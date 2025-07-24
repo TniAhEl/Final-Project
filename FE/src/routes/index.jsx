@@ -10,19 +10,21 @@ import Orders from "../components/Table/Customer/Order";
 import Profile from "../components/Form/User/Profile";
 import WarrantyTable from "../components/Table/Customer/Warranty";
 import InsuranceTable from "../components/Table/Customer/Insurance";
-import CartTable from '../components/Table/Customer/Cart'
-import CheckOut from '../components/Form/User/Checkout'
+import CartTable from "../components/Table/Customer/Cart";
+import CheckOut from "../components/Form/User/Checkout";
+import OrderCheckout from "../pages/Order/Checkout";
 
 // Import các trang con cho admin
 import Dashboard from "../layouts/DashBoard";
 import UserManagement from "../components/Table/Admin/User";
 import ProductManagement from "../components/Table/Admin/Product";
-import OrderManagement from "../components/Table/Admin/Order";
-import PromotionManagement from "../components/Table/Admin/Promotion"
-import InsuranceManagement from "../components/Table/Admin/Insurance"
-import WarrantyManagement from "../components/Table/Admin/Warranty"
+import OrderManagement from "../pages/Admin/Orders";
+import PromotionManagement from "../components/Table/Admin/Promotion";
+import InsuranceManagement from "../components/Table/Admin/Insurance";
+import WarrantyManagement from "../components/Table/Admin/Warranty";
+import ReviewAdminTable from "../components/Table/Admin/Review";
 
-import PageNotFound from '../pages/Exception/404'
+import PageNotFound from "../pages/Exception/404";
 import AboutUs from "../pages/Home/AboutUs";
 import CustomerDashboard from "../layouts/CustomerDashboard";
 
@@ -35,6 +37,7 @@ const AppRoutes = () => (
     <Route path="/product/:id" element={<ProductDetailPage />} />
     <Route path="/signup" element={<PageSignUp />} />
     <Route path="/signin" element={<PageSignIn />} />
+    <Route path="/order/checkout" element={<OrderCheckout />} />
 
     {/* Route lồng nhau cho customer */}
     <Route path="/customer" element={<CustomerLayout />}>
@@ -59,10 +62,10 @@ const AppRoutes = () => (
       <Route path="promotions" element={<PromotionManagement />} />
       <Route path="insurances" element={<InsuranceManagement />} />
       <Route path="warranties" element={<WarrantyManagement />} />
+      <Route path="review" element={<ReviewAdminTable />} />
     </Route>
 
-
-    <Route path="/about-us" element={<AboutUs/>}/>
+    <Route path="/about-us" element={<AboutUs />} />
     <Route path="*" element={<PageNotFound />} />
   </Routes>
 );

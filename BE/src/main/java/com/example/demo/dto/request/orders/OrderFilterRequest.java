@@ -5,15 +5,16 @@ import lombok.Data;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 public class OrderFilterRequest {
-    private String type;
-    private OrderStatus status;
-    private String promotionCode;
+    private List<String> types;
+    private List<OrderStatus> statuses;
+    private List<String> promotionCodes;
     private LocalDateTime startDate;
     private LocalDateTime endDate;
     private BigDecimal minTotalMoney;
     private BigDecimal maxTotalMoney;
-
 }
+

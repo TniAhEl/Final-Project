@@ -10,14 +10,16 @@ const mockCart = [
   {
     id: 1,
     name: "iPhone 15 Pro Max",
-    image: "https://cdn.tgdd.vn/Products/Images/42/303890/iphone-15-pro-max-blue-thumbnew-600x600.jpg",
+    image:
+      "https://cdn.tgdd.vn/Products/Images/42/303890/iphone-15-pro-max-blue-thumbnew-600x600.jpg",
     price: 32990000,
     quantity: 1,
   },
   {
     id: 2,
     name: "Samsung Galaxy S24 Ultra",
-    image: "https://cdn.tgdd.vn/Products/Images/42/303890/samsung-galaxy-s24-ultra-thumb-600x600.jpg",
+    image:
+      "https://cdn.tgdd.vn/Products/Images/42/303890/samsung-galaxy-s24-ultra-thumb-600x600.jpg",
     price: 28990000,
     quantity: 2,
   },
@@ -39,8 +41,13 @@ const Checkout = () => {
   const [selectedDiscount, setSelectedDiscount] = useState(null);
   const [selectedInsurance, setSelectedInsurance] = useState(null);
 
-  const total = mockCart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const discountValue = selectedDiscount ? Number(selectedDiscount.value.replace(/[^\d-]/g, "")) : 0;
+  const total = mockCart.reduce(
+    (sum, item) => sum + item.price * item.quantity,
+    0
+  );
+  const discountValue = selectedDiscount
+    ? Number(selectedDiscount.value.replace(/[^\d-]/g, ""))
+    : 0;
   const insuranceValue = selectedInsurance ? selectedInsurance.price : 0;
   const finalTotal = total + insuranceValue + discountValue;
 
@@ -51,9 +58,21 @@ const Checkout = () => {
       <div className="mb-6">
         <h3 className="font-semibold text-lg mb-2">Thông tin khách hàng</h3>
         <div className="grid grid-cols-3 gap-4">
-          <input value={mockUser.name} disabled className="bg-gray-100 rounded px-4 py-2" />
-          <input value={mockUser.phone} disabled className="bg-gray-100 rounded px-4 py-2" />
-          <input value={mockUser.email} disabled className="bg-gray-100 rounded px-4 py-2" />
+          <input
+            value={mockUser.name}
+            disabled
+            className="bg-gray-100 rounded px-4 py-2"
+          />
+          <input
+            value={mockUser.phone}
+            disabled
+            className="bg-gray-100 rounded px-4 py-2"
+          />
+          <input
+            value={mockUser.email}
+            disabled
+            className="bg-gray-100 rounded px-4 py-2"
+          />
         </div>
       </div>
       {/* Sản phẩm trong giỏ hàng */}
@@ -62,12 +81,18 @@ const Checkout = () => {
         <div className="divide-y">
           {mockCart.map((item) => (
             <div key={item.id} className="flex items-center gap-4 py-3">
-              <img src={item.image} alt={item.name} className="w-16 h-16 object-contain rounded" />
+              <img
+                src={item.image}
+                alt={item.name}
+                className="w-16 h-16 object-contain rounded"
+              />
               <div className="flex-1">
                 <div className="font-medium">{item.name}</div>
                 <div className="text-gray-500 text-sm">x{item.quantity}</div>
               </div>
-              <div className="font-semibold text-violet-700">{(item.price * item.quantity).toLocaleString()}₫</div>
+              <div className="font-semibold text-violet-700">
+                {(item.price * item.quantity).toLocaleString()}₫
+              </div>
             </div>
           ))}
         </div>
@@ -80,7 +105,7 @@ const Checkout = () => {
           className="w-full bg-gray-100 rounded px-4 py-2"
           placeholder="Nhập địa chỉ giao hàng"
           value={address}
-          onChange={e => setAddress(e.target.value)}
+          onChange={(e) => setAddress(e.target.value)}
         />
       </div>
       {/* Mã giảm giá */}
@@ -92,12 +117,12 @@ const Checkout = () => {
             className="flex-1 bg-gray-100 rounded px-4 py-2"
             placeholder="Nhập mã giảm giá"
             value={discountCode}
-            onChange={e => setDiscountCode(e.target.value)}
+            onChange={(e) => setDiscountCode(e.target.value)}
           />
           <button
             className="px-4 py-2 bg-violet-600 text-white rounded hover:bg-violet-700 transition"
             onClick={() => {
-              const found = mockDiscounts.find(d => d.code === discountCode);
+              const found = mockDiscounts.find((d) => d.code === discountCode);
               setSelectedDiscount(found || null);
             }}
           >
@@ -108,7 +133,11 @@ const Checkout = () => {
           {mockDiscounts.map((d) => (
             <button
               key={d.code}
-              className={`px-3 py-1 rounded border ${selectedDiscount?.code === d.code ? 'bg-violet-600 text-white' : 'bg-gray-100 text-gray-700'}`}
+              className={`px-3 py-1 rounded border ${
+                selectedDiscount?.code === d.code
+                  ? "bg-violet-600 text-white"
+                  : "bg-gray-100 text-gray-700"
+              }`}
               onClick={() => setSelectedDiscount(d)}
             >
               {d.code} ({d.value})
@@ -116,7 +145,10 @@ const Checkout = () => {
           ))}
         </div>
         {selectedDiscount && (
-          <div className="mt-2 text-green-600">Đã áp dụng mã: <b>{selectedDiscount.code}</b> ({selectedDiscount.value})</div>
+          <div className="mt-2 text-green-600">
+            Đã áp dụng mã: <b>{selectedDiscount.code}</b> (
+            {selectedDiscount.value})
+          </div>
         )}
       </div>
       {/* Gói bảo hiểm */}
@@ -126,7 +158,11 @@ const Checkout = () => {
           {mockInsurances.map((ins) => (
             <button
               key={ins.id}
-              className={`px-3 py-1 rounded border ${selectedInsurance?.id === ins.id ? 'bg-violet-600 text-white' : 'bg-gray-100 text-gray-700'}`}
+              className={`px-3 py-1 rounded border ${
+                selectedInsurance?.id === ins.id
+                  ? "bg-violet-600 text-white"
+                  : "bg-gray-100 text-gray-700"
+              }`}
               onClick={() => setSelectedInsurance(ins)}
             >
               {ins.name} (+{ins.price.toLocaleString()}₫)
@@ -134,16 +170,23 @@ const Checkout = () => {
           ))}
         </div>
         {selectedInsurance && (
-          <div className="mt-2 text-blue-600">Đã chọn: <b>{selectedInsurance.name}</b> (+{selectedInsurance.price.toLocaleString()}₫)</div>
+          <div className="mt-2 text-blue-600">
+            Đã chọn: <b>{selectedInsurance.name}</b> (+
+            {selectedInsurance.price.toLocaleString()}₫)
+          </div>
         )}
       </div>
       {/* Tổng cộng */}
       <div className="flex justify-end items-center gap-4 mt-8">
         <div className="text-xl font-bold">Tổng cộng:</div>
-        <div className="text-2xl font-extrabold text-violet-700">{finalTotal.toLocaleString()}₫</div>
+        <div className="text-2xl font-extrabold text-violet-700">
+          {finalTotal.toLocaleString()}₫
+        </div>
       </div>
       <div className="flex justify-end mt-4">
-        <button className="px-8 py-3 bg-violet-600 text-white rounded font-semibold hover:bg-violet-700 transition">Đặt hàng</button>
+        <button className="px-8 py-3 bg-violet-600 text-white rounded font-semibold hover:bg-violet-700 transition">
+          Đặt hàng
+        </button>
       </div>
     </div>
   );

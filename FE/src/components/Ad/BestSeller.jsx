@@ -1,18 +1,34 @@
-import ProductCard from '../Card/Product';
-import { FiChevronDown } from 'react-icons/fi';
+import ProductCard from "../Card/Product";
+import { FiChevronDown } from "react-icons/fi";
 
 function BestSellerAd(props) {
   const {
-    title = 'Best Sellers!',
-    description = 'Discover our most popular products, loved by thousands of customers!',
+    title = "Best Sellers!",
+    description = "Discover our most popular products, loved by thousands of customers!",
     products = [
-      { image: 'https://placehold.co/120x120', name: 'Samsung Galaxy S24', price: 799 },
-      { image: 'https://placehold.co/120x120', name: 'Sony WH-1000XM5', price: 349 },
-      { image: 'https://placehold.co/120x120', name: 'iPad Pro', price: 999 },
-      { image: 'https://placehold.co/120x120', name: 'MacBook Air', price: 1199 },
-      { image: 'https://placehold.co/120x120', name: 'Apple Watch Ultra', price: 799 },
+      {
+        image: "https://placehold.co/120x120",
+        name: "Samsung Galaxy S24",
+        price: 799,
+      },
+      {
+        image: "https://placehold.co/120x120",
+        name: "Sony WH-1000XM5",
+        price: 349,
+      },
+      { image: "https://placehold.co/120x120", name: "iPad Pro", price: 999 },
+      {
+        image: "https://placehold.co/120x120",
+        name: "MacBook Air",
+        price: 1199,
+      },
+      {
+        image: "https://placehold.co/120x120",
+        name: "Apple Watch Ultra",
+        price: 799,
+      },
     ],
-    buttonText = 'View All',
+    buttonText = "View All",
     onClick = () => {},
   } = props;
 
@@ -22,7 +38,10 @@ function BestSellerAd(props) {
         <div className="flex-1 flex flex-col items-start gap-3">
           <h2 className="text-2xl font-bold text-yellow-900">{title}</h2>
           <p className="text-zinc-700 text-base">{description}</p>
-          <button onClick={onClick} className="mt-2 px-5 py-2 rounded-full bg-yellow-500 text-white hover:bg-yellow-600 transition font-medium text-base">
+          <button
+            onClick={onClick}
+            className="mt-2 px-5 py-2 rounded-full bg-yellow-500 text-white hover:bg-yellow-600 transition font-medium text-base"
+          >
             {buttonText}
           </button>
         </div>

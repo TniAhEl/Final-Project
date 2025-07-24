@@ -1,6 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 
-const InsuranceForm = ({ onSubmit, onCancel, initialData = null, isEditing = false }) => {
+const InsuranceForm = ({
+  onSubmit,
+  onCancel,
+  initialData = null,
+  isEditing = false,
+}) => {
   const [formData, setFormData] = useState({
     name: "",
     releaseAt: "",
@@ -8,7 +13,7 @@ const InsuranceForm = ({ onSubmit, onCancel, initialData = null, isEditing = fal
     terms: "",
     coverageMoney: "",
     provider: "",
-    fee: ""
+    fee: "",
   });
 
   const [errors, setErrors] = useState({});
@@ -20,12 +25,12 @@ const InsuranceForm = ({ onSubmit, onCancel, initialData = null, isEditing = fal
   }, [initialData, isEditing]);
 
   const handleInputChange = (field, value) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
     if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: '' }));
+      setErrors((prev) => ({ ...prev, [field]: "" }));
     }
   };
 
@@ -35,7 +40,8 @@ const InsuranceForm = ({ onSubmit, onCancel, initialData = null, isEditing = fal
     if (!formData.name) newErrors.name = "Name is required";
     if (!formData.insured) newErrors.insured = "Insured is required";
     if (!formData.terms) newErrors.terms = "Terms are required";
-    if (!formData.coverageMoney) newErrors.coverageMoney = "Coverage money is required";
+    if (!formData.coverageMoney)
+      newErrors.coverageMoney = "Coverage money is required";
     if (!formData.fee) newErrors.fee = "Fee is required";
 
     if (Object.keys(newErrors).length > 0) {
@@ -48,7 +54,10 @@ const InsuranceForm = ({ onSubmit, onCancel, initialData = null, isEditing = fal
 
   return (
     <div className="w-full max-w-4xl mx-auto">
-      <form onSubmit={handleSubmit} className="space-y-6 bg-white p-6 border rounded-md shadow-sm">
+      <form
+        onSubmit={handleSubmit}
+        className="space-y-6 bg-white p-6 border rounded-md shadow-sm"
+      >
         {/* Name */}
         <div>
           <label className="block mb-1 text-sm font-medium text-gray-700">
@@ -57,11 +66,15 @@ const InsuranceForm = ({ onSubmit, onCancel, initialData = null, isEditing = fal
           <input
             type="text"
             value={formData.name}
-            onChange={(e) => handleInputChange('name', e.target.value)}
+            onChange={(e) => handleInputChange("name", e.target.value)}
             placeholder="E.g: Mobile Insurance Package"
-            className={`w-full p-3 border rounded-md focus:ring-2 focus:ring-violet-500 ${errors.name ? 'border-red-500' : 'border-gray-300'}`}
+            className={`w-full p-3 border rounded-md focus:ring-2 focus:ring-violet-500 ${
+              errors.name ? "border-red-500" : "border-gray-300"
+            }`}
           />
-          {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
+          {errors.name && (
+            <p className="text-red-500 text-sm mt-1">{errors.name}</p>
+          )}
         </div>
 
         {/* Release At */}
@@ -72,7 +85,7 @@ const InsuranceForm = ({ onSubmit, onCancel, initialData = null, isEditing = fal
           <input
             type="date"
             value={formData.releaseAt}
-            onChange={(e) => handleInputChange('releaseAt', e.target.value)}
+            onChange={(e) => handleInputChange("releaseAt", e.target.value)}
             className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-violet-500"
           />
         </div>
@@ -85,11 +98,15 @@ const InsuranceForm = ({ onSubmit, onCancel, initialData = null, isEditing = fal
           <input
             type="text"
             value={formData.insured}
-            onChange={(e) => handleInputChange('insured', e.target.value)}
+            onChange={(e) => handleInputChange("insured", e.target.value)}
             placeholder="E.g: iPhone 15 Pro, Samsung S24..."
-            className={`w-full p-3 border rounded-md focus:ring-2 focus:ring-violet-500 ${errors.insured ? 'border-red-500' : 'border-gray-300'}`}
+            className={`w-full p-3 border rounded-md focus:ring-2 focus:ring-violet-500 ${
+              errors.insured ? "border-red-500" : "border-gray-300"
+            }`}
           />
-          {errors.insured && <p className="text-red-500 text-sm mt-1">{errors.insured}</p>}
+          {errors.insured && (
+            <p className="text-red-500 text-sm mt-1">{errors.insured}</p>
+          )}
         </div>
 
         {/* Terms */}
@@ -100,11 +117,15 @@ const InsuranceForm = ({ onSubmit, onCancel, initialData = null, isEditing = fal
           <textarea
             rows={4}
             value={formData.terms}
-            onChange={(e) => handleInputChange('terms', e.target.value)}
+            onChange={(e) => handleInputChange("terms", e.target.value)}
             placeholder="E.g: Covers accidental damage, water damage..."
-            className={`w-full p-3 border rounded-md focus:ring-2 focus:ring-violet-500 ${errors.terms ? 'border-red-500' : 'border-gray-300'}`}
+            className={`w-full p-3 border rounded-md focus:ring-2 focus:ring-violet-500 ${
+              errors.terms ? "border-red-500" : "border-gray-300"
+            }`}
           />
-          {errors.terms && <p className="text-red-500 text-sm mt-1">{errors.terms}</p>}
+          {errors.terms && (
+            <p className="text-red-500 text-sm mt-1">{errors.terms}</p>
+          )}
         </div>
 
         {/* Coverage Money */}
@@ -115,11 +136,15 @@ const InsuranceForm = ({ onSubmit, onCancel, initialData = null, isEditing = fal
           <input
             type="number"
             value={formData.coverageMoney}
-            onChange={(e) => handleInputChange('coverageMoney', e.target.value)}
+            onChange={(e) => handleInputChange("coverageMoney", e.target.value)}
             placeholder="E.g: 15000000"
-            className={`w-full p-3 border rounded-md focus:ring-2 focus:ring-violet-500 ${errors.coverageMoney ? 'border-red-500' : 'border-gray-300'}`}
+            className={`w-full p-3 border rounded-md focus:ring-2 focus:ring-violet-500 ${
+              errors.coverageMoney ? "border-red-500" : "border-gray-300"
+            }`}
           />
-          {errors.coverageMoney && <p className="text-red-500 text-sm mt-1">{errors.coverageMoney}</p>}
+          {errors.coverageMoney && (
+            <p className="text-red-500 text-sm mt-1">{errors.coverageMoney}</p>
+          )}
         </div>
 
         {/* Fee */}
@@ -130,11 +155,15 @@ const InsuranceForm = ({ onSubmit, onCancel, initialData = null, isEditing = fal
           <input
             type="number"
             value={formData.fee}
-            onChange={(e) => handleInputChange('fee', e.target.value)}
+            onChange={(e) => handleInputChange("fee", e.target.value)}
             placeholder="E.g: 500000"
-            className={`w-full p-3 border rounded-md focus:ring-2 focus:ring-violet-500 ${errors.fee ? 'border-red-500' : 'border-gray-300'}`}
+            className={`w-full p-3 border rounded-md focus:ring-2 focus:ring-violet-500 ${
+              errors.fee ? "border-red-500" : "border-gray-300"
+            }`}
           />
-          {errors.fee && <p className="text-red-500 text-sm mt-1">{errors.fee}</p>}
+          {errors.fee && (
+            <p className="text-red-500 text-sm mt-1">{errors.fee}</p>
+          )}
         </div>
 
         {/* Provider */}
@@ -145,7 +174,7 @@ const InsuranceForm = ({ onSubmit, onCancel, initialData = null, isEditing = fal
           <input
             type="text"
             value={formData.provider}
-            onChange={(e) => handleInputChange('provider', e.target.value)}
+            onChange={(e) => handleInputChange("provider", e.target.value)}
             placeholder="E.g: Bao Viet, AIA..."
             className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-violet-500"
           />

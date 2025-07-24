@@ -18,7 +18,7 @@ const AdminLayout = () => {
         {/* Main Content */}
         <main className="flex-1 p-6 bg-white overflow-x-auto">
           <Outlet />
-          <ScrollToTopButton/>
+          <ScrollToTopButton />
         </main>
       </div>
 

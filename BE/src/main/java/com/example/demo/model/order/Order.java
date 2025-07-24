@@ -1,6 +1,7 @@
 package com.example.demo.model.order;
 
 import com.example.demo.enums.OrderStatus;
+import com.example.demo.enums.ShippingMethod;
 import com.example.demo.model.auth.User;
 import com.example.demo.model.utilities.InsurancePending;
 import com.example.demo.model.utilities.OrderPromotion;
@@ -39,6 +40,9 @@ public class Order {
     @OneToMany(mappedBy = "order")
     private List<InsurancePending> insurancePendings = new ArrayList<>();
 
+    @OneToOne(mappedBy = "order")
+    private OrderTransport orderTransport;
+
     @Column(name = "type")
     private String type;
     @Enumerated(EnumType.STRING)
@@ -46,6 +50,10 @@ public class Order {
     private OrderStatus status = OrderStatus.PENDING;
     @Column(name = "shipping_address")
     private String shippingAddress;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "transport_method")
+    private ShippingMethod method;
+
     @Column(name = "note")
     private String note;
     @Column(name = "update_at")

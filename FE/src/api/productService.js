@@ -3,7 +3,19 @@ import { api } from "./axios.js";
 
 // filter service
 export const filterProducts = async (filter, page = 0, size = 12) => {
-  const res = await api.post(`/products/filter?page=${page}&size=${size}`, filter);
+  const res = await api.post(
+    `/products/filter?page=${page}&size=${size}`,
+    filter
+  );
+  return res.data;
+};
+
+// filter service
+export const filterAdminProducts = async (filter, page = 0, size = 12) => {
+  const res = await api.post(
+    `/products/admin/filter?page=${page}&size=${size}`,
+    filter
+  );
   return res.data;
 };
 
@@ -19,7 +31,12 @@ export const createProduct = async (data) => {
 };
 // update product
 export const updateProduct = async (id, data) => {
-  const res = await api.put(`/products/${id}`, data);
+  const token = localStorage.getItem("token");
+  const res = await api.put(`/products/update?id=${id}`, data, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
   return res.data;
 };
 // add product option
@@ -35,7 +52,7 @@ export const createSerial = async (data) => {
 };
 
 // get serials by product option id
-export const getSerials = async(optionId) => {
+export const getSerials = async (optionId) => {
   const res = await api.get(`/products/serial/all?optionId=${optionId}`);
   return res.data;
 };
@@ -51,7 +68,6 @@ export const updateProductOption = async (data) => {
   const res = await api.put("products/option/update", data);
   return res.data;
 };
-
 
 //Category
 //  add new category
@@ -120,7 +136,7 @@ export const createPromotion = async (data) => {
 
 //update promotion
 export const updatePromotion = async (id, data) => {
-  const res = await api.put(`/promotions/${id}/update`, data);
+  const res = await api.put(`/promotions/update/promotion/${id}`, data);
   return res.data;
 };
 
@@ -132,7 +148,7 @@ export const getAllStores = async () => {
 
 // Lấy tất cả brand
 export const getAllBrands = async () => {
-  const res = await api.get('/products/brand/all');
+  const res = await api.get("/products/brand/all");
   // Nếu trả về object có thuộc tính data là mảng
   if (res.data && Array.isArray(res.data.data)) {
     return res.data.data;
@@ -141,4 +157,9 @@ export const getAllBrands = async () => {
   } else {
     return [];
   }
+};
+
+export const getAllPromotions = async () => {
+  const res = await api.get("/promotions/all");
+  return res.data.data;
 };

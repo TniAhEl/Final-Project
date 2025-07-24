@@ -1,6 +1,9 @@
 package com.example.demo.dto.response.order;
 
+import com.example.demo.dto.response.UserResponse;
 import com.example.demo.enums.OrderStatus;
+import com.example.demo.enums.ShippingMethod;
+import com.example.demo.model.order.OrderTransport;
 import com.example.demo.model.utilities.OrderPromotion;
 import lombok.Data;
 
@@ -11,7 +14,6 @@ import java.util.List;
 @Data
 public class OrderResponse {
     private Long id;
-    private List<OrderPromotion> orderPromotions ;
     private String type;
     private OrderStatus status = OrderStatus.PENDING;
     private String shippingAddress;
@@ -20,5 +22,9 @@ public class OrderResponse {
     private LocalDateTime createAt;
     private BigDecimal totalMoney;
     private List<OrderProductResponse> orderProducts ;
+    private UserResponse user;
+    private OrderPromotionResponse promotionResponse;
+    private ShippingMethod method;
+    private OrderTransportResponse transport;
 
 }

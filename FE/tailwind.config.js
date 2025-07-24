@@ -1,17 +1,4 @@
-/** @type {import('tailwindcss').Config} */
-export default {
-    content: [
-        "./index.html",
-      "./src/**/*.{js,jsx}", // Cho phép tailwind scan trong src/
-    ],
-    theme: {
-        extend: {
-            colors: {
-                primary: "#1e40af",
-                danger: "#dc2626",
-                "brand-yellow": "#facc15",
-            },
-            fontFamily: {
+F
                 hubot: ['Hubot Sans', 'ital'],
             },
             spacing: {

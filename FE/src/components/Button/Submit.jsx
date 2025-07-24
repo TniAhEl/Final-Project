@@ -1,16 +1,12 @@
-import React from 'react';
-import { FaPaperPlane } from 'react-icons/fa';
+import React from "react";
 
-const SubmitButton = ({ children, ...props }) => (
+const SubmitButton = ({ children, type = "submit", ...props }) => (
   <button
-    type="submit"
+    type={type}
     className="px-[57px] py-4 bg-gray-800 rounded-sm shadow-[0px_8px_16px_0px_rgba(96,97,112,0.16)] shadow-[0px_2px_4px_0px_rgba(40,41,61,0.04)] outline outline-1 outline-offset-[-1px] outline-slate-500 inline-flex justify-center items-center gap-1 font-['Inter'] text-stone-200 text-xs font-medium leading-none tracking-tight overflow-hidden"
     {...props}
   >
-    <span className="flex items-center gap-1.5">
-      <span>{children || 'Submit'}</span>
-      <FaPaperPlane className="text-stone-200 text-xs" />
-    </span>
+    <span className="flex items-center gap-1.5">{children || "Submit"}</span>
   </button>
 );
 

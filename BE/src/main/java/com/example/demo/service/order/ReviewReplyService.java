@@ -40,7 +40,6 @@ public class ReviewReplyService implements IReviewReplyService {
         reply.setStatus(ReviewStatus.NEW);
         reply.setReply(request.getReply());
         reply.setProductReview(review);
-
         ProductReviewReply savedReply = productReviewReplyRepository.save(reply);
 
         review.setProductReviewReply(savedReply);

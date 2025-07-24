@@ -2,17 +2,20 @@ package com.example.demo.service.impl.auth;
 
 import com.example.demo.dto.request.AdminRegistrationRequest;
 import com.example.demo.dto.request.LoginRequest;
+import com.example.demo.dto.request.UpdateInformationRequest;
 import com.example.demo.dto.request.UserRegistrationRequest;
 import com.example.demo.dto.response.AuthResponse;
+import com.example.demo.dto.response.UserResponse;
+import com.example.demo.exception.ResourceNotFoundException;
 import com.example.demo.model.auth.Admin;
 import com.example.demo.model.auth.User;
 import com.example.demo.model.product.Cart;
 import com.example.demo.repository.auth.AdminRepository;
 import com.example.demo.repository.auth.UserRepository;
 import com.example.demo.repository.product.CartRepository;
-import com.example.demo.service.impl.product.ICartService;
 import com.example.demo.util.JwtUtil;
 import lombok.RequiredArgsConstructor;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -27,6 +30,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class AuthService {
     private final CartRepository cartRepository;
+    private final ModelMapper modelMapper;
 
     @Autowired
     private UserRepository userRepository;
@@ -72,7 +76,7 @@ public class AuthService {
 
 
         String token = jwtUtil.generateToken(saveUser.getUsername(), "USER", saveUser.getId());
-        return new AuthResponse(token, "USER", "User registered successfully");
+        return new AuthResponse(token, "USER", user.getId(), "User registered successfully");
     }
 
     // Admin Registration (typically done by super admin)
@@ -98,7 +102,7 @@ public class AuthService {
         Admin savedAdmin = adminRepository.save(admin);
 
         String token = jwtUtil.generateToken(admin.getUsername(), "ADMIN", savedAdmin.getId());
-        return new AuthResponse(token, "ADMIN", "Admin registered successfully");
+        return new AuthResponse(token, "ADMIN", admin.getId(), "Admin registered successfully");
     }
 
     // Login for both User and Admin
@@ -112,14 +116,14 @@ public class AuthService {
             Optional<Admin> admin = adminRepository.findByUsername(request.getUsername());
             if (admin.isPresent()) {
                 String token = jwtUtil.generateToken(admin.get().getUsername(), "ADMIN", admin.get().getId());
-                return new AuthResponse(token, "ADMIN", "Admin login successful");
+                return new AuthResponse(token, "ADMIN", admin.get().getId(), "Admin login successful");
             }
 
             // Check if user exists in user table
             Optional<User> user = userRepository.findByUsername(request.getUsername());
             if (user.isPresent()) {
                 String token = jwtUtil.generateToken(user.get().getUsername() , "USER", user.get().getId());
-                return new AuthResponse(token, "USER", "User login successful");
+                return new AuthResponse(token, "USER", user.get().getId() , "User login successful");
             }
 
             throw new RuntimeException("User not found");
@@ -127,5 +131,23 @@ public class AuthService {
         } catch (BadCredentialsException e) {
             throw new RuntimeException("Invalid credentials");
         }
+    }
+
+    public UserResponse getUserInfo(Long userId){
+        User user = userRepository.findById(userId).orElseThrow(()-> new ResourceNotFoundException("User not found!"));
+        UserResponse userResponse = modelMapper.map(user, UserResponse.class);
+        return userResponse;
+    }
+
+    public UserResponse updateInfomation(Long userId, UpdateInformationRequest request){
+        User user = userRepository.findById(userId).orElseThrow(()-> new ResourceNotFoundException("User not found!"));
+        user.setFirstName(request.getFirstName());
+        user.setLastName(request.getLastName());
+        user.setPhone(request.getPhone());
+        user.setAddress(request.getAddress());
+        user.setBday(request.getBday());
+        userRepository.save(user);
+        UserResponse userResponse = modelMapper.map(user, UserResponse.class);
+        return userResponse;
     }
 }

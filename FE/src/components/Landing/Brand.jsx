@@ -1,8 +1,17 @@
 import React, { useEffect, useState } from "react";
 import { FaApple } from "react-icons/fa";
-import { SiSamsung, SiXiaomi, SiOppo, SiVivo, SiNokia, SiSony, SiAsus, SiHuawei } from "react-icons/si";
+import {
+  SiSamsung,
+  SiXiaomi,
+  SiOppo,
+  SiVivo,
+  SiNokia,
+  SiSony,
+  SiAsus,
+  SiHuawei,
+} from "react-icons/si";
 import { Link, useNavigate } from "react-router-dom";
-import { getAllBrands } from '../../api/productService';
+import { getAllBrands } from "../../api/productService";
 
 // Map brand name to icon
 const brandIconMap = {
@@ -22,24 +31,29 @@ const Brand = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    getAllBrands().then(data => {
-      // Nếu data là mảng string, chuyển thành mảng object { name }
-      if (Array.isArray(data) && typeof data[0] === 'string') {
-        setBrands(data.map(name => ({ name })));
-        console.log('Brands set:', data.map(name => ({ name })));
-      } else {
-        setBrands(data);
-        console.log('Brands set:', data);
-      }
-    }).catch(() => {
-      setBrands([]);
-      console.log('Brands set: [] (error)');
-    });
+    getAllBrands()
+      .then((data) => {
+        // Nếu data là mảng string, chuyển thành mảng object { name }
+        if (Array.isArray(data) && typeof data[0] === "string") {
+          setBrands(data.map((name) => ({ name })));
+          console.log(
+            "Brands set:",
+            data.map((name) => ({ name }))
+          );
+        } else {
+          setBrands(data);
+          console.log("Brands set:", data);
+        }
+      })
+      .catch(() => {
+        setBrands([]);
+        console.log("Brands set: [] (error)");
+      });
   }, []);
 
   const handleBrandClick = (brandName) => {
     // Chuyển sang trang category, truyền filter qua state với key 'brands'
-    navigate('/products', { state: { filter: { brand: [brandName] } } });
+    navigate("/products", { state: { filter: { brand: [brandName] } } });
   };
 
   return (
@@ -53,7 +67,9 @@ const Brand = () => {
       </div>
       <div className="flex flex-wrap justify-center items-center gap-x-24 gap-y-10 w-full mt-10">
         {brands.map((brand) => {
-          const icon = brandIconMap[brand.name] || <div className="text-4xl text-gray-400">?</div>;
+          const icon = brandIconMap[brand.name] || (
+            <div className="text-4xl text-gray-400">?</div>
+          );
           return (
             <button
               type="button"
@@ -64,7 +80,9 @@ const Brand = () => {
               <div className="w-16 h-16 flex items-center justify-center rounded-full bg-gray-100 shadow group-hover:scale-110 transition-transform">
                 {icon}
               </div>
-              <span className="text-slate-900 text-xl font-bold font-['Roboto'] leading-relaxed group-hover:text-violet-600 transition-colors">{brand.name}</span>
+              <span className="text-slate-900 text-xl font-bold font-['Roboto'] leading-relaxed group-hover:text-violet-600 transition-colors">
+                {brand.name}
+              </span>
             </button>
           );
         })}

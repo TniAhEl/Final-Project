@@ -8,9 +8,10 @@ import java.time.LocalDate;
 
 @Data
 public class InsuranceResponse {
+    private Long id;
     private String name;
     private LocalDate releaseAt;
-    private String  insured;
+    private int  insured;
     private String terms;
     private InsuranceStatus status;
     private BigDecimal coverageMoney;

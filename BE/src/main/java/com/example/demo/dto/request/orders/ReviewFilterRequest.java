@@ -8,9 +8,6 @@ import java.time.LocalDateTime;
 
 @Data
 public class ReviewFilterRequest {
-    private LocalDateTime startDate;
-    private LocalDateTime endDate;
-    private int rating;
+    private Integer rating;
     private ReviewStatus status;
-    private String sortField;
 }

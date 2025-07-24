@@ -25,6 +25,7 @@ public class ProductOption {
 
     @Column(name = "price")
     private BigDecimal price;
+    @Enumerated(EnumType.STRING)
     @Column(name = "color_name")
     private ColorName colorName;
     @Column(name = "ram")
@@ -34,6 +35,12 @@ public class ProductOption {
 
     @Column(name = "remaining_quantity")
     private int remainingQuantity;
+
+    @Column(name = "sold_quantity")
+    private int soldQuantity;
+
+    @Column(name = "reversed_quantity")
+    private int reversedQuantity;
 
     @ManyToOne
     @JoinColumn(name = "product_id")

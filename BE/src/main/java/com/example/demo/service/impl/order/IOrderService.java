@@ -1,7 +1,8 @@
 package com.example.demo.service.impl.order;
 
+import com.example.demo.dto.request.FilterOrderWarranty;
 import com.example.demo.dto.request.orders.OrderFilterRequest;
-import com.example.demo.dto.request.utilities.InsuranceContractRequest;
+import com.example.demo.dto.request.utilities.InsurancePendingRequest;
 import com.example.demo.dto.request.utilities.OrderInforRequest;
 import com.example.demo.dto.response.order.OrderResponse;
 import com.example.demo.enums.OrderStatus;
@@ -12,7 +13,7 @@ import java.util.Map;
 
 public interface IOrderService {
 
-    Order placeOrder(Long userId, OrderInforRequest request, String promotionCode, List<InsuranceContractRequest> insuranceContracts);
+    Order placeOrder(Long userId, OrderInforRequest request, String promotionCode, List<InsurancePendingRequest> insuranceContracts);
 
     Order getOrder(Long customerId);
     List<Order> getCustomerOrders(Long userId);
@@ -27,4 +28,7 @@ public interface IOrderService {
 
     Order confirmOrder(Long adminId, Long orderId, OrderStatus status);
 
+    Map<String, Object> filterOrdersForUser(OrderFilterRequest filter, Long userId, int page, int size);
+
+    Map<String, Object> filterOrderProductWarranty(FilterOrderWarranty filter, Long userId, int page, int size);
 }

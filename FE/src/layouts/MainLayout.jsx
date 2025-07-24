@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import HeaderAuth from "../components/Header/HeaderAuth";
+import Header from "../components/Header/Header";
 import Footer from "../components/Footer/Footer";
 
 const MainLayout = ({ children }) => {
@@ -40,7 +41,7 @@ const MainLayout = ({ children }) => {
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
       >
-        <HeaderAuth />
+        {localStorage.getItem("token") ? <HeaderAuth /> : <Header />}
       </div>
 
       {/* Để tránh nội dung bị che, thêm padding-top bằng chiều cao header (giả sử 64px) */}

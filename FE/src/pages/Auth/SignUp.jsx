@@ -4,15 +4,10 @@ import SignUpForm from "../../components/Form/User/SignUp"; // hoặc SignUp, In
 import Footer from "../../components/Footer/Footer";
 import Header from "../../components/Header/Header";
 
-
-
-
-
 const SignUpPage = () => {
   const [showHeader, setShowHeader] = useState(true);
   const lastScrollY = useRef(0);
   const ticking = useRef(false);
-
 
   // Xử lý scroll để ẩn/hiện header
   useEffect(() => {

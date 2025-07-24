@@ -1,5 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { createSerial, updateSerial, getSerials, getAllStores } from '../../../api/productService';
+import React, { useState, useEffect } from "react";
+import {
+  createSerial,
+  updateSerial,
+  getSerials,
+  getAllStores,
+} from "../../../api/productService";
 
 const ViewAllOptions = ({ product, onClose, onAddSerial }) => {
   const [showSerialForm, setShowSerialForm] = useState(false);
@@ -7,47 +12,47 @@ const ViewAllOptions = ({ product, onClose, onAddSerial }) => {
   const [showUpdateSerialForm, setShowUpdateSerialForm] = useState(false);
   const [selectedSerialForUpdate, setSelectedSerialForUpdate] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [serialsData, setSerialsData] = useState({}); // Store serials for each option
   const [loadingSerials, setLoadingSerials] = useState({}); // Loading state for each option
   const [stores, setStores] = useState([]);
 
   const handleAddSerial = (option) => {
-    console.log('Adding serial for option:', option);
+    console.log("Adding serial for option:", option);
     setSelectedOptionForSerial(option);
     setShowSerialForm(true);
-    setError('');
-    setSuccess('');
+    setError("");
+    setSuccess("");
   };
 
   const handleCloseSerialForm = () => {
     setShowSerialForm(false);
     setSelectedOptionForSerial(null);
-    setError('');
-    setSuccess('');
+    setError("");
+    setSuccess("");
   };
 
   const handleSubmitSerial = async (serialData) => {
     try {
       setLoading(true);
-      setError('');
-      setSuccess('');
+      setError("");
+      setSuccess("");
 
       // Prepare data for API
       const apiData = {
         serialNumber: serialData.serialNumber,
-        productOptionId: selectedOptionForSerial.id.toString()
+        productOptionId: selectedOptionForSerial.id.toString(),
       };
 
-      console.log('Sending serial data to API:', apiData);
-      
+      console.log("Sending serial data to API:", apiData);
+
       // Call API to add serial
       const response = await createSerial(apiData);
-      console.log('API response:', response);
-      
-      setSuccess('Serial added successfully!');
-      
+      console.log("API response:", response);
+
+      setSuccess("Serial added successfully!");
+
       // Close form after a short delay
       setTimeout(() => {
         handleCloseSerialForm();
@@ -56,51 +61,52 @@ const ViewAllOptions = ({ product, onClose, onAddSerial }) => {
           onAddSerial(selectedOptionForSerial, serialData);
         }
       }, 1500);
-      
     } catch (err) {
-      console.error('Error adding serial:', err);
-      setError(err.response?.data?.message || 'Failed to add serial. Please try again.');
+      console.error("Error adding serial:", err);
+      setError(
+        err.response?.data?.message || "Failed to add serial. Please try again."
+      );
     } finally {
       setLoading(false);
     }
   };
 
   const handleUpdateSerial = (serial) => {
-    console.log('Updating serial:', serial);
+    console.log("Updating serial:", serial);
     setSelectedSerialForUpdate(serial);
     setShowUpdateSerialForm(true);
-    setError('');
-    setSuccess('');
+    setError("");
+    setSuccess("");
   };
 
   const handleCloseUpdateSerialForm = () => {
     setShowUpdateSerialForm(false);
     setSelectedSerialForUpdate(null);
-    setError('');
-    setSuccess('');
+    setError("");
+    setSuccess("");
   };
 
   const handleSubmitUpdateSerial = async (updateData) => {
     try {
       setLoading(true);
-      setError('');
-      setSuccess('');
+      setError("");
+      setSuccess("");
 
       // Prepare data for API
       const apiData = {
         status: updateData.status,
         serialNumber: updateData.serialNumber,
-        storeId: updateData.storeId
+        storeId: updateData.storeId,
       };
 
-      console.log('Sending update serial data to API:', apiData);
-      
+      console.log("Sending update serial data to API:", apiData);
+
       // Call API to update serial
       const response = await updateSerial(selectedSerialForUpdate.id, apiData);
-      console.log('API response:', response);
-      
-      setSuccess('Serial updated successfully!');
-      
+      console.log("API response:", response);
+
+      setSuccess("Serial updated successfully!");
+
       // Close form after a short delay
       setTimeout(() => {
         handleCloseUpdateSerialForm();
@@ -113,10 +119,12 @@ const ViewAllOptions = ({ product, onClose, onAddSerial }) => {
           onAddSerial(null, updateData);
         }
       }, 1500);
-      
     } catch (err) {
-      console.error('Error updating serial:', err);
-      setError(err.response?.data?.message || 'Failed to update serial. Please try again.');
+      console.error("Error updating serial:", err);
+      setError(
+        err.response?.data?.message ||
+          "Failed to update serial. Please try again."
+      );
     } finally {
       setLoading(false);
     }
@@ -125,33 +133,33 @@ const ViewAllOptions = ({ product, onClose, onAddSerial }) => {
   // Function to fetch serials for a specific option
   const fetchSerialsForOption = async (optionId) => {
     try {
-      setLoadingSerials(prev => ({ ...prev, [optionId]: true }));
-      
-      console.log('Fetching serials for option:', optionId);
+      setLoadingSerials((prev) => ({ ...prev, [optionId]: true }));
+
+      console.log("Fetching serials for option:", optionId);
       const response = await getSerials(optionId);
-      console.log('Serials response:', response);
-      
+      console.log("Serials response:", response);
+
       if (response.data) {
-        setSerialsData(prev => ({
+        setSerialsData((prev) => ({
           ...prev,
-          [optionId]: response.data
+          [optionId]: response.data,
         }));
       }
     } catch (err) {
-      console.error('Error fetching serials:', err);
-      setSerialsData(prev => ({
+      console.error("Error fetching serials:", err);
+      setSerialsData((prev) => ({
         ...prev,
-        [optionId]: []
+        [optionId]: [],
       }));
     } finally {
-      setLoadingSerials(prev => ({ ...prev, [optionId]: false }));
+      setLoadingSerials((prev) => ({ ...prev, [optionId]: false }));
     }
   };
 
   // Auto-fetch serials for all options when component mounts
   useEffect(() => {
     if (product.option && product.option.length > 0) {
-      product.option.forEach(option => {
+      product.option.forEach((option) => {
         if (option.id) {
           fetchSerialsForOption(option.id);
         }
@@ -162,16 +170,18 @@ const ViewAllOptions = ({ product, onClose, onAddSerial }) => {
   // Lấy danh sách store khi mở form update serial
   useEffect(() => {
     if (showUpdateSerialForm) {
-      getAllStores().then(data => {
-        // Nếu API trả về object có thuộc tính data là mảng
-        if (data && Array.isArray(data.data)) {
-          setStores(data.data);
-        } else if (Array.isArray(data)) {
-          setStores(data);
-        } else {
-          setStores([]);
-        }
-      }).catch(() => setStores([]));
+      getAllStores()
+        .then((data) => {
+          // Nếu API trả về object có thuộc tính data là mảng
+          if (data && Array.isArray(data.data)) {
+            setStores(data.data);
+          } else if (Array.isArray(data)) {
+            setStores(data);
+          } else {
+            setStores([]);
+          }
+        })
+        .catch(() => setStores([]));
     }
   }, [showUpdateSerialForm]);
 
@@ -218,9 +228,9 @@ const ViewAllOptions = ({ product, onClose, onAddSerial }) => {
           {product.option && product.option.length > 0 ? (
             <div className="space-y-4">
               {product.option.map((option, index) => (
-                <OptionCard 
-                  key={option.id || index} 
-                  option={option} 
+                <OptionCard
+                  key={option.id || index}
+                  option={option}
                   onAddSerial={handleAddSerial}
                   onUpdateSerial={handleUpdateSerial}
                   serials={serialsData[option.id] || []}
@@ -232,8 +242,10 @@ const ViewAllOptions = ({ product, onClose, onAddSerial }) => {
           ) : (
             <div className="text-center py-8">
               <div className="text-gray-400 text-4xl mb-4">📦</div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Không có options</h3>
-              <p className="text-gray-500">Sản phẩm này chưa có options nào.</p>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                No options
+              </h3>
+              <p className="text-gray-500">This product has no options yet.</p>
             </div>
           )}
         </div>
@@ -255,9 +267,9 @@ const ViewAllOptions = ({ product, onClose, onAddSerial }) => {
                 ×
               </button>
             </div>
-            
+
             <div className="p-6">
-              <SerialForm 
+              <SerialForm
                 onSubmit={handleSubmitSerial}
                 onCancel={handleCloseSerialForm}
                 optionInfo={selectedOptionForSerial}
@@ -286,7 +298,7 @@ const ViewAllOptions = ({ product, onClose, onAddSerial }) => {
                 ×
               </button>
             </div>
-            
+
             <div className="p-6">
               <UpdateSerialForm
                 onSubmit={handleSubmitUpdateSerial}
@@ -306,20 +318,27 @@ const ViewAllOptions = ({ product, onClose, onAddSerial }) => {
 };
 
 // Component OptionCard
-const OptionCard = ({ option, onAddSerial, onUpdateSerial, serials, loadingSerials, onFetchSerials }) => {
+const OptionCard = ({
+  option,
+  onAddSerial,
+  onUpdateSerial,
+  serials,
+  loadingSerials,
+  onFetchSerials,
+}) => {
   const [showSerials, setShowSerials] = useState(false);
 
   const formatPrice = (price) => {
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND'
+    return new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency: "VND",
     }).format(price);
   };
 
   const getStockStatusColor = (remainingQuantity) => {
-    if (remainingQuantity > 10) return 'text-green-600';
-    if (remainingQuantity > 0) return 'text-yellow-600';
-    return 'text-red-600';
+    if (remainingQuantity > 10) return "text-green-600";
+    if (remainingQuantity > 0) return "text-yellow-600";
+    return "text-red-600";
   };
 
   return (
@@ -334,13 +353,15 @@ const OptionCard = ({ option, onAddSerial, onUpdateSerial, serials, loadingSeria
             {option.colorName}
           </span>
         </div>
-        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-          option.remainingQuantity > 10 
-            ? 'bg-green-100 text-green-800' 
-            : option.remainingQuantity > 0 
-            ? 'bg-yellow-100 text-yellow-800' 
-            : 'bg-red-100 text-red-800'
-        }`}>
+        <span
+          className={`px-2 py-1 rounded-full text-xs font-medium ${
+            option.remainingQuantity > 10
+              ? "bg-green-100 text-green-800"
+              : option.remainingQuantity > 0
+              ? "bg-yellow-100 text-yellow-800"
+              : "bg-red-100 text-red-800"
+          }`}
+        >
           Tồn: {option.remainingQuantity}
         </span>
       </div>
@@ -349,7 +370,9 @@ const OptionCard = ({ option, onAddSerial, onUpdateSerial, serials, loadingSeria
       <div className="space-y-2 text-sm">
         <div className="flex justify-between">
           <span className="text-gray-500">Giá:</span>
-          <span className="font-semibold text-blue-600">{formatPrice(option.price)}</span>
+          <span className="font-semibold text-blue-600">
+            {formatPrice(option.price)}
+          </span>
         </div>
         <div className="flex justify-between">
           <span className="text-gray-500">RAM:</span>
@@ -368,7 +391,7 @@ const OptionCard = ({ option, onAddSerial, onUpdateSerial, serials, loadingSeria
             onClick={() => setShowSerials(!showSerials)}
             className="flex-1 px-3 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors text-sm font-medium"
           >
-            {showSerials ? 'Ẩn Serials' : 'View Serials'}
+            {showSerials ? "Ẩn Serials" : "View Serials"}
           </button>
           <button
             onClick={() => onAddSerial(option)}
@@ -383,48 +406,71 @@ const OptionCard = ({ option, onAddSerial, onUpdateSerial, serials, loadingSeria
       {showSerials && (
         <div className="mt-4 pt-4 border-t border-gray-200">
           <div className="flex justify-between items-center mb-3">
-            <h4 className="text-base font-medium text-gray-800">Danh sách Serial:</h4>
+            <h4 className="text-base font-medium text-gray-800">
+              Danh sách Serial:
+            </h4>
             <button
               onClick={onFetchSerials}
               disabled={loadingSerials}
               className="text-sm text-blue-600 hover:text-blue-800 disabled:opacity-50 font-medium"
             >
-              {loadingSerials ? 'Loading...' : 'Refresh'}
+              {loadingSerials ? "Loading..." : "Refresh"}
             </button>
           </div>
-          
+
           {loadingSerials ? (
             <div className="text-center py-6">
               <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500 mx-auto"></div>
-              <div className="text-sm text-gray-500 mt-2">Loading serials...</div>
+              <div className="text-sm text-gray-500 mt-2">
+                Loading serials...
+              </div>
             </div>
           ) : serials && serials.length > 0 ? (
             <div className="space-y-2">
               {serials.map((serial, idx) => (
-                <div key={serial.id || idx} className="bg-gray-50 p-3 rounded-lg border border-gray-200">
+                <div
+                  key={serial.id || idx}
+                  className="bg-gray-50 p-3 rounded-lg border border-gray-200"
+                >
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
                       <div className="flex justify-between items-center mb-2">
-                        <span className="font-semibold text-gray-900">{serial.serialNumber}</span>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          serial.productListConfigStatus === 'AVAILABLE' ? 'bg-green-100 text-green-800' :
-                          serial.productListConfigStatus === 'SOLD' ? 'bg-red-100 text-red-800' :
-                          serial.productListConfigStatus === 'BROKEN' ? 'bg-orange-100 text-orange-800' :
-                          serial.productListConfigStatus === 'RETURN' ? 'bg-purple-100 text-purple-800' :
-                          'bg-gray-100 text-gray-800'
-                        }`}>
+                        <span className="font-semibold text-gray-900">
+                          {serial.serialNumber}
+                        </span>
+                        <span
+                          className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            serial.productListConfigStatus === "AVAILABLE"
+                              ? "bg-green-100 text-green-800"
+                              : serial.productListConfigStatus === "SOLD"
+                              ? "bg-red-100 text-red-800"
+                              : serial.productListConfigStatus === "BROKEN"
+                              ? "bg-orange-100 text-orange-800"
+                              : serial.productListConfigStatus === "RETURN"
+                              ? "bg-purple-100 text-purple-800"
+                              : "bg-gray-100 text-gray-800"
+                          }`}
+                        >
                           {serial.productListConfigStatus}
                         </span>
                       </div>
                       {serial.store && (
                         <div className="text-sm text-gray-600 space-y-1">
-                          <div><span className="font-medium">Store:</span> {serial.store.name}</div>
-                          <div><span className="font-medium">Location:</span> {serial.store.location}</div>
+                          <div>
+                            <span className="font-medium">Store:</span>{" "}
+                            {serial.store.name}
+                          </div>
+                          <div>
+                            <span className="font-medium">Location:</span>{" "}
+                            {serial.store.location}
+                          </div>
                         </div>
                       )}
                     </div>
                     <button
-                      onClick={() => onUpdateSerial({ ...serial, optionId: option.id })}
+                      onClick={() =>
+                        onUpdateSerial({ ...serial, optionId: option.id })
+                      }
                       className="ml-3 px-3 py-1.5 bg-blue-500 text-white rounded-md text-sm hover:bg-blue-600 transition-colors font-medium"
                     >
                       Update
@@ -436,7 +482,7 @@ const OptionCard = ({ option, onAddSerial, onUpdateSerial, serials, loadingSeria
           ) : (
             <div className="text-center py-6">
               <div className="text-gray-400 text-2xl mb-2">📋</div>
-              <div className="text-sm text-gray-500">Không có serial nào</div>
+              <div className="text-sm text-gray-500">No serials</div>
             </div>
           )}
         </div>
@@ -446,22 +492,29 @@ const OptionCard = ({ option, onAddSerial, onUpdateSerial, serials, loadingSeria
 };
 
 // Component SerialForm
-const SerialForm = ({ onSubmit, onCancel, optionInfo, loading, error, success }) => {
+const SerialForm = ({
+  onSubmit,
+  onCancel,
+  optionInfo,
+  loading,
+  error,
+  success,
+}) => {
   const [formData, setFormData] = useState({
-    serialNumber: ''
+    serialNumber: "",
   });
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!formData.serialNumber.trim()) {
       return;
     }
@@ -473,17 +526,30 @@ const SerialForm = ({ onSubmit, onCancel, optionInfo, loading, error, success })
     <form onSubmit={handleSubmit} className="space-y-4">
       {/* Option Info */}
       <div className="bg-gray-50 p-4 rounded-lg">
-        <h3 className="text-sm font-medium text-gray-700 mb-2">Option Information:</h3>
+        <h3 className="text-sm font-medium text-gray-700 mb-2">
+          Option Information:
+        </h3>
         <div className="text-xs text-gray-600 space-y-1">
           <div>Color: {optionInfo.colorName}</div>
-          <div>RAM: {optionInfo.ram}GB | ROM: {optionInfo.rom}GB</div>
-          <div>Price: {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(optionInfo.price)}</div>
+          <div>
+            RAM: {optionInfo.ram}GB | ROM: {optionInfo.rom}GB
+          </div>
+          <div>
+            Price:{" "}
+            {new Intl.NumberFormat("vi-VN", {
+              style: "currency",
+              currency: "VND",
+            }).format(optionInfo.price)}
+          </div>
         </div>
       </div>
 
       {/* Serial Number */}
       <div>
-        <label htmlFor="serialNumber" className="block text-sm font-medium text-gray-700 mb-1">
+        <label
+          htmlFor="serialNumber"
+          className="block text-sm font-medium text-gray-700 mb-1"
+        >
           Serial Number *
         </label>
         <input
@@ -534,7 +600,7 @@ const SerialForm = ({ onSubmit, onCancel, optionInfo, loading, error, success })
               Adding...
             </div>
           ) : (
-            'Add Serial'
+            "Add Serial"
           )}
         </button>
       </div>
@@ -543,28 +609,42 @@ const SerialForm = ({ onSubmit, onCancel, optionInfo, loading, error, success })
 };
 
 // Component UpdateSerialForm
-const UpdateSerialForm = ({ onSubmit, onCancel, serialInfo, loading, error, success, stores = [] }) => {
+const UpdateSerialForm = ({
+  onSubmit,
+  onCancel,
+  serialInfo,
+  loading,
+  error,
+  success,
+  stores = [],
+}) => {
   // Debug giá trị stores
-  console.log('stores in UpdateSerialForm', stores);
+  console.log("stores in UpdateSerialForm", stores);
   const [formData, setFormData] = useState({
-    status: serialInfo.productListConfigStatus || 'AVAILABLE',
-    serialNumber: serialInfo.serialNumber || '',
-    storeId: serialInfo.store?.id?.toString() || (Array.isArray(stores) && stores[0]?.id?.toString() || '')
+    status: serialInfo.productListConfigStatus || "AVAILABLE",
+    serialNumber: serialInfo.serialNumber || "",
+    storeId:
+      serialInfo.store?.id?.toString() ||
+      (Array.isArray(stores) && stores[0]?.id?.toString()) ||
+      "",
   });
 
   useEffect(() => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      storeId: serialInfo.store?.id?.toString() || (Array.isArray(stores) && stores[0]?.id?.toString() || '')
+      storeId:
+        serialInfo.store?.id?.toString() ||
+        (Array.isArray(stores) && stores[0]?.id?.toString()) ||
+        "",
     }));
     // eslint-disable-next-line
   }, [stores, serialInfo]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
@@ -580,19 +660,27 @@ const UpdateSerialForm = ({ onSubmit, onCancel, serialInfo, loading, error, succ
     <form onSubmit={handleSubmit} className="space-y-4">
       {/* Serial Info */}
       <div className="bg-gray-50 p-4 rounded-lg">
-        <h3 className="text-sm font-medium text-gray-700 mb-2">Serial Information:</h3>
+        <h3 className="text-sm font-medium text-gray-700 mb-2">
+          Serial Information:
+        </h3>
         <div className="text-xs text-gray-600 space-y-1">
           <div>ID: {serialInfo.id}</div>
           <div>Current Status: {serialInfo.productListConfigStatus}</div>
           <div>Serial Number: {serialInfo.serialNumber}</div>
           {serialInfo.store && (
-            <div>Current Store: <span className="font-semibold">{serialInfo.store.name}</span></div>
+            <div>
+              Current Store:{" "}
+              <span className="font-semibold">{serialInfo.store.name}</span>
+            </div>
           )}
         </div>
       </div>
       {/* Status */}
       <div>
-        <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">
+        <label
+          htmlFor="status"
+          className="block text-sm font-medium text-gray-700 mb-1"
+        >
           Status *
         </label>
         <select
@@ -613,7 +701,10 @@ const UpdateSerialForm = ({ onSubmit, onCancel, serialInfo, loading, error, succ
       </div>
       {/* Serial Number */}
       <div>
-        <label htmlFor="serialNumber" className="block text-sm font-medium text-gray-700 mb-1">
+        <label
+          htmlFor="serialNumber"
+          className="block text-sm font-medium text-gray-700 mb-1"
+        >
           Serial Number *
         </label>
         <input
@@ -630,7 +721,10 @@ const UpdateSerialForm = ({ onSubmit, onCancel, serialInfo, loading, error, succ
       </div>
       {/* Store chọn từ danh sách */}
       <div>
-        <label htmlFor="storeId" className="block text-sm font-medium text-gray-700 mb-1">
+        <label
+          htmlFor="storeId"
+          className="block text-sm font-medium text-gray-700 mb-1"
+        >
           Store *
         </label>
         <select
@@ -642,9 +736,12 @@ const UpdateSerialForm = ({ onSubmit, onCancel, serialInfo, loading, error, succ
           required
           disabled={loading || !Array.isArray(stores) || stores.length === 0}
         >
-          {Array.isArray(stores) && stores.map(store => (
-            <option key={store.id} value={store.id}>{store.name}</option>
-          ))}
+          {Array.isArray(stores) &&
+            stores.map((store) => (
+              <option key={store.id} value={store.id}>
+                {store.name}
+              </option>
+            ))}
         </select>
       </div>
       {/* Success Message */}
@@ -680,7 +777,7 @@ const UpdateSerialForm = ({ onSubmit, onCancel, serialInfo, loading, error, succ
               Updating...
             </div>
           ) : (
-            'Update Serial'
+            "Update Serial"
           )}
         </button>
       </div>
@@ -688,4 +785,4 @@ const UpdateSerialForm = ({ onSubmit, onCancel, serialInfo, loading, error, succ
   );
 };
 
-export default ViewAllOptions; 
+export default ViewAllOptions;

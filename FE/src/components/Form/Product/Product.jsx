@@ -1,57 +1,75 @@
-import { useState, useEffect } from 'react';
-import { updateProduct, createProduct } from '../../../api/productService';
+import { useState, useEffect } from "react";
+import { updateProduct, createProduct } from "../../../api/productService";
 
-const ProductForm = ({ onSubmit, onCancel, initialData = null, isEditing = false, productId = null }) => {
+function isFormChanged(formData, initialData) {
+  if (!initialData) return false;
+  // So sánh từng trường, chỉ cần 1 trường khác là true
+  for (const key in formData) {
+    if (formData[key] !== (initialData[key] ?? "")) {
+      return true;
+    }
+  }
+  return false;
+}
+
+const ProductForm = ({
+  onSubmit,
+  onCancel,
+  initialData = null,
+  isEditing = false,
+  productId = null,
+}) => {
   const [formData, setFormData] = useState({
-    productName: '',
-    description: '',
-    brand: '',
-    status: '',
-    createAt: '',
-    updateAt: '',
-    categoryId: '',
-    warrantyId: '',
-    os: '',
-    cpu: '',
-    cpuSpeed: '',
-    gpu: '',
-    batteryCapacity: '',
-    batteryType: '',
-    chargeSupport: '',
-    batteryTech: '',
-    screenDimension: '',
-    flash: '',
-    frontCamera: '',
-    backCamera: '',
-    screenTouch: '',
-    screenTech: '',
-    screenResolution: '',
-    maxBrightness: '',
-    backCameraTech: '',
-    backCameraRecord: '',
-    mobileNetwork: '',
-    bluetooth: '',
-    sim: 'Dual SIM',
-    wifi: '',
-    gps: '',
-    chargePort: '',
-    earphonePort: '',
-    anotherPort: '',
-    design: '',
-    material: '',
-    dimension: '',
-    releaseYear: '',
-    musicUtil: '',
-    movieUtil: '',
-    recordUtil: '',
-    resistanceUtil: '',
-    specialUtil: '',
-    advancedUtil: ''
+    productName: "",
+    description: "",
+    brand: "",
+    status: "",
+    createAt: "",
+    updateAt: "",
+    categoryId: "",
+    warrantyId: "",
+    os: "",
+    cpu: "",
+    cpuSpeed: "",
+    gpu: "",
+    batteryCapacity: "",
+    batteryType: "",
+    chargeSupport: "",
+    batteryTech: "",
+    screenDimension: "",
+    flash: "",
+    frontCamera: "",
+    backCamera: "",
+    screenTouch: "",
+    screenTech: "",
+    screenResolution: "",
+    maxBrightness: "",
+    backCameraTech: "",
+    backCameraRecord: "",
+    mobileNetwork: "",
+    bluetooth: "",
+    sim: "Dual SIM",
+    wifi: "",
+    gps: "",
+    chargePort: "",
+    earphonePort: "",
+    anotherPort: "",
+    design: "",
+    material: "",
+    dimension: "",
+    releaseYear: "",
+    musicUtil: "",
+    movieUtil: "",
+    recordUtil: "",
+    resistanceUtil: "",
+    specialUtil: "",
+    advancedUtil: "",
   });
 
   const [errors, setErrors] = useState({});
   const [success, setSuccess] = useState({});
   const [isLoading, setIsLoading] = useState(false);
+  const [isChanged, setIsChanged] = useState(false);
 
   // Load initial data when editing
   useEffect(() => {
@@ -60,18 +78,24 @@ const ProductForm = ({ onSubmit, onCancel, initialData = null, isEditing = false
     }
   }, [initialData, isEditing]);
 
+  useEffect(() => {
+    if (isEditing && initialData) {
+      setIsChanged(isFormChanged(formData, initialData));
+    }
+  }, [formData, initialData, isEditing]);
+
   const handleInputChange = (field, value) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
-    
+
     // Clear errors and success when user starts typing
     if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: '' }));
+      setErrors((prev) => ({ ...prev, [field]: "" }));
     }
     if (success[field]) {
-      setSuccess(prev => ({ ...prev, [field]: '' }));
+      setSuccess((prev) => ({ ...prev, [field]: "" }));
     }
   };
 
@@ -92,7 +116,7 @@ const ProductForm = ({ onSubmit, onCancel, initialData = null, isEditing = false
       chargeSupport: data.chargeSupport,
       batteryTech: data.batteryTech,
       screenDimension: data.screenDimension,
-      flash: data.flash === 'true' || data.flash === true,
+      flash: data.flash === "true" || data.flash === true,
       frontCamera: data.frontCamera,
       backCamera: data.backCamera,
       screenTouch: data.screenTouch,
@@ -118,23 +142,24 @@ const ProductForm = ({ onSubmit, onCancel, initialData = null, isEditing = false
       recordUtil: data.recordUtil,
       resistanceUtil: data.resistanceUtil,
       specialUtil: data.specialUtil,
-      advancedUtil: data.advancedUtil
+      advancedUtil: data.advancedUtil,
+      status: data.status, // Sửa từ 'status' thành 'productStatus'
     };
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     // Basic validation
     const newErrors = {};
     if (!formData.productName.trim()) {
-      newErrors.productName = 'Product name is required';
+      newErrors.productName = "Product name is required";
     }
     if (!formData.description.trim()) {
-      newErrors.description = 'Product description is required';
+      newErrors.description = "Product description is required";
     }
     if (!formData.categoryId.trim()) {
-      newErrors.categoryId = 'Category is required';
+      newErrors.categoryId = "Category is required";
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -146,17 +171,18 @@ const ProductForm = ({ onSubmit, onCancel, initialData = null, isEditing = false
 
     try {
       const apiData = transformDataForAPI(formData);
-      
+
       if (isEditing && productId) {
         // Update existing product
         const response = await updateProduct(productId, apiData);
-        setSuccess({ general: 'Product updated successfully!' });
-        
+        setSuccess({ general: "Product updated successfully!" });
+        window.scrollTo({ top: 0, behavior: "smooth" }); // Scroll to top
+
         // Clear success message after 3 seconds
         setTimeout(() => {
           setSuccess({});
         }, 3000);
-        
+
         // Call onSubmit callback if provided
         if (onSubmit) {
           onSubmit(response);
@@ -164,33 +190,61 @@ const ProductForm = ({ onSubmit, onCancel, initialData = null, isEditing = false
       } else {
         // Create new product
         const response = await createProduct(apiData);
-        setSuccess({ general: 'Product created successfully!' });
-        
+        setSuccess({ general: "Product created successfully!" });
+        window.scrollTo({ top: 0, behavior: "smooth" }); // Scroll to top
+
         // Clear success message after 3 seconds
         setTimeout(() => {
           setSuccess({});
         }, 3000);
-        
+
         // Call onSubmit callback if provided
         if (onSubmit) {
           onSubmit(response);
         }
       }
     } catch (error) {
-      console.error('Error submitting product:', error);
-      setErrors({ general: error.response?.data?.message || 'An error occurred while saving the product' });
-      
+      console.error("Error submitting product:", error);
+      setErrors({
+        general:
+          error.response?.data?.message ||
+          "An error occurred while saving the product",
+      });
+
       // Clear error message after 5 seconds
       setTimeout(() => {
-        setErrors(prev => ({ ...prev, general: '' }));
+        setErrors((prev) => ({ ...prev, general: "" }));
       }, 5000);
     } finally {
       setIsLoading(false);
     }
   };
 
+  // Hàm update nhanh khi bấm nút nổi
+  const handleQuickUpdate = async () => {
+    if (!isEditing || !isChanged || isLoading) return;
+    setIsLoading(true);
+    try {
+      const apiData = transformDataForAPI(formData);
+      const response = await updateProduct(productId, apiData);
+      setSuccess({ general: "Product updated successfully!" });
+      window.scrollTo({ top: 0, behavior: "smooth" }); // Scroll to top
+      setTimeout(() => setSuccess({}), 3000);
+      if (onSubmit) onSubmit(response);
+    } catch (error) {
+      setErrors({
+        general:
+          error.response?.data?.message ||
+          "An error occurred while saving the product",
+      });
+      setTimeout(() => setErrors((prev) => ({ ...prev, general: "" })), 5000);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
-    <div className="w-full max-w-6xl mx-auto">
+    <div className="w-full max-w-6xl mx-auto relative">
       {/* General Error/Success Message */}
       {errors.general && (
         <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-md">
@@ -202,12 +256,14 @@ const ProductForm = ({ onSubmit, onCancel, initialData = null, isEditing = false
           {success.general}
         </div>
       )}
-      
+
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Basic Information Section */}
         <div className="bg-white p-6 rounded-lg border border-gray-200">
-          <h3 className="text-lg font-semibold mb-4 text-gray-800">Basic Information</h3>
-          
+          <h3 className="text-lg font-semibold mb-4 text-gray-800">
+            Basic Information
+          </h3>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Product Name */}
             <div>
@@ -217,14 +273,18 @@ const ProductForm = ({ onSubmit, onCancel, initialData = null, isEditing = false
               <input
                 type="text"
                 value={formData.productName}
-                onChange={(e) => handleInputChange('productName', e.target.value)}
+                onChange={(e) =>
+                  handleInputChange("productName", e.target.value)
+                }
                 placeholder="Enter product name"
                 className={`w-full p-3 border rounded-md focus:ring-2 focus:ring-violet-500 focus:border-transparent ${
-                  errors.productName ? 'border-red-500' : 'border-gray-300'
+                  errors.productName ? "border-red-500" : "border-gray-300"
                 }`}
               />
               {errors.productName && (
-                <p className="text-red-500 text-sm mt-1">{errors.productName}</p>
+                <p className="text-red-500 text-sm mt-1">
+                  {errors.productName}
+                </p>
               )}
             </div>
 
@@ -236,7 +296,7 @@ const ProductForm = ({ onSubmit, onCancel, initialData = null, isEditing = false
               <input
                 type="text"
                 value={formData.brand}
-                onChange={(e) => handleInputChange('brand', e.target.value)}
+                onChange={(e) => handleInputChange("brand", e.target.value)}
                 placeholder="Enter brand name"
                 className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-violet-500 focus:border-transparent"
               />
@@ -250,10 +310,12 @@ const ProductForm = ({ onSubmit, onCancel, initialData = null, isEditing = false
               <input
                 type="text"
                 value={formData.categoryId}
-                onChange={(e) => handleInputChange('categoryId', e.target.value)}
+                onChange={(e) =>
+                  handleInputChange("categoryId", e.target.value)
+                }
                 placeholder="Select category"
                 className={`w-full p-3 border rounded-md focus:ring-2 focus:ring-violet-500 focus:border-transparent ${
-                  errors.categoryId ? 'border-red-500' : 'border-gray-300'
+                  errors.categoryId ? "border-red-500" : "border-gray-300"
                 }`}
               />
               {errors.categoryId && (
@@ -268,13 +330,14 @@ const ProductForm = ({ onSubmit, onCancel, initialData = null, isEditing = false
               </label>
               <select
                 value={formData.status}
-                onChange={(e) => handleInputChange('status', e.target.value)}
+                onChange={(e) => handleInputChange("status", e.target.value)}
                 className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-violet-500 focus:border-transparent"
               >
                 <option value="">Select status</option>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-                <option value="draft">Draft</option>
+                <option value="DRAFT">Draft</option>
+                <option value="OUT_STOCK">Out of Stock</option>
+                <option value="ONSELL">On Sell</option>
+                <option value="PREORDER">Preorder</option>
               </select>
             </div>
           </div>
@@ -286,11 +349,11 @@ const ProductForm = ({ onSubmit, onCancel, initialData = null, isEditing = false
             </label>
             <textarea
               value={formData.description}
-              onChange={(e) => handleInputChange('description', e.target.value)}
+              onChange={(e) => handleInputChange("description", e.target.value)}
               placeholder="Enter product description"
               rows={3}
               className={`w-full p-3 border rounded-md focus:ring-2 focus:ring-violet-500 focus:border-transparent ${
-                errors.description ? 'border-red-500' : 'border-gray-300'
+                errors.description ? "border-red-500" : "border-gray-300"
               }`}
             />
             {errors.description && (
@@ -301,8 +364,10 @@ const ProductForm = ({ onSubmit, onCancel, initialData = null, isEditing = false
 
         {/* Technical Specifications Section */}
         <div className="bg-white p-6 rounded-lg border border-gray-200">
-          <h3 className="text-lg font-semibold mb-4 text-gray-800">Technical Specifications</h3>
-          
+          <h3 className="text-lg font-semibold mb-4 text-gray-800">
+            Technical Specifications
+          </h3>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* OS */}
             <div>
@@ -312,7 +377,7 @@ const ProductForm = ({ onSubmit, onCancel, initialData = null, isEditing = false
               <input
                 type="text"
                 value={formData.os}
-                onChange={(e) => handleInputChange('os', e.target.value)}
+                onChange={(e) => handleInputChange("os", e.target.value)}
                 placeholder="e.g., Android 13, iOS 16"
                 className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-violet-500 focus:border-transparent"
               />
@@ -326,7 +391,7 @@ const ProductForm = ({ onSubmit, onCancel, initialData = null, isEditing = false
               <input
                 type="text"
                 value={formData.cpu}
-                onChange={(e) => handleInputChange('cpu', e.target.value)}
+                onChange={(e) => handleInputChange("cpu", e.target.value)}
                 placeholder="e.g., Snapdragon 8 Gen 2"
                 className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-violet-500 focus:border-transparent"
               />
@@ -340,7 +405,7 @@ const ProductForm = ({ onSubmit, onCancel, initialData = null, isEditing = false
               <input
                 type="text"
                 value={formData.cpuSpeed}
-                onChange={(e) => handleInputChange('cpuSpeed', e.target.value)}
+                onChange={(e) => handleInputChange("cpuSpeed", e.target.value)}
                 placeholder="e.g., 3.2 GHz"
                 className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-violet-500 focus:border-transparent"
               />
@@ -354,7 +419,7 @@ const ProductForm = ({ onSubmit, onCancel, initialData = null, isEditing = false
               <input
                 type="text"
                 value={formData.gpu}
-                onChange={(e) => handleInputChange('gpu', e.target.value)}
+                onChange={(e) => handleInputChange("gpu", e.target.value)}
                 placeholder="e.g., Adreno 740"
                 className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-violet-500 focus:border-transparent"
               />
@@ -364,8 +429,10 @@ const ProductForm = ({ onSubmit, onCancel, initialData = null, isEditing = false
 
         {/* Battery Section */}
         <div className="bg-white p-6 rounded-lg border border-gray-200">
-          <h3 className="text-lg font-semibold mb-4 text-gray-800">Battery & Charging</h3>
-          
+          <h3 className="text-lg font-semibold mb-4 text-gray-800">
+            Battery & Charging
+          </h3>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Battery Capacity */}
             <div>
@@ -375,7 +442,9 @@ const ProductForm = ({ onSubmit, onCancel, initialData = null, isEditing = false
               <input
                 type="text"
                 value={formData.batteryCapacity}
-                onChange={(e) => handleInputChange('batteryCapacity', e.target.value)}
+                onChange={(e) =>
+                  handleInputChange("batteryCapacity", e.target.value)
+                }
                 placeholder="e.g., 5000 mAh"
                 className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-violet-500 focus:border-transparent"
               />
@@ -389,7 +458,9 @@ const ProductForm = ({ onSubmit, onCancel, initialData = null, isEditing = false
               <input
                 type="text"
                 value={formData.batteryType}
-                onChange={(e) => handleInputChange('batteryType', e.target.value)}
+                onChange={(e) =>
+                  handleInputChange("batteryType", e.target.value)
+                }
                 placeholder="e.g., Li-Po"
                 className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-violet-500 focus:border-transparent"
               />
@@ -403,7 +474,9 @@ const ProductForm = ({ onSubmit, onCancel, initialData = null, isEditing = false
               <input
                 type="text"
                 value={formData.chargeSupport}
-                onChange={(e) => handleInputChange('chargeSupport', e.target.value)}
+                onChange={(e) =>
+                  handleInputChange("chargeSupport", e.target.value)
+                }
                 placeholder="e.g., 67W"
                 className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-violet-500 focus:border-transparent"
               />
@@ -417,7 +490,9 @@ const ProductForm = ({ onSubmit, onCancel, initialData = null, isEditing = false
               <input
                 type="text"
                 value={formData.batteryTech}
-                onChange={(e) => handleInputChange('batteryTech', e.target.value)}
+                onChange={(e) =>
+                  handleInputChange("batteryTech", e.target.value)
+                }
                 placeholder="e.g., Fast charging"
                 className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-violet-500 focus:border-transparent"
               />
@@ -428,7 +503,7 @@ const ProductForm = ({ onSubmit, onCancel, initialData = null, isEditing = false
         {/* Camera Section */}
         <div className="bg-white p-6 rounded-lg border border-gray-200">
           <h3 className="text-lg font-semibold mb-4 text-gray-800">Camera</h3>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Front Camera */}
             <div>
@@ -438,7 +513,9 @@ const ProductForm = ({ onSubmit, onCancel, initialData = null, isEditing = false
               <input
                 type="text"
                 value={formData.frontCamera}
-                onChange={(e) => handleInputChange('frontCamera', e.target.value)}
+                onChange={(e) =>
+                  handleInputChange("frontCamera", e.target.value)
+                }
                 placeholder="e.g., 32 MP"
                 className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-violet-500 focus:border-transparent"
               />
@@ -452,7 +529,9 @@ const ProductForm = ({ onSubmit, onCancel, initialData = null, isEditing = false
               <input
                 type="text"
                 value={formData.backCamera}
-                onChange={(e) => handleInputChange('backCamera', e.target.value)}
+                onChange={(e) =>
+                  handleInputChange("backCamera", e.target.value)
+                }
                 placeholder="e.g., 108 MP + 8 MP + 2 MP"
                 className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-violet-500 focus:border-transparent"
               />
@@ -469,8 +548,12 @@ const ProductForm = ({ onSubmit, onCancel, initialData = null, isEditing = false
                     type="radio"
                     name="flash"
                     value="true"
-                    checked={formData.flash === true || formData.flash === 'true'}
-                    onChange={(e) => handleInputChange('flash', e.target.value === 'true')}
+                    checked={
+                      formData.flash === true || formData.flash === "true"
+                    }
+                    onChange={(e) =>
+                      handleInputChange("flash", e.target.value === "true")
+                    }
                     className="mr-2"
                   />
                   <span className="text-sm">Yes</span>
@@ -480,8 +563,12 @@ const ProductForm = ({ onSubmit, onCancel, initialData = null, isEditing = false
                     type="radio"
                     name="flash"
                     value="false"
-                    checked={formData.flash === false || formData.flash === 'false'}
-                    onChange={(e) => handleInputChange('flash', e.target.value === 'true')}
+                    checked={
+                      formData.flash === false || formData.flash === "false"
+                    }
+                    onChange={(e) =>
+                      handleInputChange("flash", e.target.value === "true")
+                    }
                     className="mr-2"
                   />
                   <span className="text-sm">No</span>
@@ -497,7 +584,9 @@ const ProductForm = ({ onSubmit, onCancel, initialData = null, isEditing = false
               <input
                 type="text"
                 value={formData.backCameraTech}
-                onChange={(e) => handleInputChange('backCameraTech', e.target.value)}
+                onChange={(e) =>
+                  handleInputChange("backCameraTech", e.target.value)
+                }
                 placeholder="e.g., OIS, EIS"
                 className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-violet-500 focus:border-transparent"
               />
@@ -508,7 +597,7 @@ const ProductForm = ({ onSubmit, onCancel, initialData = null, isEditing = false
         {/* Screen Section */}
         <div className="bg-white p-6 rounded-lg border border-gray-200">
           <h3 className="text-lg font-semibold mb-4 text-gray-800">Display</h3>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Screen Dimension */}
             <div>
@@ -518,7 +607,9 @@ const ProductForm = ({ onSubmit, onCancel, initialData = null, isEditing = false
               <input
                 type="text"
                 value={formData.screenDimension}
-                onChange={(e) => handleInputChange('screenDimension', e.target.value)}
+                onChange={(e) =>
+                  handleInputChange("screenDimension", e.target.value)
+                }
                 placeholder="e.g., 6.7 inch"
                 className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-violet-500 focus:border-transparent"
               />
@@ -532,7 +623,9 @@ const ProductForm = ({ onSubmit, onCancel, initialData = null, isEditing = false
               <input
                 type="text"
                 value={formData.screenResolution}
-                onChange={(e) => handleInputChange('screenResolution', e.target.value)}
+                onChange={(e) =>
+                  handleInputChange("screenResolution", e.target.value)
+                }
                 placeholder="e.g., 2400 x 1080"
                 className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-violet-500 focus:border-transparent"
               />
@@ -546,7 +639,9 @@ const ProductForm = ({ onSubmit, onCancel, initialData = null, isEditing = false
               <input
                 type="text"
                 value={formData.screenTech}
-                onChange={(e) => handleInputChange('screenTech', e.target.value)}
+                onChange={(e) =>
+                  handleInputChange("screenTech", e.target.value)
+                }
                 placeholder="e.g., AMOLED"
                 className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-violet-500 focus:border-transparent"
               />
@@ -560,7 +655,9 @@ const ProductForm = ({ onSubmit, onCancel, initialData = null, isEditing = false
               <input
                 type="text"
                 value={formData.maxBrightness}
-                onChange={(e) => handleInputChange('maxBrightness', e.target.value)}
+                onChange={(e) =>
+                  handleInputChange("maxBrightness", e.target.value)
+                }
                 placeholder="e.g., 1200 nits"
                 className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-violet-500 focus:border-transparent"
               />
@@ -574,7 +671,9 @@ const ProductForm = ({ onSubmit, onCancel, initialData = null, isEditing = false
               <input
                 type="text"
                 value={formData.screenTouch}
-                onChange={(e) => handleInputChange('screenTouch', e.target.value)}
+                onChange={(e) =>
+                  handleInputChange("screenTouch", e.target.value)
+                }
                 placeholder="e.g., Multi-touch"
                 className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-violet-500 focus:border-transparent"
               />
@@ -584,8 +683,10 @@ const ProductForm = ({ onSubmit, onCancel, initialData = null, isEditing = false
 
         {/* Connectivity Section */}
         <div className="bg-white p-6 rounded-lg border border-gray-200">
-          <h3 className="text-lg font-semibold mb-4 text-gray-800">Connectivity</h3>
-          
+          <h3 className="text-lg font-semibold mb-4 text-gray-800">
+            Connectivity
+          </h3>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Mobile Network */}
             <div>
@@ -595,7 +696,9 @@ const ProductForm = ({ onSubmit, onCancel, initialData = null, isEditing = false
               <input
                 type="text"
                 value={formData.mobileNetwork}
-                onChange={(e) => handleInputChange('mobileNetwork', e.target.value)}
+                onChange={(e) =>
+                  handleInputChange("mobileNetwork", e.target.value)
+                }
                 placeholder="e.g., 5G, 4G"
                 className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-violet-500 focus:border-transparent"
               />
@@ -609,7 +712,7 @@ const ProductForm = ({ onSubmit, onCancel, initialData = null, isEditing = false
               <input
                 type="text"
                 value={formData.bluetooth}
-                onChange={(e) => handleInputChange('bluetooth', e.target.value)}
+                onChange={(e) => handleInputChange("bluetooth", e.target.value)}
                 placeholder="e.g., 5.2"
                 className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-violet-500 focus:border-transparent"
               />
@@ -623,7 +726,7 @@ const ProductForm = ({ onSubmit, onCancel, initialData = null, isEditing = false
               <input
                 type="text"
                 value={formData.wifi}
-                onChange={(e) => handleInputChange('wifi', e.target.value)}
+                onChange={(e) => handleInputChange("wifi", e.target.value)}
                 placeholder="e.g., 802.11 a/b/g/n/ac/ax"
                 className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-violet-500 focus:border-transparent"
               />
@@ -637,7 +740,7 @@ const ProductForm = ({ onSubmit, onCancel, initialData = null, isEditing = false
               <input
                 type="text"
                 value={formData.gps}
-                onChange={(e) => handleInputChange('gps', e.target.value)}
+                onChange={(e) => handleInputChange("gps", e.target.value)}
                 placeholder="e.g., GPS, GLONASS"
                 className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-violet-500 focus:border-transparent"
               />
@@ -651,7 +754,7 @@ const ProductForm = ({ onSubmit, onCancel, initialData = null, isEditing = false
               <input
                 type="text"
                 value={formData.sim}
-                onChange={(e) => handleInputChange('sim', e.target.value)}
+                onChange={(e) => handleInputChange("sim", e.target.value)}
                 placeholder="e.g., Dual SIM"
                 className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-violet-500 focus:border-transparent"
               />
@@ -662,7 +765,7 @@ const ProductForm = ({ onSubmit, onCancel, initialData = null, isEditing = false
         {/* Ports Section */}
         <div className="bg-white p-6 rounded-lg border border-gray-200">
           <h3 className="text-lg font-semibold mb-4 text-gray-800">Ports</h3>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Charge Port */}
             <div>
@@ -672,7 +775,9 @@ const ProductForm = ({ onSubmit, onCancel, initialData = null, isEditing = false
               <input
                 type="text"
                 value={formData.chargePort}
-                onChange={(e) => handleInputChange('chargePort', e.target.value)}
+                onChange={(e) =>
+                  handleInputChange("chargePort", e.target.value)
+                }
                 placeholder="e.g., USB-C"
                 className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-violet-500 focus:border-transparent"
               />
@@ -686,7 +791,9 @@ const ProductForm = ({ onSubmit, onCancel, initialData = null, isEditing = false
               <input
                 type="text"
                 value={formData.earphonePort}
-                onChange={(e) => handleInputChange('earphonePort', e.target.value)}
+                onChange={(e) =>
+                  handleInputChange("earphonePort", e.target.value)
+                }
                 placeholder="e.g., 3.5mm"
                 className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-violet-500 focus:border-transparent"
               />
@@ -700,7 +807,9 @@ const ProductForm = ({ onSubmit, onCancel, initialData = null, isEditing = false
               <input
                 type="text"
                 value={formData.anotherPort}
-                onChange={(e) => handleInputChange('anotherPort', e.target.value)}
+                onChange={(e) =>
+                  handleInputChange("anotherPort", e.target.value)
+                }
                 placeholder="e.g., None"
                 className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-violet-500 focus:border-transparent"
               />
@@ -711,7 +820,7 @@ const ProductForm = ({ onSubmit, onCancel, initialData = null, isEditing = false
         {/* Design Section */}
         <div className="bg-white p-6 rounded-lg border border-gray-200">
           <h3 className="text-lg font-semibold mb-4 text-gray-800">Design</h3>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Design */}
             <div>
@@ -721,7 +830,7 @@ const ProductForm = ({ onSubmit, onCancel, initialData = null, isEditing = false
               <input
                 type="text"
                 value={formData.design}
-                onChange={(e) => handleInputChange('design', e.target.value)}
+                onChange={(e) => handleInputChange("design", e.target.value)}
                 placeholder="e.g., Touch"
                 className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-violet-500 focus:border-transparent"
               />
@@ -735,7 +844,7 @@ const ProductForm = ({ onSubmit, onCancel, initialData = null, isEditing = false
               <input
                 type="text"
                 value={formData.material}
-                onChange={(e) => handleInputChange('material', e.target.value)}
+                onChange={(e) => handleInputChange("material", e.target.value)}
                 placeholder="e.g., Glass, Aluminum"
                 className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-violet-500 focus:border-transparent"
               />
@@ -749,7 +858,7 @@ const ProductForm = ({ onSubmit, onCancel, initialData = null, isEditing = false
               <input
                 type="text"
                 value={formData.dimension}
-                onChange={(e) => handleInputChange('dimension', e.target.value)}
+                onChange={(e) => handleInputChange("dimension", e.target.value)}
                 placeholder="e.g., 163.1 x 75.9 x 8.1 mm"
                 className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-violet-500 focus:border-transparent"
               />
@@ -763,7 +872,9 @@ const ProductForm = ({ onSubmit, onCancel, initialData = null, isEditing = false
               <input
                 type="number"
                 value={formData.releaseYear}
-                onChange={(e) => handleInputChange('releaseYear', e.target.value)}
+                onChange={(e) =>
+                  handleInputChange("releaseYear", e.target.value)
+                }
                 placeholder="e.g., 2023"
                 className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-violet-500 focus:border-transparent"
               />
@@ -773,8 +884,10 @@ const ProductForm = ({ onSubmit, onCancel, initialData = null, isEditing = false
 
         {/* Utilities Section */}
         <div className="bg-white p-6 rounded-lg border border-gray-200">
-          <h3 className="text-lg font-semibold mb-4 text-gray-800">Utilities</h3>
-          
+          <h3 className="text-lg font-semibold mb-4 text-gray-800">
+            Utilities
+          </h3>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Music Utility */}
             <div>
@@ -784,7 +897,7 @@ const ProductForm = ({ onSubmit, onCancel, initialData = null, isEditing = false
               <input
                 type="text"
                 value={formData.musicUtil}
-                onChange={(e) => handleInputChange('musicUtil', e.target.value)}
+                onChange={(e) => handleInputChange("musicUtil", e.target.value)}
                 placeholder="e.g., MP3, WAV"
                 className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-violet-500 focus:border-transparent"
               />
@@ -798,7 +911,7 @@ const ProductForm = ({ onSubmit, onCancel, initialData = null, isEditing = false
               <input
                 type="text"
                 value={formData.movieUtil}
-                onChange={(e) => handleInputChange('movieUtil', e.target.value)}
+                onChange={(e) => handleInputChange("movieUtil", e.target.value)}
                 placeholder="e.g., MP4, MKV"
                 className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-violet-500 focus:border-transparent"
               />
@@ -812,7 +925,9 @@ const ProductForm = ({ onSubmit, onCancel, initialData = null, isEditing = false
               <input
                 type="text"
                 value={formData.recordUtil}
-                onChange={(e) => handleInputChange('recordUtil', e.target.value)}
+                onChange={(e) =>
+                  handleInputChange("recordUtil", e.target.value)
+                }
                 placeholder="e.g., Yes"
                 className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-violet-500 focus:border-transparent"
               />
@@ -826,7 +941,9 @@ const ProductForm = ({ onSubmit, onCancel, initialData = null, isEditing = false
               <input
                 type="text"
                 value={formData.resistanceUtil}
-                onChange={(e) => handleInputChange('resistanceUtil', e.target.value)}
+                onChange={(e) =>
+                  handleInputChange("resistanceUtil", e.target.value)
+                }
                 placeholder="e.g., IP67"
                 className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-violet-500 focus:border-transparent"
               />
@@ -840,7 +957,9 @@ const ProductForm = ({ onSubmit, onCancel, initialData = null, isEditing = false
               <input
                 type="text"
                 value={formData.specialUtil}
-                onChange={(e) => handleInputChange('specialUtil', e.target.value)}
+                onChange={(e) =>
+                  handleInputChange("specialUtil", e.target.value)
+                }
                 placeholder="e.g., Samsung Knox"
                 className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-violet-500 focus:border-transparent"
               />
@@ -854,7 +973,9 @@ const ProductForm = ({ onSubmit, onCancel, initialData = null, isEditing = false
               <input
                 type="text"
                 value={formData.advancedUtil}
-                onChange={(e) => handleInputChange('advancedUtil', e.target.value)}
+                onChange={(e) =>
+                  handleInputChange("advancedUtil", e.target.value)
+                }
                 placeholder="e.g., AI Camera"
                 className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-violet-500 focus:border-transparent"
               />
@@ -871,23 +992,75 @@ const ProductForm = ({ onSubmit, onCancel, initialData = null, isEditing = false
           >
             Cancel
           </button>
-          <button
-            type="submit"
-            className={`px-6 py-3 rounded-md transition-colors flex items-center space-x-2 ${
-              isLoading 
-                ? 'bg-gray-400 text-white cursor-not-allowed' 
-                : 'bg-violet-500 text-white hover:bg-violet-600'
-            }`}
-            disabled={isLoading}
-          >
-            {isLoading && (
-              <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-            )}
-            <span>{isLoading ? 'Saving...' : (isEditing ? 'Update Product' : 'Save Product')}</span>
-          </button>
+          {isEditing ? (
+            <button
+              type="submit"
+              className={`px-6 py-3 rounded-md transition-colors flex items-center space-x-2 ${
+                isLoading || !isChanged
+                  ? "bg-gray-400 text-white cursor-not-allowed"
+                  : "bg-violet-500 text-white hover:bg-violet-600"
+              }`}
+              disabled={isLoading || !isChanged}
+            >
+              {isLoading && (
+                <svg
+                  className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+              )}
+              <span>{isLoading ? "Saving..." : "Update Product"}</span>
+            </button>
+          ) : (
+            <button
+              type="submit"
+              className={`px-6 py-3 rounded-md transition-colors flex items-center space-x-2 ${
+                isLoading
+                  ? "bg-gray-400 text-white cursor-not-allowed"
+                  : "bg-violet-500 text-white hover:bg-violet-600"
+              }`}
+              disabled={isLoading}
+            >
+              {isLoading && (
+                <svg
+                  className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+              )}
+              <span>{isLoading ? "Saving..." : "Save Product"}</span>
+            </button>
+          )}
         </div>
       </form>
     </div>

@@ -1,5 +1,6 @@
 package com.example.demo.model.utilities;
 
+import com.example.demo.enums.ContractStatus;
 import com.example.demo.model.product.OrderProductSerial;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -33,6 +34,17 @@ public class InsuranceContract {
     @OneToOne
     @JoinColumn(name = "order_product_serial_id")
     private OrderProductSerial orderProductSerial;
+
+    @Column(name = "expired_date")
+    private LocalDate expireDate;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "contract_status")
+    private ContractStatus status;
+
+    @Column(name = "code")
+    private String code;
+
 
     @ManyToOne
     @JoinColumn(name = "insurance_id")

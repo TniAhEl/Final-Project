@@ -13,7 +13,10 @@ const Main = () => {
             </div>
           </div>
           <div className="self-stretch justify-start text-slate-900 text-base font-normal font-['Roboto'] leading-[28.80px]">
-            Aliquam vel platea curabitur sit vestibulum egestas sit id lorem. Aliquet neque, dui sed eget scelerisque. Non at at venenatis tortor amet feugiat ullamcorper in. Odio vulputate cras vel lacinia turpis volutpat adipiscing. Sollicitudin at velit, blandit tempus nunc in.
+            Aliquam vel platea curabitur sit vestibulum egestas sit id lorem.
+            Aliquet neque, dui sed eget scelerisque. Non at at venenatis tortor
+            amet feugiat ullamcorper in. Odio vulputate cras vel lacinia turpis
+            volutpat adipiscing. Sollicitudin at velit, blandit tempus nunc in.
           </div>
           <div className="inline-flex justify-start items-center gap-4 mt-4">
             <button
@@ -26,8 +29,12 @@ const Main = () => {
               className="flex items-center px-4 py-3 rounded-lg text-blue-600 text-base font-medium font-['Roboto'] leading-normal tracking-wide hover:bg-blue-50 transition"
               onClick={() => navigate("/about-us")}
             >
-              <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                <polygon points="6,4 16,10 6,16" fill="#2563eb"/>
+              <svg
+                className="w-5 h-5 mr-2"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <polygon points="6,4 16,10 6,16" fill="#2563eb" />
               </svg>
               More Information
             </button>

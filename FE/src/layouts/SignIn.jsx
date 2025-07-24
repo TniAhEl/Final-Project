@@ -1,4 +1,4 @@
-import AuthenticationImg from '../assets/images/Authen.png';
+import AuthenticationImg from "../assets/images/Authen.png";
 
 const SignInLayout = ({ children }) => {
   return (

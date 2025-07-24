@@ -1,5 +1,5 @@
-import React from 'react';
-import { FaEdit } from 'react-icons/fa';
+import React from "react";
+import { FaEdit } from "react-icons/fa";
 
 const UpdateButton = ({ children, ...props }) => (
   <button
@@ -7,7 +7,7 @@ const UpdateButton = ({ children, ...props }) => (
     {...props}
   >
     <span className="flex items-center gap-1.5">
-      <span>{children || 'Update'}</span>
+      <span>{children || "Update"}</span>
       <FaEdit className="text-stone-200 text-xs" />
     </span>
   </button>

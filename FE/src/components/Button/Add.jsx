@@ -1,5 +1,5 @@
-import React from 'react';
-import { FaPlus } from 'react-icons/fa';
+import React from "react";
+import { FaPlus } from "react-icons/fa";
 
 const AddButton = ({ children, ...props }) => (
   <button
@@ -7,7 +7,7 @@ const AddButton = ({ children, ...props }) => (
     {...props}
   >
     <span className="flex items-center gap-1.5">
-      <span>{children || 'Add'}</span>
+      <span>{children || "Add"}</span>
       <FaPlus className="text-stone-200 text-xs" />
     </span>
   </button>

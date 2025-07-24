@@ -17,4 +17,5 @@ public interface IOrderReviewService {
     Map<String , Object> filterReviews(ReviewFilterRequest filter, int page, int size);
     ReviewResponse convertToResponse(ProductReview productReview);
     List<ReviewResponse> convertToResponses(List<ProductReview> productReviews);
+    List<ProductReview> getAllReviewByProductId(Long productId);
 }

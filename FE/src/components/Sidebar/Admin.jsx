@@ -1,57 +1,71 @@
-import { MdSpaceDashboard, MdInventory2, MdShoppingCart, MdLocalOffer, MdBarChart, MdVerifiedUser } from 'react-icons/md';
-import { FaUsers, FaShieldAlt } from 'react-icons/fa';
-import { Link, useLocation } from 'react-router-dom';
+import {
+  MdSpaceDashboard,
+  MdInventory2,
+  MdShoppingCart,
+  MdLocalOffer,
+  MdBarChart,
+  MdVerifiedUser,
+  MdRateReview,
+} from "react-icons/md";
+import { FaUsers, FaShieldAlt } from "react-icons/fa";
+import { Link, useLocation } from "react-router-dom";
 
 const menu = [
   {
-    type: 'item',
-    label: 'Dashboard',
+    type: "item",
+    label: "Dashboard",
     icon: <MdSpaceDashboard className="text-xl text-gray-700" />,
-    to: '/admin/dashboard',
+    to: "/admin/dashboard",
   },
-  { type: 'section', label: 'Sales', className: 'text-slate-600' },
+  { type: "section", label: "Sales", className: "text-slate-600" },
   {
-    type: 'item',
-    label: 'Products',
+    type: "item",
+    label: "Products",
     icon: <MdInventory2 className="text-xl text-gray-700" />,
-    to: '/admin/products',
+    to: "/admin/products",
   },
   {
-    type: 'item',
-    label: 'Orders',
+    type: "item",
+    label: "Orders",
     icon: <MdShoppingCart className="text-xl text-gray-700" />,
-    to: '/admin/orders',
+    to: "/admin/orders",
   },
   {
-    type: 'item',
-    label: 'Users',
+    type: "item",
+    label: "Users",
     icon: <FaUsers className="text-xl text-gray-700" />,
-    to: '/admin/users',
+    to: "/admin/users",
   },
   {
-    type: 'item',
-    label: 'Warranty',
+    type: "item",
+    label: "Warranty",
     icon: <MdVerifiedUser className="text-xl text-gray-700" />,
-    to: '/admin/warranties',
+    to: "/admin/warranties",
   },
   {
-    type: 'item',
-    label: 'Insurance',
+    type: "item",
+    label: "Insurance",
     icon: <FaShieldAlt className="text-xl text-gray-700" />,
-    to: '/admin/insurances',
+    to: "/admin/insurances",
   },
-  { type: 'section', label: 'Purchase', className: 'text-slate-600' },
+  { type: "section", label: "Purchase", className: "text-slate-600" },
   {
-    type: 'item',
-    label: 'Promotions',
+    type: "item",
+    label: "Promotions",
     icon: <MdLocalOffer className="text-xl text-gray-700" />,
-    to: '/admin/promotions',
+    to: "/admin/promotions",
   },
   {
-    type: 'item',
-    label: 'Reports',
+    type: "item",
+    label: "Review",
+    icon: <MdRateReview className="text-xl text-blue-500" />,
+    to: "/admin/review",
+  },
+  {
+    type: "item",
+    label: "Reports",
     icon: <MdBarChart className="text-xl text-gray-700" />,
-    to: '/admin/reports',
+    to: "/admin/reports",
   },
 ];
 
@@ -61,7 +75,7 @@ const SidebarAdmin = () => {
   return (
     <div className="w-full h-full overflow-y-auto self-stretch p-3 bg-slate-100 inline-flex flex-col justify-start items-start gap-2 overflow-hidden">
       {menu.map((item, idx) =>
-        item.type === 'section' ? (
+        item.type === "section" ? (
           <div
             key={idx}
             className={`self-stretch justify-start text-xs font-light font-['Inter'] leading-none ${item.className}`}
@@ -73,7 +87,7 @@ const SidebarAdmin = () => {
             to={item.to}
             key={idx}
             className={`self-stretch px-2 py-1 rounded-sm inline-flex justify-start items-center gap-2 hover:bg-slate-200 transition ${
-              location.pathname === item.to ? 'bg-slate-300' : ''
+              location.pathname === item.to ? "bg-slate-300" : ""
             }`}
           >
             <div className="size-6 flex items-center justify-center">

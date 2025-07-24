@@ -1,48 +1,58 @@
 package com.example.demo.service.order;
 
+import com.example.demo.dto.request.FilterOrderWarranty;
 import com.example.demo.dto.request.orders.OrderFilterRequest;
-import com.example.demo.dto.request.utilities.InsuranceContractRequest;
+import com.example.demo.dto.request.utilities.InsurancePendingRequest;
 import com.example.demo.dto.request.utilities.OrderInforRequest;
+import com.example.demo.dto.response.UserResponse;
+import com.example.demo.dto.response.WarrantyProductInfo;
 import com.example.demo.dto.response.order.OrderProductResponse;
+import com.example.demo.dto.response.order.OrderPromotionResponse;
 import com.example.demo.dto.response.order.OrderResponse;
-import com.example.demo.enums.AdminRole;
-import com.example.demo.enums.DiscountType;
-import com.example.demo.enums.OrderStatus;
-import com.example.demo.enums.WarrantyStatus;
+import com.example.demo.dto.response.order.OrderTransportResponse;
+import com.example.demo.dto.response.utility.PromotionResponse;
+import com.example.demo.dto.response.utility.WarrantyResponse;
+import com.example.demo.enums.*;
 import com.example.demo.exception.OutOfRemainingResourceException;
 import com.example.demo.exception.PermissionException;
 import com.example.demo.exception.ResourceNotFoundException;
 import com.example.demo.model.auth.Admin;
+import com.example.demo.model.auth.User;
 import com.example.demo.model.order.Order;
 import com.example.demo.model.order.OrderProduct;
+import com.example.demo.model.order.OrderTransport;
 import com.example.demo.model.product.Cart;
 import com.example.demo.model.product.OrderProductSerial;
 import com.example.demo.model.product.ProductOption;
+import com.example.demo.model.product.ProductSerial;
 import com.example.demo.model.utilities.*;
 import com.example.demo.repository.InsuranceContractRepository;
 import com.example.demo.repository.auth.AdminRepository;
-import com.example.demo.repository.order.OrderProductRepository;
-import com.example.demo.repository.order.OrderProductSerialRepository;
-import com.example.demo.repository.order.OrderPromotionRepository;
-import com.example.demo.repository.order.OrderRepository;
+import com.example.demo.repository.auth.UserRepository;
+import com.example.demo.repository.order.*;
 import com.example.demo.repository.product.CartRepository;
 import com.example.demo.repository.product.ProductOptionRepository;
-import com.example.demo.repository.utilities.InsuranceRepository;
-import com.example.demo.repository.utilities.PromotionRepository;
-import com.example.demo.repository.utilities.WarrantyProductCardRepository;
+import com.example.demo.repository.product.ProductSerialRepository;
+import com.example.demo.repository.utilities.*;
 import com.example.demo.service.impl.order.IOrderService;
 import com.example.demo.service.product.CartService;
+import com.example.demo.service.product.ProductService;
+import com.example.demo.service.utility.InsuranceService;
+import com.example.demo.service.utility.WarrantyService;
+import com.example.demo.util.InsuranceIDGenerator;
+import com.example.demo.util.TrackingNumberGenerator;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.Query;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.math.BigInteger;
+import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -55,17 +65,25 @@ public class OrderService implements IOrderService {
     private final ProductOptionRepository productOptionRepository;
     private final PromotionRepository promotionRepository;
     private final OrderPromotionRepository orderPromotionRepository;
-    private final InsuranceRepository insuranceRepository;
+    private final WarrantyService warrantyService;
+    private final InsuranceService insuranceService;
+    private final InsurancePendingsRepository insurancePendingsRepository;
 
     private final CartService cartService;
     private final WarrantyProductCardRepository warrantyProductCardRepository;
     private final InsuranceContractRepository insuranceContractRepository;
     private final OrderProductRepository orderProductRepository;
     private final AdminRepository adminRepository;
+    private final EntityManager entityManager;
+    private final UserRepository userRepository;
+    private final ProductSerialRepository productSerialRepository;
+    private final OrderTransportRepository orderTransportRepository;
+    private final WarrantyRepository warrantyRepository;
 
 
     @Override
-    public Order placeOrder(Long userId, OrderInforRequest request, String promotionCode, List<InsuranceContractRequest> insuranceContracts) {
+    @Transactional
+    public Order placeOrder(Long userId, OrderInforRequest request, String promotionCode, List<InsurancePendingRequest> requests) {
         // 1. get user cart
         Cart cart = cartRepository.findByUserId(userId);
         if (cart == null || cart.getCartProducts().isEmpty()) {
@@ -81,6 +99,7 @@ public class OrderService implements IOrderService {
         order.setShippingAddress(request.getAddress());
         order.setType(request.getType());
         order.setNote(request.getNote());
+        order.setMethod(request.getMethod());
 
         Order savedOrder = orderRepository.save(order);
 
@@ -89,14 +108,6 @@ public class OrderService implements IOrderService {
         orderProductRepository.saveAll(orderProducts);
 
         savedOrder.setOrderProducts(orderProducts);
-
-        List<OrderProductSerial> allSerials = new ArrayList<>();
-        for (OrderProduct op : orderProducts) {
-            List<OrderProductSerial> serials = createOrderProductSerials(op);
-            allSerials.addAll(serials);
-        }
-
-        List<OrderProductSerial> orderProductSerials = orderProductSerialRepository.saveAll(allSerials);
 
         // 4. calculate total money
         BigDecimal totalMoney = calculateTotalMoney(orderProducts);
@@ -110,16 +121,15 @@ public class OrderService implements IOrderService {
                 throw new IllegalStateException("Promotion code is out of stock");
             }
 
-
-            totalMoney = calculateDiscount(totalMoney, promotion);
-
-
             // create map_order_promotion
             OrderPromotion map = new OrderPromotion();
             map.setOrder(savedOrder);
             map.setPromotion(promotion);
             map.setUpdateAt(LocalDateTime.now());
+            map.setTotalDiscount(totalMoney.subtract(calculateDiscount(totalMoney, promotion)));
             orderPromotionRepository.save(map);
+
+            totalMoney = calculateDiscount(totalMoney, promotion);
 
             // reduce the remaining quantity
             promotion.setRemainingQuantity(promotion.getRemainingQuantity() - 1);
@@ -127,27 +137,23 @@ public class OrderService implements IOrderService {
         }
         savedOrder.setTotalMoney(totalMoney);
 
-        // 6. get product insurance and create an insurance contract
-        if (insuranceContracts != null && !insuranceContracts.isEmpty()) {
-            BigDecimal totalInsuranceFee = createInsuranceContracts(insuranceContracts, orderProducts, orderProductSerials);
-            totalMoney = totalMoney.add(totalInsuranceFee); // Cộng phí bảo hiểm vào tổng tiền
+        //6 create insurancepending
+        if (requests != null && !requests.isEmpty()) {
+            List<InsurancePending> insurancePendings = insuranceService.createInsurancePendings(requests, savedOrder.getId());
+
+            BigDecimal totalInsuranceMoney = insurancePendings.stream()
+                    .map(InsurancePending::getTotalfee)
+                    .filter(Objects::nonNull)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            insurancePendingsRepository.saveAll(insurancePendings);
+            savedOrder.setTotalMoney(savedOrder.getTotalMoney().add(totalInsuranceMoney));
         }
 
 
-        // 7. create warranty card without a product serial id
-
-            for (OrderProduct orderProduct : orderProducts) {
-                WarrantyProductCard warrantyCard = new WarrantyProductCard();
-                warrantyCard.setOrder(orderProduct.getOrder());
-                warrantyCard.setStartDate(LocalDateTime.now());
-                warrantyCard.setEndDate(LocalDateTime.now().plusMonths(12)); // VD: bảo hành 12 tháng
-                warrantyCard.setStatus(WarrantyStatus.ACTIVE);
-                warrantyProductCardRepository.save(warrantyCard);
-            }
 
         // 8. save order
 
-        savedOrder.setTotalMoney(totalMoney);
         Order finalOrder = orderRepository.save(savedOrder);
         //9. clear the user cart
         cartService.clearCart(cart.getId());
@@ -163,51 +169,11 @@ public class OrderService implements IOrderService {
 
     }
 
-    private BigDecimal createInsuranceContracts(List<InsuranceContractRequest> insuranceRequests, List<OrderProduct> orderProducts, List<OrderProductSerial> savedSerials) {
-        List<InsuranceContract> contractsToSave = new ArrayList<>();
-        BigDecimal totalFee = BigDecimal.ZERO;
-
-        for (InsuranceContractRequest icr : insuranceRequests) {
-            // FIX: Tìm sản phẩm và bảo hiểm tương ứng
-            OrderProduct relatedOrderProduct = orderProducts.stream()
-                    .filter(op -> op.getProductOption().getId().equals(icr.getOrderProductId()))
-                    .findFirst()
-                    .orElseThrow(() -> new ResourceNotFoundException("Product option with id " + icr.getOrderProductId() + " not in this order."));
-
-            Insurance insurance = insuranceRepository.findById(icr.getInsuranceId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Insurance with id " + icr.getInsuranceId() + " not found."));
-
-            // FIX: Lấy các serial thuộc về sản phẩm này
-            List<OrderProductSerial> serialsForProduct = savedSerials.stream()
-                    .filter(s -> s.getOrderProduct().equals(relatedOrderProduct))
-                    .toList();
-
-            if (serialsForProduct.size() < icr.getQuantity()) {
-                throw new IllegalStateException("Not enough serials available for insurance for product option " + icr.getOrderProductId());
-            }
-
-            for (int i = 0; i < icr.getQuantity(); i++) {
-                OrderProductSerial serial = serialsForProduct.get(i);
-                InsuranceContract contract = new InsuranceContract();
-                contract.setInsuranceFee(insurance.getFee());
-                contract.setCoverageMoney(insurance.getCoverageMoney());
-                contract.setCreate_at(LocalDate.now());
-                contract.setInsurance(insurance);
-                contract.setOrderProductSerial(serial);
-                contractsToSave.add(contract);
-                totalFee = totalFee.add(insurance.getFee());
-            }
-        }
-
-        insuranceContractRepository.saveAll(contractsToSave); // FIX: Lưu tất cả hợp đồng bảo hiểm
-        return totalFee;
-    }
-
     private List<OrderProduct> createOrderProducts(Order order, Cart cart) {
         return cart.getCartProducts().stream().map(cartProduct -> {
             ProductOption productOption = cartProduct.getProductOption();
-            if(productOption.getRemainingQuantity()==0|| productOption.getRemainingQuantity() >cartProduct.getQuantity()) {
-                productOption.setRemainingQuantity(productOption.getRemainingQuantity() - cartProduct.getQuantity());
+            if(productOption.getRemainingQuantity()> 0|| productOption.getRemainingQuantity() > productOption.getReversedQuantity()+cartProduct.getQuantity()) {
+                productOption.setReversedQuantity(cartProduct.getQuantity()+productOption.getReversedQuantity());
             } else {
                 throw new OutOfRemainingResourceException("The remaining quantity of the product is not enough to place order");
             }
@@ -216,7 +182,6 @@ public class OrderService implements IOrderService {
             return new OrderProduct(order, updateOption, productOption.getPrice(), cartProduct.getQuantity());
         }).collect(Collectors.toList());
     }
-
 
     private List<OrderProductSerial> createOrderProductSerials(OrderProduct orderProduct) {
         List<OrderProductSerial> serials = new ArrayList<>();
@@ -250,9 +215,17 @@ public class OrderService implements IOrderService {
     }
 
     @Override
-    public Order updateOrder(Long userId, OrderStatus status) {
-        Order order = orderRepository.findByUser_Id(userId);
+    public Order updateOrder(Long orderId, OrderStatus status) {
+        Order order = orderRepository.findById(orderId).orElseThrow(()-> new ResourceNotFoundException("Order not found!"));
+        if(status == OrderStatus.CANCELLED){
+            List<OrderProduct> orderProducts = orderProductRepository.findAllByOrder_Id(orderId);
 
+                for (OrderProduct orderProduct : orderProducts) {
+                    ProductOption option = productOptionRepository.findById(orderProduct.getProductOption().getId()).orElseThrow(()->new ResourceNotFoundException("Option not found!"));
+                    option.setRemainingQuantity(option.getRemainingQuantity()+orderProduct.getQuantity());
+                    orderProduct.setReviewed(false);
+                }
+        }
         order.setStatus(status);
 
         return orderRepository.save(order);
@@ -270,13 +243,41 @@ public class OrderService implements IOrderService {
             dto.setColorName(op.getProductOption().getColorName());
             dto.setRam(op.getProductOption().getRam());
             dto.setRom(op.getProductOption().getRom());
-            dto.setName(op.getProductOption().getProduct().getName()); // <-- lấy từ Product
+            dto.setName(op.getProductOption().getProduct().getName());
+            dto.setProductId(op.getProductOption().getProduct().getId());
             return dto;
         }).toList();
+
         orderResponse.setOrderProducts(orderProductResponses);
+
+        User user = userRepository.findById(order.getUser().getId())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        UserResponse userResponse = modelMapper.map(user, UserResponse.class);
+        orderResponse.setUser(userResponse);
+
+        OrderTransport transport = orderTransportRepository.findByOrderId(order.getId());
+        OrderTransportResponse transportResponse = null;
+        if (transport != null) {
+            transportResponse = modelMapper.map(transport, OrderTransportResponse.class);
+        }
+        orderResponse.setTransport(transportResponse); // Không bị lỗi khi null
+
+        OrderPromotion orderPromotion = orderPromotionRepository.findByOrderId(order.getId());
+        if (orderPromotion != null && orderPromotion.getPromotion() != null) {
+            Promotion promotion = promotionRepository.findById(orderPromotion.getPromotion().getId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Promotion not found"));
+
+            PromotionResponse promotionInfo = modelMapper.map(promotion, PromotionResponse.class);
+            OrderPromotionResponse orderPromotionResponse = modelMapper.map(orderPromotion, OrderPromotionResponse.class);
+            orderPromotionResponse.setPromotionInfo(promotionInfo);
+            orderResponse.setPromotionResponse(orderPromotionResponse);
+        } else {
+            orderResponse.setPromotionResponse(null);
+        }
 
         return orderResponse;
     }
+
 
     @Override
     public List<OrderResponse> convertToResponses(List<Order> orders) {
@@ -285,36 +286,386 @@ public class OrderService implements IOrderService {
 
     @Override
     public Map<String, Object> filterOrders(OrderFilterRequest filter, int page, int size) {
-        return Map.of();
+        String baseSql = """
+        SELECT * FROM order_table WHERE 1=1
+    """;
+
+        StringBuilder where = new StringBuilder();
+        Map<String, Object> params = new HashMap<>();
+
+        if (filter.getTypes() != null && !filter.getTypes().isEmpty()) {
+            where.append(" AND type IN :types");
+            params.put("types", filter.getTypes());
+        }
+
+        if (filter.getStatuses() != null && !filter.getStatuses().isEmpty()) {
+            where.append(" AND order_status IN :statuses");
+            List<String> statusNames = filter.getStatuses().stream()
+                    .map(Enum::name)
+                    .collect(Collectors.toList());
+            params.put("statuses", statusNames);
+        }
+
+        if (filter.getPromotionCodes() != null && !filter.getPromotionCodes().isEmpty()) {
+            where.append(" AND promotion_code IN :promotionCodes");
+            params.put("promotionCodes", filter.getPromotionCodes());
+        }
+
+        if (filter.getStartDate() != null) {
+            where.append(" AND created_at >= :startDate");
+            params.put("startDate", filter.getStartDate());
+        }
+
+        if (filter.getEndDate() != null) {
+            where.append(" AND created_at <= :endDate");
+            params.put("endDate", filter.getEndDate());
+        }
+
+        if (filter.getMinTotalMoney() != null) {
+            where.append(" AND total_money >= :minTotalMoney");
+            params.put("minTotalMoney", filter.getMinTotalMoney());
+        }
+
+        if (filter.getMaxTotalMoney() != null) {
+            where.append(" AND total_money <= :maxTotalMoney");
+            params.put("maxTotalMoney", filter.getMaxTotalMoney());
+        }
+
+        String orderBy = " ORDER BY id ASC";
+        String limitOffset = " LIMIT :limit OFFSET :offset";
+
+        String finalSql = baseSql + where + orderBy + limitOffset;
+        String countSql = "SELECT COUNT(*) FROM order_table WHERE 1=1" + where;
+
+        Query query = entityManager.createNativeQuery(finalSql, Order.class);
+        Query countQuery = entityManager.createNativeQuery(countSql);
+
+        params.forEach((k, v) -> {
+            query.setParameter(k, v);
+            countQuery.setParameter(k, v);
+        });
+
+        query.setParameter("limit", size);
+        query.setParameter("offset", page * size);
+
+        @SuppressWarnings("unchecked")
+        List<Order> orders = query.getResultList();
+
+        Long total = ((Number) countQuery.getSingleResult()).longValue();
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("content", convertToResponses(orders));
+        result.put("page", page);
+        result.put("size", size);
+        result.put("totalElements", total);
+        result.put("totalPages", (int) Math.ceil((double) total / size));
+
+        return result;
     }
 
+
     @Override
+    @Transactional
     public Order confirmOrder(Long adminId, Long orderId, OrderStatus status) {
-        //1 check admin id, if roleAdmin != Admin then throw exception that you have no permission
-        Admin admin = adminRepository.findById(adminId).orElseThrow(()-> new ResourceNotFoundException("Admin not found with id"));
+        // 1. Kiểm tra quyền admin
+        Admin admin = adminRepository.findById(adminId)
+                .orElseThrow(() -> new ResourceNotFoundException("Admin not found with id: " + adminId));
         if (admin.getAdminRole() != AdminRole.ADMIN) {
             throw new PermissionException("Admin has no permission!");
         }
 
+        // 2. Kiểm tra đơn hàng
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
 
-        //2 check orderId, if not exists then throw exception that order not found with id
-        // else get the order
-        Order order = orderRepository.findById(orderId).orElseThrow(()-> new ResourceNotFoundException("Order not found with id: "+orderId));
-        
+        // 3. Lấy các sản phẩm trong đơn hàng
+        List<OrderProduct> orderProducts = orderProductRepository.findAllByOrder_Id(orderId);
 
-        //3 get the insurance request by the order id, then
-        // get the productoptionid and quantity and the insuranceId in the insurance request
-        // use loop to get productserial that have the productoptionid with status AVAILABLE, change it to SOLD status
-        // get the productserialId then create orderProductSerial set the productSerialId
-        // create insuranceContract, set the orderproductSerialId and the insuranceId with the fee
-        // set the insuranceContractId to the prooductSerialId
-        // set the endDate of the insurance contract equal with currentdate + insuredTime
+        for (OrderProduct orderProduct : orderProducts) {
+            Long productOptionId = orderProduct.getProductOption().getId();
+            int quantity = orderProduct.getQuantity();
 
-        // create warranty by orderId and productSerialId,
+            // 3.0
+            ProductOption productOption = productOptionRepository.findById(productOptionId).orElseThrow(()-> new ResourceNotFoundException("Product option not found!"));
+            productOption.setRemainingQuantity(productOption.getRemainingQuantity()-orderProduct.getQuantity());
+            productOption.setReversedQuantity(productOption.getReversedQuantity()-orderProduct.getQuantity());
+            productOption.setSoldQuantity(productOption.getSoldQuantity()+orderProduct.getQuantity());
+            productOptionRepository.save(productOption);
+
+            // 3.1 Lấy serial AVAILABLE
+            List<ProductSerial> availableSerials = productSerialRepository
+                    .findAllByProductListConfigStatusAndProductOption_Id(ProductSerialStatus.AVAILABLE, productOptionId);
+
+            // 3.2 Kiểm tra số lượng serial
+            if (availableSerials.size() < quantity) {
+                throw new IllegalStateException("Không đủ serial AVAILABLE cho sản phẩm optionId = " + productOptionId);
+            }
+
+            // 3.3 Lấy đúng số lượng cần
+            List<ProductSerial> serialsToUse = availableSerials.subList(0, quantity);
+
+            for (ProductSerial serial : serialsToUse) {
+                // 3.4 Cập nhật trạng thái serial
+                serial.setProductListConfigStatus(ProductSerialStatus.SOLD);
+                productSerialRepository.save(serial);
+
+                // 3.5 Tạo bản ghi OrderProductSerial
+                OrderProductSerial ops = new OrderProductSerial();
+                ops.setOrderProduct(orderProduct);
+                ops.setProductSerial(serial);
+                ops.setUpdateAt(LocalDateTime.now());
+                orderProductSerialRepository.save(ops);
+
+                // 3.6 Tạo thẻ bảo hành
+                WarrantyProductCard warrantyCard = new WarrantyProductCard();
+                warrantyCard.setOrder(order);
+                warrantyCard.setProductSerial(serial);
+                warrantyCard.setStatus(WarrantyStatus.ACTIVE);
+                warrantyCard.setStartDate(LocalDateTime.now());
+                warrantyCard.setEndDate(LocalDateTime.now().plusMonths(12));
+                warrantyProductCardRepository.save(warrantyCard);
+
+                // 3.7 Tạo hợp đồng bảo hiểm nếu có4
+
+                List<InsurancePending> pendingList = insurancePendingsRepository
+                        .findByOrderAndOrderProduct(orderId, productOptionId);
+                System.out.println("Pending size: " + pendingList.size());
+                System.out.println("Order ID: " + orderId);
+                System.out.println("Product option ID: " + productOptionId);
+                for (InsurancePending pending : pendingList) {
+                    pending.setStatus(PendingStatus.CONFIRM);
+                    if (pending.getQuantity() > 0) {
+                        InsuranceContract contract = new InsuranceContract();
+                        contract.setInsurance(pending.getInsurance());
+                        contract.setExpireDate(LocalDate.now().plusMonths(pending.getInsurance().getInsured()));
+                        contract.setStatus(ContractStatus.ACTIVE);
+                        contract.setOrderProductSerial(ops);
+                        contract.setCreate_at(LocalDate.from(LocalDateTime.now()));
+                        contract.setCoverageMoney(pending.getInsurance().getCoverageMoney());
+                        contract.setInsuranceFee(pending.getInsurance().getFee());
+
+                        String code = InsuranceIDGenerator.generate(contract.getInsurance().getName(), LocalDate.from(contract.getCreate_at()));
+                        contract.setCode(code);
+                        insuranceContractRepository.save(contract);
+
+                        pending.setQuantity(pending.getQuantity() - 1);
+                        insurancePendingsRepository.save(pending);
+                    }
+                }
+            }
+
+        }
+
+        // 4. Cập nhật trạng thái đơn hàng
+        order.setStatus(status); // Ví dụ: CONFIRMED
+        order.setUpdateAt(LocalDateTime.now());
 
 
+        // 5. Create Transportation
+        OrderTransport transport = new OrderTransport();
+        transport.setCreateAt(LocalDateTime.now());
+        transport.setShippingMethod(order.getMethod());
+        transport.setShippingAddress(order.getShippingAddress());
+        transport.setShip(TransportStatus.PROCESSING);
+        transport.setUpdateAt(LocalDateTime.now());
+        transport.setOrder(order);
+        String trackingNumber = TrackingNumberGenerator.generate(
+                LocalDate.from(transport.getUpdateAt()),
+                transport.getShippingAddress(),
+                transport.getShippingMethod()
+        );
+        transport.setTrackingNumber(trackingNumber);
+        orderTransportRepository.save(transport);
 
+        order.setOrderTransport(transport);
+        orderRepository.save(order);
 
-        return null;
+        return order;
     }
+
+
+    @Override
+    public Map<String, Object> filterOrdersForUser(OrderFilterRequest filter, Long userId, int page, int size) {
+        String baseSql = """
+        SELECT * FROM order_table WHERE 1=1
+    """;
+
+        StringBuilder where = new StringBuilder();
+        Map<String, Object> params = new HashMap<>();
+
+        // Lọc theo userId
+        if (userId != null) {
+            where.append(" AND user_id = :userId");
+            params.put("userId", userId);
+        }
+
+        if (filter.getTypes() != null && !filter.getTypes().isEmpty()) {
+            where.append(" AND type IN :types");
+            params.put("types", filter.getTypes());
+        }
+
+        if (filter.getStatuses() != null && !filter.getStatuses().isEmpty()) {
+            where.append(" AND order_status IN :statuses");
+            List<String> statusNames = filter.getStatuses().stream()
+                    .map(Enum::name)
+                    .collect(Collectors.toList());
+            params.put("statuses", statusNames);
+        }
+
+        if (filter.getPromotionCodes() != null && !filter.getPromotionCodes().isEmpty()) {
+            where.append(" AND promotion_code IN :promotionCodes");
+            params.put("promotionCodes", filter.getPromotionCodes());
+        }
+
+        if (filter.getStartDate() != null) {
+            where.append(" AND created_at >= :startDate");
+            params.put("startDate", filter.getStartDate());
+        }
+
+        if (filter.getEndDate() != null) {
+            where.append(" AND created_at <= :endDate");
+            params.put("endDate", filter.getEndDate());
+        }
+
+        if (filter.getMinTotalMoney() != null) {
+            where.append(" AND total_money >= :minTotalMoney");
+            params.put("minTotalMoney", filter.getMinTotalMoney());
+        }
+
+        if (filter.getMaxTotalMoney() != null) {
+            where.append(" AND total_money <= :maxTotalMoney");
+            params.put("maxTotalMoney", filter.getMaxTotalMoney());
+        }
+
+        String orderBy = " ORDER BY id ASC";
+        String limitOffset = " LIMIT :limit OFFSET :offset";
+
+        String finalSql = baseSql + where + orderBy + limitOffset;
+        String countSql = "SELECT COUNT(*) FROM order_table WHERE 1=1" + where;
+
+        Query query = entityManager.createNativeQuery(finalSql, Order.class);
+        Query countQuery = entityManager.createNativeQuery(countSql);
+
+        params.forEach((k, v) -> {
+            query.setParameter(k, v);
+            countQuery.setParameter(k, v);
+        });
+
+        query.setParameter("limit", size);
+        query.setParameter("offset", page * size);
+
+        @SuppressWarnings("unchecked")
+        List<Order> orders = query.getResultList();
+
+        Long total = ((Number) countQuery.getSingleResult()).longValue();
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("content", convertToResponses(orders));
+        result.put("page", page);
+        result.put("size", size);
+        result.put("totalElements", total);
+        result.put("totalPages", (int) Math.ceil((double) total / size));
+
+        return result;
+    }
+
+    @Override
+    public Map<String, Object> filterOrderProductWarranty(FilterOrderWarranty filter, Long userId, int page, int size) {
+        String baseSql = """
+        SELECT 
+            wc.id, wc.start_date, wc.end_date, wc.status, 
+            ps.serial_number, 
+            p.name,
+            p.warranty_id  -- Thêm để lấy warrantyId từ bảng product
+        FROM warranty_card wc
+        JOIN order_table o ON wc.order_id = o.id
+        JOIN product_serial ps ON wc.product_serial_id = ps.id
+        JOIN product_option po ON ps.product_option_id = po.id
+        JOIN product p ON po.product_id = p.id
+        WHERE 1=1
+    """;
+
+        StringBuilder where = new StringBuilder();
+        Map<String, Object> params = new HashMap<>();
+
+        if (userId != null) {
+            where.append(" AND o.user_id = :userId");
+            params.put("userId", userId);
+        }
+
+        if (filter.getStatuses() != null && !filter.getStatuses().isEmpty()) {
+            where.append(" AND wc.status IN :statuses");
+            List<String> statusNames = filter.getStatuses().stream()
+                    .map(Enum::name)
+                    .collect(Collectors.toList());
+            params.put("statuses", statusNames);
+        }
+
+        String orderBy = " ORDER BY wc.id ASC";
+        String limitOffset = " LIMIT :limit OFFSET :offset";
+
+        String finalSql = baseSql + where + orderBy + limitOffset;
+        String countSql = """
+        SELECT COUNT(*)
+        FROM warranty_card wc
+        JOIN order_table o ON wc.order_id = o.id
+        JOIN product_serial ps ON wc.product_serial_id = ps.id
+        JOIN product_option po ON ps.product_option_id = po.id
+        JOIN product p ON po.product_id = p.id
+        WHERE 1=1
+    """ + where;
+
+        Query query = entityManager.createNativeQuery(finalSql);
+        Query countQuery = entityManager.createNativeQuery(countSql);
+
+        params.forEach((k, v) -> {
+            query.setParameter(k, v);
+            countQuery.setParameter(k, v);
+        });
+
+        query.setParameter("limit", size);
+        query.setParameter("offset", page * size);
+
+        List<Object[]> rawResults = query.getResultList();
+        Long total = ((Number) countQuery.getSingleResult()).longValue();
+
+        List<WarrantyProductInfo> warrantyInfos = rawResults.stream().map(row -> {
+            WarrantyProductInfo info = new WarrantyProductInfo();
+
+            info.setId(row[0] != null ? ((Number) row[0]).longValue() : null);
+            info.setStartDate(row[1] instanceof Timestamp ts ? ts.toLocalDateTime() : null);
+            info.setEndDate(row[2] instanceof Timestamp ts ? ts.toLocalDateTime() : null);
+            info.setStatus(row[3] != null ? WarrantyStatus.valueOf(row[3].toString()) : null);
+            info.setSerial(row[4] != null ? row[4].toString() : null);
+            info.setProductName(row[5] != null ? row[5].toString() : null);
+
+            // Lấy warranty_id từ product
+            Long warrantyPolicyId = row[6] != null ? ((Number) row[6]).longValue() : null;
+            WarrantyResponse warrantyResponse = null;
+            if (warrantyPolicyId != null) {
+                warrantyResponse = warrantyRepository.findById(warrantyPolicyId)
+                        .map(warrantyService::convertToResponse)
+                        .orElse(null);
+            }
+            info.setWarrantyResponse(warrantyResponse);
+
+            return info;
+        }).toList();
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("content", warrantyInfos);
+        result.put("page", page);
+        result.put("size", size);
+        result.put("totalElements", total);
+        result.put("totalPages", (int) Math.ceil((double) total / size));
+
+        return result;
+    }
+
+
+
+
+
+
+
 }

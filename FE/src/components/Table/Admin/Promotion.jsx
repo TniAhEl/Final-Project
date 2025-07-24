@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import PromotionForm from "../../Form/Promtion";
+import { createPromotion, updatePromotion, getAllPromotions } from "../../../api/productService";
 
 const statusColor = {
   Active: "text-green-600 font-semibold",
@@ -7,26 +8,53 @@ const statusColor = {
   Upcoming: "text-yellow-500 font-semibold",
 };
 
-const PromotionTable = ({
-  promotions = [],
-  onView = () => {},
-  onDelete = () => {},
-  onCreate = () => {},
-}) => {
+const isPromotionChanged = (a, b) => {
+  if (!a || !b) return false;
+  const keys = [
+    "name", "description", "code", "type", "value", "startDate", "endDate", "status", "quantity"
+  ];
+  return keys.some((k) => a[k] !== b[k]);
+};
+
+const PromotionTable = () => {
+  const [promotions, setPromotions] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+  const [editingPromotion, setEditingPromotion] = useState(null);
+  const [formChanged, setFormChanged] = useState(false);
+  const initialValuesRef = useRef(null);
+
+  const fetchPromotions = async () => {
+    const data = await getAllPromotions();
+    setPromotions(data || []);
+  };
+
+  useEffect(() => {
+    fetchPromotions();
+  }, []);
 
   const handleAddPromotion = () => {
     setShowForm(true);
+    setEditingPromotion(null);
     setSuccessMessage("");
+    setFormChanged(false);
+    initialValuesRef.current = null;
   };
 
-  const handleFormSubmit = (formData) => {
-    onCreate(formData);
-    setShowForm(false);
-    setSuccessMessage("🎉 Promotion added successfully!");
-
-    // Hide message after 3 seconds
+  const handleFormSubmit = async (formData) => {
+    try {
+      if (editingPromotion) {
+        await updatePromotion(editingPromotion.id, formData);
+        setSuccessMessage("🎉 Promotion updated successfully!");
+      } else {
+        await createPromotion(formData);
+        setSuccessMessage("🎉 Promotion added successfully!");
+      }
+      setShowForm(false);
+      fetchPromotions();
+    } catch (err) {
+      setSuccessMessage("❌ Error! Please try again.");
+    }
     setTimeout(() => {
       setSuccessMessage("");
     }, 3000);
@@ -34,6 +62,31 @@ const PromotionTable = ({
 
   const handleFormCancel = () => {
     setShowForm(false);
+    setEditingPromotion(null);
+    setFormChanged(false);
+    initialValuesRef.current = null;
+  };
+
+  const handleEditPromotion = (promo) => {
+    setEditingPromotion(promo);
+    setShowForm(true);
+    setSuccessMessage("");
+    setFormChanged(false);
+    initialValuesRef.current = promo;
+  };
+
+  // Theo dõi thay đổi form để enable/disable nút Update
+  const handleFormChange = (values) => {
+    if (editingPromotion) {
+      setFormChanged(isPromotionChanged(initialValuesRef.current, values));
+    } else {
+      setFormChanged(true); // Khi tạo mới luôn cho phép submit nếu có thay đổi
+    }
+  };
+
+  const handleDeletePromotion = async (promo) => {
+    setSuccessMessage("Xóa promotion chưa được tích hợp API!");
+    setTimeout(() => setSuccessMessage(""), 2000);
   };
 
   return (
@@ -42,7 +95,9 @@ const PromotionTable = ({
         <>
           {/* Header */}
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-semibold text-gray-800">Promotion List</h2>
+            <h2 className="text-lg font-semibold text-gray-800">
+              Promotion List
+            </h2>
             <button
               onClick={handleAddPromotion}
               className="px-4 py-2 bg-violet-600 text-white rounded hover:bg-violet-700 text-sm"
@@ -63,14 +118,30 @@ const PromotionTable = ({
             <div className="divide-y divide-slate-300">
               {/* Header */}
               <div className="flex bg-neutral-50">
-                <div className="w-40 p-4 text-slate-800/90 text-sm font-medium">Promotion Name</div>
-                <div className="w-32 p-4 text-slate-800/90 text-sm font-medium">Code</div>
-                <div className="w-32 p-4 text-slate-800/90 text-sm font-medium">Type</div>
-                <div className="w-24 p-4 text-slate-800/90 text-sm font-medium">Value</div>
-                <div className="w-32 p-4 text-slate-800/90 text-sm font-medium">Start Date</div>
-                <div className="w-32 p-4 text-slate-800/90 text-sm font-medium">End Date</div>
-                <div className="w-24 p-4 text-slate-800/90 text-sm font-medium">Status</div>
-                <div className="w-32 p-4 text-slate-800/90 text-sm font-medium">Actions</div>
+                <div className="w-40 p-4 text-slate-800/90 text-sm font-medium">
+                  Promotion Name
+                </div>
+                <div className="w-32 p-4 text-slate-800/90 text-sm font-medium">
+                  Code
+                </div>
+                <div className="w-32 p-4 text-slate-800/90 text-sm font-medium">
+                  Type
+                </div>
+                <div className="w-24 p-4 text-slate-800/90 text-sm font-medium">
+                  Value
+                </div>
+                <div className="w-32 p-4 text-slate-800/90 text-sm font-medium">
+                  Start Date
+                </div>
+                <div className="w-32 p-4 text-slate-800/90 text-sm font-medium">
+                  End Date
+                </div>
+                <div className="w-24 p-4 text-slate-800/90 text-sm font-medium">
+                  Status
+                </div>
+                <div className="w-32 p-4 text-slate-800/90 text-sm font-medium">
+                  Actions
+                </div>
               </div>
 
               {/* Rows */}
@@ -84,24 +155,40 @@ const PromotionTable = ({
                   key={promo.code + idx}
                   className="flex items-center bg-white hover:bg-blue-50/50 divide-x divide-slate-300"
                 >
-                  <div className="w-40 p-4 text-zinc-800 text-sm">{promo.name}</div>
-                  <div className="w-32 p-4 text-zinc-800 text-sm">{promo.code}</div>
-                  <div className="w-32 p-4 text-zinc-800 text-sm">{promo.type}</div>
-                  <div className="w-24 p-4 text-zinc-800 text-sm">{promo.value}</div>
-                  <div className="w-32 p-4 text-zinc-800 text-sm">{promo.startDate}</div>
-                  <div className="w-32 p-4 text-zinc-800 text-sm">{promo.endDate}</div>
-                  <div className={`w-24 p-4 text-sm ${statusColor[promo.status] || ""}`}>
+                  <div className="w-40 p-4 text-zinc-800 text-sm">
+                    {promo.name}
+                  </div>
+                  <div className="w-32 p-4 text-zinc-800 text-sm">
+                    {promo.code}
+                  </div>
+                  <div className="w-32 p-4 text-zinc-800 text-sm">
+                    {promo.type}
+                  </div>
+                  <div className="w-24 p-4 text-zinc-800 text-sm">
+                    {promo.value}
+                  </div>
+                  <div className="w-32 p-4 text-zinc-800 text-sm">
+                    {promo.startDate}
+                  </div>
+                  <div className="w-32 p-4 text-zinc-800 text-sm">
+                    {promo.endDate}
+                  </div>
+                  <div
+                    className={`w-24 p-4 text-sm ${
+                      statusColor[promo.status] || ""
+                    }`}
+                  >
                     {promo.status}
                   </div>
                   <div className="w-32 p-4 flex gap-2">
                     <button
-                      onClick={() => onView(promo)}
+                      onClick={() => handleEditPromotion(promo)}
                       className="px-3 py-1 rounded bg-blue-600 text-white hover:bg-blue-700 text-xs font-medium"
                     >
-                      View
+                      Edit
                     </button>
                     <button
-                      onClick={() => onDelete(promo)}
+                      onClick={() => handleDeletePromotion(promo)}
                       className="px-3 py-1 rounded bg-red-500 text-white hover:bg-red-600 text-xs font-medium"
                     >
                       Delete
@@ -115,11 +202,16 @@ const PromotionTable = ({
       ) : (
         // Form replaces table
         <div>
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">Add New Promotion</h2>
+          <h2 className="text-lg font-semibold text-gray-800 mb-4">
+            {editingPromotion ? "Edit Promotion" : "Add New Promotion"}
+          </h2>
           <PromotionForm
-            isEditing={false}
+            isEditing={!!editingPromotion}
+            initialValues={editingPromotion}
             onSubmit={handleFormSubmit}
             onCancel={handleFormCancel}
+            onChange={handleFormChange}
+            disableSubmit={!!editingPromotion && !formChanged}
           />
         </div>
       )}

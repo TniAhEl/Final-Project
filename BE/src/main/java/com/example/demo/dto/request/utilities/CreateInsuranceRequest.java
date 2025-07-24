@@ -11,7 +11,7 @@ import java.time.LocalDate;
 public class CreateInsuranceRequest {
     private String name;
     private LocalDate releaseAt;
-    private String  insured;
+    private int  insured;
     private String terms;
     private BigDecimal coverageMoney;
     private String provider;

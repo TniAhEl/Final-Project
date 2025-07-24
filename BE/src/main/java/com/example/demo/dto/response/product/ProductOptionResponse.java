@@ -13,4 +13,5 @@ public class ProductOptionResponse {
     private int ram;
     private int rom;
     private int remainingQuantity;
+    private int soldQuantity;
 }

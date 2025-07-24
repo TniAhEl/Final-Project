@@ -29,13 +29,25 @@ const DashBoard = () => {
           <TotalOrder value={totalOrder} compareValue={12} compareType="up" />
         </div>
         <div style={{ flex: 1 }}>
-          <TotalRevenue value={totalRevenue} compareValue={-5} compareType="down" />
+          <TotalRevenue
+            value={totalRevenue}
+            compareValue={-5}
+            compareType="down"
+          />
         </div>
         <div style={{ flex: 1 }}>
-          <TotalCustomer value={totalCustomer} compareValue={8} compareType="up" />
+          <TotalCustomer
+            value={totalCustomer}
+            compareValue={8}
+            compareType="up"
+          />
         </div>
         <div style={{ flex: 1 }}>
-          <TotalPending value={totalPending} compareValue={-2} compareType="down" />
+          <TotalPending
+            value={totalPending}
+            compareValue={-2}
+            compareType="down"
+          />
         </div>
       </div>
       {/* Biểu đồ báo cáo */}
@@ -43,7 +55,6 @@ const DashBoard = () => {
         <div style={{ flex: 1 }}>
           <Revenue />
         </div>
-        
       </div>
     </div>
   );

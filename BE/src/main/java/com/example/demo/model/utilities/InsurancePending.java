@@ -1,5 +1,6 @@
 package com.example.demo.model.utilities;
 
+import com.example.demo.enums.PendingStatus;
 import com.example.demo.model.order.Order;
 import com.example.demo.model.order.OrderProduct;
 import jakarta.persistence.*;
@@ -32,8 +33,9 @@ public class InsurancePending {
     @Column(name = "total_fee")
     private BigDecimal totalfee;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "status")
-    private String status;
+    private PendingStatus status;
 
     @ManyToOne
     @JoinColumn(name = "order_id")

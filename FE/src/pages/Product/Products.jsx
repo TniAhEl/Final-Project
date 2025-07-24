@@ -1,8 +1,8 @@
-import React from 'react';
-import HeaderAuth from '../../components/Header/HeaderAuth';
-import Footer from '../../components/Footer/Footer';
-import CategoryLayout from '../../layouts/CategoryLayout';
-import ScrollToTopButton from '../../components/Button/ScrollToTop';
+import React from "react";
+import HeaderAuth from "../../components/Header/HeaderAuth";
+import Footer from "../../components/Footer/Footer";
+import CategoryLayout from "../../layouts/CategoryLayout";
+import ScrollToTopButton from "../../components/Button/ScrollToTop";
 
 const Products = () => {
   return (

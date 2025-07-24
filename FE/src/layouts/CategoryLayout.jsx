@@ -24,13 +24,24 @@ const CategoryLayout = () => {
   const [currentFilters, setCurrentFilters] = useState({});
   const footerRef = useRef(null);
   const [initialized, setInitialized] = useState(false);
+  const [isDebouncing, setIsDebouncing] = useState(false);
+  const [brandFilterApplied, setBrandFilterApplied] = useState(false); // Thêm state này
+  const [isFiltering, setIsFiltering] = useState(false); // Thêm state cho filter loading
 
   // Fetch products với filter (hoặc filter rỗng)
   const fetchFilteredProducts = async (filterObject, pageToFetch = 0) => {
+    // Nếu pageToFetch = 0 (filter mới), set isFiltering = true
+    if (pageToFetch === 0) {
+      setIsFiltering(true);
+    }
     setLoading(true);
     setError(null);
     try {
-      const result = await filterProducts(filterObject || {}, pageToFetch, PAGE_SIZE);
+      const result = await filterProducts(
+        filterObject || {},
+        pageToFetch,
+        PAGE_SIZE
+      );
       const productList = result.content || [];
       setProducts(
         pageToFetch === 0 ? productList : [...products, ...productList]
@@ -47,54 +58,52 @@ const CategoryLayout = () => {
       setHasMore(false);
     } finally {
       setLoading(false);
+      setIsFiltering(false); // Reset isFiltering khi fetch xong
     }
   };
 
-  // Lần đầu mount: chỉ fetch nếu chưa nhận filter từ Brand.jsx
+  // Lần đầu mount: nếu có filter từ Brand.jsx thì ưu tiên, chỉ áp dụng 1 lần
   useEffect(() => {
-    if (!initialized && (!location.state || !location.state.filter)) {
+    if (!initialized) {
+      if (location.state && location.state.filter && !brandFilterApplied) {
+        let filter = location.state.filter;
+        if (filter.brands) {
+          filter = { brand: filter.brands };
+        }
+        setCurrentFilters(filter);
+        setProducts([]);
+        setPage(0);
+        setHasMore(true);
+        fetchFilteredProducts(filter, 0);
+        setBrandFilterApplied(true); // Đánh dấu đã áp dụng filter từ Brand.jsx
+        setInitialized(true);
+        return;
+      }
+      // If no filter from Brand.jsx, fetch normally
       setProducts([]);
       setPage(0);
       setHasMore(true);
       fetchFilteredProducts({}, 0);
-    }
-    // eslint-disable-next-line
-  }, [initialized, location.state]);
-
-  // Khi mount, nếu có filter truyền từ Brand.jsx qua location.state, ưu tiên filter này
-  useEffect(() => {
-    if (location.state && location.state.filter && !initialized) {
-      let filter = location.state.filter;
-      // Nếu filter có key 'brands', đổi thành 'brand' (số ít)
-      if (filter.brands) {
-        filter = { brand: filter.brands };
-      }
-      console.log('Filter from Brand.jsx:', filter);
-      setCurrentFilters(filter);
-      setProducts([]);
-      setPage(0);
-      setHasMore(true);
-      fetchFilteredProducts(filter, 0);
       setInitialized(true);
     }
     // eslint-disable-next-line
-  }, [location.state, initialized]);
+  }, [initialized, location.state, brandFilterApplied]);
 
-  // Gọi fetchFilteredProducts mỗi khi page thay đổi, nhưng bỏ qua lần đầu nếu page=0 đã được fetch ở trên
+  // Khi page thay đổi (lazy load)
   useEffect(() => {
-    if (page === 0) return; // đã fetch ở trên
+    if (page === 0) return;
     fetchFilteredProducts(currentFilters, page);
     // eslint-disable-next-line
   }, [page]);
 
-  // Khi filter thay đổi, reset page về 0 và fetch lại sản phẩm
+  // Khi filter thay đổi (do người dùng thao tác), fetch lại sản phẩm nhưng chỉ khi debounce xong
   useEffect(() => {
-    if (initialized) {
+    if (initialized && !isDebouncing) {
       setPage(0);
       fetchFilteredProducts(currentFilters, 0);
     }
     // eslint-disable-next-line
-  }, [currentFilters]);
+  }, [currentFilters, isDebouncing]);
 
   // Lazy load: khi scroll đến cuối trang thì tăng page
   useEffect(() => {
@@ -126,7 +135,7 @@ const CategoryLayout = () => {
     Object.entries(filterObject).forEach(([key, value]) => {
       if (value !== undefined && value !== null && value !== "") {
         if (Array.isArray(value)) {
-          cleanFilter[key] = value.map(v => v.toString());
+          cleanFilter[key] = value.map((v) => v.toString());
         } else {
           cleanFilter[key] = value.toString();
         }
@@ -134,6 +143,15 @@ const CategoryLayout = () => {
     });
     setCurrentFilters(cleanFilter);
   };
+
+  // Tính số sản phẩm available
+  const availableProducts = products.filter((product) => {
+    if (!Array.isArray(product.option)) return false;
+    const totalRemain = product.option
+      .filter((opt) => opt.remainingQuantity > 0)
+      .reduce((sum, opt) => sum + (opt.remainingQuantity || 0), 0);
+    return totalRemain > 0;
+  });
 
   return (
     <div className="flex flex-col w-full min-h-screen bg-gray-50">
@@ -151,16 +169,28 @@ const CategoryLayout = () => {
             minPrice={0}
             maxPrice={50000000}
             onFilterChange={handleFilterChange}
+            onDebounceChange={setIsDebouncing}
+            initialFilters={
+              brandFilterApplied
+                ? currentFilters
+                : location.state && location.state.filter
+                ? location.state.filter
+                : {}
+            }
           />
-          {/* Thông tin kết quả */}
-          {products.length > 0 && (
+          {/* Loading when debouncing filter */}
+          {isDebouncing && (
+            <div className="mb-4 text-blue-500 text-sm">Filtering...</div>
+          )}
+          {/* Result information */}
+          {availableProducts.length > 0 && (
             <div className="mb-6 text-sm text-gray-600">
-              Hiển thị {products.length} sản phẩm
-              {totalElements > 0 && ` (tổng cộng ${totalElements} sản phẩm)`}
+              Showing {availableProducts.length} available products
+              {totalElements > 0 && ` (total ${totalElements} products)`}
             </div>
           )}
 
-          {/* Lưới sản phẩm */}
+          {/* Product grid */}
           {products.length === 0 && loading ? (
             <div className="text-center text-gray-500 py-12">
               <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
@@ -168,33 +198,36 @@ const CategoryLayout = () => {
             </div>
           ) : error ? (
             <div className="text-center text-red-500 py-12">{error}</div>
-          ) : products.length === 0 ? (
+          ) : isFiltering ? (
+            <div className="text-center text-gray-500 py-12">
+              <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+              Filtering products...
+            </div>
+          ) : availableProducts.length === 0 ? (
             <div className="text-center text-gray-400 py-12">
               <div className="text-6xl mb-4">📦</div>
-              Không có sản phẩm nào
+              No available products found
             </div>
           ) : (
             <>
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2">
-                {products
-                  .filter(product => {
-                    // Tính tổng remainingQuantity của tất cả option > 0
-                    if (!Array.isArray(product.option)) return false;
-                    const totalRemain = product.option
-                      .filter(opt => opt.remainingQuantity > 0)
-                      .reduce((sum, opt) => sum + (opt.remainingQuantity || 0), 0);
-                    return totalRemain > 0;
-                  })
-                  .map((product, idx) => (
-                    <ProductCard
-                      key={product.id || idx}
-                      {...product}
-                      option={Array.isArray(product.option) ? product.option.filter(opt => opt.remainingQuantity > 0) : []}
-                    />
-                  ))}
+                {availableProducts.map((product, idx) => (
+                  <ProductCard
+                    key={product.id || idx}
+                    {...product}
+                    status={product.status}
+                    option={
+                      Array.isArray(product.option)
+                        ? product.option.filter(
+                            (opt) => opt.remainingQuantity > 0
+                          )
+                        : []
+                    }
+                  />
+                ))}
               </div>
 
-              {/* Footer để detect scroll */}
+              {/* Footer to detect scroll */}
               <div ref={footerRef} className="h-8"></div>
 
               {loading && (
@@ -206,7 +239,7 @@ const CategoryLayout = () => {
 
               {!hasMore && products.length > 0 && (
                 <div className="text-center text-gray-400 py-4">
-                  Đã hiển thị tất cả sản phẩm
+                  All products displayed
                 </div>
               )}
             </>

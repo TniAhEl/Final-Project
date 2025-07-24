@@ -83,6 +83,9 @@ public class ProductSerialService implements IProductSerialService {
         if(request.getStatus()!=ProductSerialStatus.AVAILABLE){
             option.setRemainingQuantity(option.getRemainingQuantity() - 1);
             productOptionRepository.save(option);
+        } else if(request.getStatus()!= productSerial.getProductListConfigStatus() || request.getStatus() == ProductSerialStatus.AVAILABLE){
+            option.setRemainingQuantity(option.getRemainingQuantity()+1);
+            productOptionRepository.save(option);
         }
 
         Optional<Product> product = productRepository.findById(option.getProduct().getId());

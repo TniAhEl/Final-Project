@@ -1,6 +1,11 @@
 import { useState } from "react";
 
-const PromotionForm = ({ onSubmit, onCancel, initialData = null, isEditing = false }) => {
+const PromotionForm = ({
+  onSubmit,
+  onCancel,
+  initialData = null,
+  isEditing = false,
+}) => {
   const [promotionData, setPromotionData] = useState(
     initialData || {
       name: "",
@@ -11,19 +16,19 @@ const PromotionForm = ({ onSubmit, onCancel, initialData = null, isEditing = fal
       startDate: "",
       endDate: "",
       status: "",
-      quantity: ""
+      quantity: "",
     }
   );
 
   const [errors, setErrors] = useState({});
 
   const handleInputChange = (field, value) => {
-    setPromotionData(prev => ({
+    setPromotionData((prev) => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
     if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: "" }));
+      setErrors((prev) => ({ ...prev, [field]: "" }));
     }
   };
 
@@ -31,11 +36,14 @@ const PromotionForm = ({ onSubmit, onCancel, initialData = null, isEditing = fal
     e.preventDefault();
     // Validate
     const newErrors = {};
-    if (!promotionData.name.trim()) newErrors.name = "Promotion name is required";
-    if (!promotionData.code.trim()) newErrors.code = "Promotion code is required";
+    if (!promotionData.name.trim())
+      newErrors.name = "Promotion name is required";
+    if (!promotionData.code.trim())
+      newErrors.code = "Promotion code is required";
     if (!promotionData.type) newErrors.type = "Promotion type is required";
     if (!promotionData.value) newErrors.value = "Promotion value is required";
-    if (!promotionData.startDate) newErrors.startDate = "Start date is required";
+    if (!promotionData.startDate)
+      newErrors.startDate = "Start date is required";
     if (!promotionData.endDate) newErrors.endDate = "End date is required";
     if (!promotionData.status) newErrors.status = "Status is required";
     if (!promotionData.quantity) newErrors.quantity = "Quantity is required";
@@ -55,7 +63,9 @@ const PromotionForm = ({ onSubmit, onCancel, initialData = null, isEditing = fal
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Basic Information */}
         <div className="bg-white p-6 rounded-lg border border-gray-200">
-          <h3 className="text-lg font-semibold mb-4 text-gray-800">Promotion Information</h3>
+          <h3 className="text-lg font-semibold mb-4 text-gray-800">
+            Promotion Information
+          </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Promotion Name */}
             <div>
@@ -65,13 +75,15 @@ const PromotionForm = ({ onSubmit, onCancel, initialData = null, isEditing = fal
               <input
                 type="text"
                 value={promotionData.name}
-                onChange={e => handleInputChange('name', e.target.value)}
+                onChange={(e) => handleInputChange("name", e.target.value)}
                 placeholder="e.g., Summer Sale, Flash Sale..."
                 className={`w-full p-3 border rounded-md focus:ring-2 focus:ring-violet-500 focus:border-transparent ${
-                  errors.name ? 'border-red-500' : 'border-gray-300'
+                  errors.name ? "border-red-500" : "border-gray-300"
                 }`}
               />
-              {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
+              {errors.name && (
+                <p className="text-red-500 text-sm mt-1">{errors.name}</p>
+              )}
             </div>
             {/* Promotion Code */}
             <div>
@@ -81,13 +93,15 @@ const PromotionForm = ({ onSubmit, onCancel, initialData = null, isEditing = fal
               <input
                 type="text"
                 value={promotionData.code}
-                onChange={e => handleInputChange('code', e.target.value)}
+                onChange={(e) => handleInputChange("code", e.target.value)}
                 placeholder="e.g., SUMMER2024, FLASH50..."
                 className={`w-full p-3 border rounded-md focus:ring-2 focus:ring-violet-500 focus:border-transparent ${
-                  errors.code ? 'border-red-500' : 'border-gray-300'
+                  errors.code ? "border-red-500" : "border-gray-300"
                 }`}
               />
-              {errors.code && <p className="text-red-500 text-sm mt-1">{errors.code}</p>}
+              {errors.code && (
+                <p className="text-red-500 text-sm mt-1">{errors.code}</p>
+              )}
             </div>
             {/* Promotion Type */}
             <div>
@@ -96,17 +110,19 @@ const PromotionForm = ({ onSubmit, onCancel, initialData = null, isEditing = fal
               </label>
               <select
                 value={promotionData.type}
-                onChange={e => handleInputChange('type', e.target.value)}
+                onChange={(e) => handleInputChange("type", e.target.value)}
                 className={`w-full p-3 border rounded-md focus:ring-2 focus:ring-violet-500 focus:border-transparent ${
-                  errors.type ? 'border-red-500' : 'border-gray-300'
+                  errors.type ? "border-red-500" : "border-gray-300"
                 }`}
               >
                 <option value="">Select promotion type</option>
-                <option value="percentage">Discount by percentage (%)</option>
-                <option value="fixed">Discount by fixed amount</option>
+                <option value="PERCENTAGE">Discount by percentage (%)</option>
+                <option value="AMOUNT">Discount by fixed amount</option>
                 <option value="free_shipping">Free shipping</option>
               </select>
-              {errors.type && <p className="text-red-500 text-sm mt-1">{errors.type}</p>}
+              {errors.type && (
+                <p className="text-red-500 text-sm mt-1">{errors.type}</p>
+              )}
             </div>
             {/* Promotion Value */}
             <div>
@@ -117,13 +133,15 @@ const PromotionForm = ({ onSubmit, onCancel, initialData = null, isEditing = fal
                 type="number"
                 step="0.01"
                 value={promotionData.value}
-                onChange={e => handleInputChange('value', e.target.value)}
+                onChange={(e) => handleInputChange("value", e.target.value)}
                 placeholder="e.g., 20 (for %) or 50000 (for VND)"
                 className={`w-full p-3 border rounded-md focus:ring-2 focus:ring-violet-500 focus:border-transparent ${
-                  errors.value ? 'border-red-500' : 'border-gray-300'
+                  errors.value ? "border-red-500" : "border-gray-300"
                 }`}
               />
-              {errors.value && <p className="text-red-500 text-sm mt-1">{errors.value}</p>}
+              {errors.value && (
+                <p className="text-red-500 text-sm mt-1">{errors.value}</p>
+              )}
             </div>
             {/* Quantity */}
             <div>
@@ -133,13 +151,15 @@ const PromotionForm = ({ onSubmit, onCancel, initialData = null, isEditing = fal
               <input
                 type="number"
                 value={promotionData.quantity}
-                onChange={e => handleInputChange('quantity', e.target.value)}
+                onChange={(e) => handleInputChange("quantity", e.target.value)}
                 placeholder="e.g., 100 (number of promotion codes)"
                 className={`w-full p-3 border rounded-md focus:ring-2 focus:ring-violet-500 focus:border-transparent ${
-                  errors.quantity ? 'border-red-500' : 'border-gray-300'
+                  errors.quantity ? "border-red-500" : "border-gray-300"
                 }`}
               />
-              {errors.quantity && <p className="text-red-500 text-sm mt-1">{errors.quantity}</p>}
+              {errors.quantity && (
+                <p className="text-red-500 text-sm mt-1">{errors.quantity}</p>
+              )}
             </div>
             {/* Status */}
             <div>
@@ -148,17 +168,19 @@ const PromotionForm = ({ onSubmit, onCancel, initialData = null, isEditing = fal
               </label>
               <select
                 value={promotionData.status}
-                onChange={e => handleInputChange('status', e.target.value)}
+                onChange={(e) => handleInputChange("status", e.target.value)}
                 className={`w-full p-3 border rounded-md focus:ring-2 focus:ring-violet-500 focus:border-transparent ${
-                  errors.status ? 'border-red-500' : 'border-gray-300'
+                  errors.status ? "border-red-500" : "border-gray-300"
                 }`}
               >
                 <option value="">Select status</option>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-                <option value="expired">Expired</option>
+                <option value="ACTIVE">Active</option>
+                <option value="INACTIVE">Inactive</option>
+                <option value="EXPIRED">Expired</option>
               </select>
-              {errors.status && <p className="text-red-500 text-sm mt-1">{errors.status}</p>}
+              {errors.status && (
+                <p className="text-red-500 text-sm mt-1">{errors.status}</p>
+              )}
             </div>
           </div>
           {/* Description */}
@@ -168,7 +190,7 @@ const PromotionForm = ({ onSubmit, onCancel, initialData = null, isEditing = fal
             </label>
             <textarea
               value={promotionData.description}
-              onChange={e => handleInputChange('description', e.target.value)}
+              onChange={(e) => handleInputChange("description", e.target.value)}
               placeholder="e.g., Special summer promotion..."
               rows={3}
               className="w-full p-3 border rounded-md focus:ring-2 focus:ring-violet-500 focus:border-transparent border-gray-300"
@@ -177,7 +199,9 @@ const PromotionForm = ({ onSubmit, onCancel, initialData = null, isEditing = fal
         </div>
         {/* Apply Time */}
         <div className="bg-white p-6 rounded-lg border border-gray-200">
-          <h3 className="text-lg font-semibold mb-4 text-gray-800">Apply Time</h3>
+          <h3 className="text-lg font-semibold mb-4 text-gray-800">
+            Apply Time
+          </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Start Date */}
             <div>
@@ -187,12 +211,14 @@ const PromotionForm = ({ onSubmit, onCancel, initialData = null, isEditing = fal
               <input
                 type="datetime-local"
                 value={promotionData.startDate}
-                onChange={e => handleInputChange('startDate', e.target.value)}
+                onChange={(e) => handleInputChange("startDate", e.target.value)}
                 className={`w-full p-3 border rounded-md focus:ring-2 focus:ring-violet-500 focus:border-transparent ${
-                  errors.startDate ? 'border-red-500' : 'border-gray-300'
+                  errors.startDate ? "border-red-500" : "border-gray-300"
                 }`}
               />
-              {errors.startDate && <p className="text-red-500 text-sm mt-1">{errors.startDate}</p>}
+              {errors.startDate && (
+                <p className="text-red-500 text-sm mt-1">{errors.startDate}</p>
+              )}
             </div>
             {/* End Date */}
             <div>
@@ -202,12 +228,14 @@ const PromotionForm = ({ onSubmit, onCancel, initialData = null, isEditing = fal
               <input
                 type="datetime-local"
                 value={promotionData.endDate}
-                onChange={e => handleInputChange('endDate', e.target.value)}
+                onChange={(e) => handleInputChange("endDate", e.target.value)}
                 className={`w-full p-3 border rounded-md focus:ring-2 focus:ring-violet-500 focus:border-transparent ${
-                  errors.endDate ? 'border-red-500' : 'border-gray-300'
+                  errors.endDate ? "border-red-500" : "border-gray-300"
                 }`}
               />
-              {errors.endDate && <p className="text-red-500 text-sm mt-1">{errors.endDate}</p>}
+              {errors.endDate && (
+                <p className="text-red-500 text-sm mt-1">{errors.endDate}</p>
+              )}
             </div>
           </div>
         </div>

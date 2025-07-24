@@ -65,4 +65,5 @@ public class ProductResponse {
     private String recordUtil;
     private String resistanceUtil;
     private String specialUtil;
+    private String advancedUtil;
 }

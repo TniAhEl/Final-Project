@@ -19,6 +19,7 @@ const SignInForm = () => {
       const res = await login(username, password);
       localStorage.setItem("token", res.token);
       localStorage.setItem("role", res.role);
+      localStorage.setItem("userId", res.id);
       alert("Sign in successfully");
       navigate("/"); // Chuyển hướng sang trang chủ sau khi đăng nhập thành công
     } catch (error) {

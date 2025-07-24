@@ -3,8 +3,8 @@ package com.example.demo.dto.request.utilities;
 import lombok.Data;
 
 @Data
-public class InsuranceContractRequest {
+public class InsurancePendingRequest {
     private Long insuranceId;
-    private Long orderProductId;
-    private int quantity;
+    private Long productOptionId;
+    private Long quantity;
 }

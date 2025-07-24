@@ -1,5 +1,5 @@
-import React from 'react';
-import { FaTrash } from 'react-icons/fa';
+import React from "react";
+import { FaTrash } from "react-icons/fa";
 
 const DeleteButton = ({ children, ...props }) => (
   <button
@@ -7,7 +7,7 @@ const DeleteButton = ({ children, ...props }) => (
     {...props}
   >
     <span className="flex items-center gap-1.5">
-      <span>{children || 'Delete'}</span>
+      <span>{children || "Delete"}</span>
       <FaTrash className="text-stone-200 text-xs" />
     </span>
   </button>

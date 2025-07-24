@@ -67,7 +67,9 @@ const SignUpForm = () => {
           />
         </div>
         <div className="flex flex-col gap-1">
-          <label className="text-gray-600 text-[15px] font-medium">Username</label>
+          <label className="text-gray-600 text-[15px] font-medium">
+            Username
+          </label>
           <input
             type="text"
             value={form.username}

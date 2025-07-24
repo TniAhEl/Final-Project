@@ -1,4 +1,4 @@
-import { FaGoogle } from 'react-icons/fa';
+import { FaGoogle } from "react-icons/fa";
 
 const GoogleIcon = () => (
   <span className="size-5 relative inline-block overflow-hidden">
@@ -16,7 +16,9 @@ const GoogleButton = ({ children, ...props }) => (
   >
     <span className="flex items-center gap-[15px]">
       <FaGoogle />
-      <span className="text-slate-800 text-xs font-semibold leading-none">{children || 'Sign in with Google'}</span>
+      <span className="text-slate-800 text-xs font-semibold leading-none">
+        {children || "Sign in with Google"}
+      </span>
     </span>
   </button>
 );

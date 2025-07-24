@@ -13,4 +13,5 @@ public class WarrantyResponse {
     private String note;
     private LocalDateTime createAt;
     private LocalDateTime updateAt;
+    private String name;
 }

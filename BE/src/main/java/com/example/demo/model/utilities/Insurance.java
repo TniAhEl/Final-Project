@@ -32,7 +32,7 @@ public class Insurance {
     private LocalDate releaseAt;
 
     @Column(name = "insured")
-    private String  insured;
+    private int insured;
 
     @Column(name = "terms")
     private String terms;
@@ -61,5 +61,7 @@ public class Insurance {
 
     @OneToMany(mappedBy = "insurance")
     private List<InsurancePending> insurancePendings = new ArrayList<>();
+
+
 
 }

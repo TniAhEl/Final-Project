@@ -1,15 +1,14 @@
 package com.example.demo.controller;
 
-import com.example.demo.dto.request.orders.CreateReviewReplyRequest;
-import com.example.demo.dto.request.orders.CreateReviewRequest;
-import com.example.demo.dto.request.orders.UpdateReviewReplyRequest;
-import com.example.demo.dto.request.orders.UpdateReviewRequest;
-import com.example.demo.dto.request.utilities.InsuranceContractRequest;
+import com.example.demo.dto.request.FilterOrderWarranty;
+import com.example.demo.dto.request.orders.*;
+import com.example.demo.dto.request.utilities.InsurancePendingRequest;
 import com.example.demo.dto.request.utilities.OrderInforRequest;
 import com.example.demo.dto.response.ApiResponse;
 import com.example.demo.dto.response.order.OrderResponse;
 import com.example.demo.dto.response.order.ReviewReplyResponse;
 import com.example.demo.dto.response.order.ReviewResponse;
+import com.example.demo.enums.OrderStatus;
 import com.example.demo.model.order.Order;
 import com.example.demo.model.product.ProductReview;
 import com.example.demo.model.product.ProductReviewReply;
@@ -23,6 +22,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RequiredArgsConstructor
 @RestController
@@ -37,11 +37,16 @@ public class OrderController {
     public ResponseEntity<ApiResponse> createOrder(
             @RequestParam Long userId,
             @RequestParam(required = false) String promotionCode,
-            @RequestBody OrderInforRequest request,
-            @RequestBody(required = false) List<InsuranceContractRequest> insuranceContracts
+            @RequestBody PlaceOrderRequest requestWrapper
     ) {
         try {
-            Order order = orderService.placeOrder(userId, request, promotionCode, insuranceContracts);
+            Order order = orderService.placeOrder(
+                    userId,
+                    requestWrapper.getOrderInfo(),
+                    promotionCode,
+                    requestWrapper.getInsuranceContracts()
+            );
+
             OrderResponse orderResponse = orderService.convertToResponse(order);
             return ResponseEntity.ok(new ApiResponse("Order placed successfully!", orderResponse));
         } catch (Exception e) {
@@ -50,6 +55,7 @@ public class OrderController {
                     .body(new ApiResponse("Error occurred while placing order", e.toString()));
         }
     }
+
 
 
     @PostMapping("order/product/review")
@@ -120,4 +126,52 @@ public class OrderController {
                     .body(new ApiResponse("Error occur while updating reply review", e.toString()));
         }
     }
+
+    @PostMapping("/filter")
+    @PreAuthorize("hasRole('ADMIN')")
+    public  ResponseEntity<Map<String, Object>> filterOrder(
+            @RequestBody OrderFilterRequest filter,
+            @RequestParam int page,
+            @RequestParam(defaultValue = "20") int size
+            ){
+        Map<String, Object> result = orderService.filterOrders(filter, page, size);
+        return ResponseEntity.ok(result);
+    }
+
+
+    @PutMapping("/confirm")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse> confirmOrder(
+            @RequestParam Long adminId,
+            @RequestParam Long orderId,
+            @RequestParam OrderStatus status
+            ){
+        Order order = orderService.confirmOrder(adminId, orderId, status);
+        OrderResponse response = orderService.convertToResponse(order);
+        return ResponseEntity.ok(new ApiResponse("Confirm order  success", response));
+    }
+
+    @PostMapping("/customer")
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<Map<String, Object>> getCustomerOrder(
+            @RequestParam Long userId,
+            @RequestBody OrderFilterRequest filter,
+            @RequestParam int page,
+            @RequestParam int size
+    ){
+        return ResponseEntity.ok(orderService.filterOrdersForUser(filter, userId, page, size));
+    }
+
+    @PostMapping("/customer/warranty")
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<Map<String, Object>> filterWarranty(
+            @RequestParam Long userId,
+            @RequestBody FilterOrderWarranty filter,
+            @RequestParam int page,
+            @RequestParam int size
+    ){
+        return ResponseEntity.ok(orderService.filterOrderProductWarranty(filter, userId, page, size));
+    }
+
+
 }

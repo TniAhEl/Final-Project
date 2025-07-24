@@ -40,6 +40,8 @@ public class OrderProduct {
     private BigDecimal unitPrice;
     @Column(name = "update_at")
     private LocalDateTime updateAt;
+    @Column(name = "is_reviewed")
+    private boolean isReviewed;
 
 
     @OneToMany(mappedBy = "orderProduct")
@@ -56,10 +58,13 @@ public class OrderProduct {
     @JoinColumn(name = "product_option",nullable = false)
     private ProductOption productOption;
 
+
+
     public OrderProduct(Order order, ProductOption productOption, BigDecimal unitPrice, int quantity){
         this.order = order;
         this.productOption =productOption;
         this.unitPrice = productOption.getPrice();
         this.quantity = quantity;
+        this.updateAt = LocalDateTime.now();
     }
 }

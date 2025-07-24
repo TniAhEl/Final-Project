@@ -4,6 +4,14 @@ target/
 !**/src/main/**/target/
 !**/src/test/**/target/
 
+## properties
+*.properties
+*.yml
+*.yaml
+*.json
+*.xml
+*.html
+
 ### STS ###
 .apt_generated
 .classpath

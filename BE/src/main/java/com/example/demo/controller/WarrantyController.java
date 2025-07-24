@@ -1,5 +1,7 @@
 package com.example.demo.controller;
 
+import com.example.demo.dto.request.FilterInsuranceContract;
+import com.example.demo.dto.request.FilterWarrantyRequest;
 import com.example.demo.dto.request.utilities.CreateWarrantyRequest;
 import com.example.demo.dto.request.utilities.UpdateWarrantyRequest;
 import com.example.demo.dto.response.ApiResponse;
@@ -16,6 +18,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
@@ -81,6 +84,15 @@ public class WarrantyController {
         } catch (ResourceNotFoundException e) {
             return ResponseEntity.status(NOT_FOUND).body(new ApiResponse(e.getMessage(),null));
         }
+    }
+
+    @PostMapping("/customer/filter")
+    public ResponseEntity<Map<String, Object>> filterCustomerWarranty(
+            @RequestBody FilterWarrantyRequest filter,
+            @RequestParam int page,
+            @RequestParam int size
+    ){
+        return ResponseEntity.ok(warrantyService.filterCustomerWarranty(filter, page, size));
     }
 
 

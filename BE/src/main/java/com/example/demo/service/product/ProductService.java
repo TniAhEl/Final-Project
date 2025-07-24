@@ -17,10 +17,9 @@ import jakarta.persistence.Query;
 import jakarta.persistence.TypedQuery;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
-import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -40,7 +39,11 @@ public class ProductService implements IProductService {
     private final StoreRepository storeRepository;
 
 
+    // sử lại filter product, lọc theo ngày cập nhật, lọc theo số lượng đã bán
+
+
     @Override
+    @Transactional
     public Product createProduct(CreateProductRequest request) {
         Optional<Product> existingProduct = productRepository.findByName(request.getName());
         if (existingProduct.isPresent()) {
@@ -236,19 +239,17 @@ public class ProductService implements IProductService {
 
     @Override
     public Map<String, Object> filterProducts(ProductFilterRequest filter, int page, int size) {
-        // Bước 1: Lấy danh sách sản phẩm có ít nhất 1 option thỏa điều kiện
         String productSql = """
-            SELECT DISTINCT p.*
-            FROM product p
-            JOIN product_category c ON p.category_id = c.id
-            JOIN product_option o ON o.product_id = p.id
-            WHERE 1=1
-            """;
+        SELECT DISTINCT p.*
+        FROM product p
+        JOIN product_category c ON p.category_id = c.id
+        JOIN product_option o ON o.product_id = p.id
+        WHERE p.product_status != 'DRAFT' AND p.product_status != 'OUT_STOCK'
+    """;
 
         StringBuilder where = new StringBuilder();
         Map<String, Object> productParams = new HashMap<>();
 
-        // Thêm các điều kiện lọc cho product
         if (filter.getCategoryName() != null && !filter.getCategoryName().isEmpty()) {
             where.append(" AND c.name IN :categoryNames");
             productParams.put("categoryNames", filter.getCategoryName());
@@ -282,19 +283,27 @@ public class ProductService implements IProductService {
             productParams.put("maxPrice", filter.getMaxPrice());
         }
 
-        String fullProductSql = productSql + where + " LIMIT :limit OFFSET :offset";
+        String orderBy;
+        if (Boolean.TRUE.equals(filter.getSortByNewest())) {
+            orderBy = " ORDER BY p.update_at DESC";
+        } else {
+            orderBy = " ORDER BY p.id ASC";
+        }
+
+
+        String fullProductSql = productSql + where + orderBy + " LIMIT :limit OFFSET :offset";
+
         String countSql = """
         SELECT COUNT(DISTINCT p.id)
         FROM product p
         JOIN product_category c ON p.category_id = c.id
         JOIN product_option o ON o.product_id = p.id
         WHERE 1=1
-        """ + where;
+    """ + where;
 
         Query productQuery = entityManager.createNativeQuery(fullProductSql, Product.class);
         Query countQuery = entityManager.createNativeQuery(countSql);
 
-        // Set params cho productQuery và countQuery
         productParams.forEach((k, v) -> {
             productQuery.setParameter(k, v);
             countQuery.setParameter(k, v);
@@ -306,7 +315,7 @@ public class ProductService implements IProductService {
         @SuppressWarnings("unchecked")
         List<Product> products = productQuery.getResultList();
 
-        // Bước 2: Lấy toàn bộ options của các sản phẩm đã lọc và filter lại
+        // Lọc options nếu có sản phẩm
         if (!products.isEmpty()) {
             List<Long> productIds = products.stream().map(Product::getId).collect(Collectors.toList());
 
@@ -329,7 +338,6 @@ public class ProductService implements IProductService {
             TypedQuery<ProductOption> optionQuery = entityManager.createQuery(optionSql + optionWhere, ProductOption.class);
             optionQuery.setParameter("productIds", productIds);
 
-            // Chỉ set các tham số liên quan đến optionQuery
             if (filter.getRam() != null && !filter.getRam().isEmpty()) {
                 optionQuery.setParameter("rams", filter.getRam());
             }
@@ -345,11 +353,146 @@ public class ProductService implements IProductService {
 
             List<ProductOption> filteredOptions = optionQuery.getResultList();
 
-            // Nhóm options theo productId
             Map<Long, List<ProductOption>> optionsByProduct = filteredOptions.stream()
                     .collect(Collectors.groupingBy(option -> option.getProduct().getId()));
 
-            // Gán lại danh sách options đã lọc cho từng sản phẩm
+            for (Product product : products) {
+                product.setProductOptions(optionsByProduct.getOrDefault(product.getId(), Collections.emptyList()));
+            }
+        }
+
+        Long total = ((Number) countQuery.getSingleResult()).longValue();
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("content", convertToResponses(products));
+        response.put("page", page);
+        response.put("size", size);
+        response.put("totalElements", total);
+        response.put("totalPages", (int) Math.ceil((double) total / size));
+
+        return response;
+    }
+
+
+
+    @Override
+    public Map<String, Object> filterAdminProducts(ProductFilterRequest filter, int page, int size) {
+        String productSql = """
+        SELECT DISTINCT p.*
+        FROM product p
+        JOIN product_category c ON p.category_id = c.id
+        LEFT JOIN product_option o ON o.product_id = p.id
+        WHERE 1=1
+    """;
+
+        StringBuilder where = new StringBuilder();
+        Map<String, Object> productParams = new HashMap<>();
+
+        if (filter.getCategoryName() != null && !filter.getCategoryName().isEmpty()) {
+            where.append(" AND c.name IN :categoryNames");
+            productParams.put("categoryNames", filter.getCategoryName());
+        }
+        if (filter.getBrand() != null && !filter.getBrand().isEmpty()) {
+            where.append(" AND p.brand IN :brands");
+            productParams.put("brands", filter.getBrand());
+        }
+        if (filter.getOs() != null && !filter.getOs().isEmpty()) {
+            where.append(" AND p.os IN :osList");
+            productParams.put("osList", filter.getOs());
+        }
+        if (filter.getScreenResolution() != null && !filter.getScreenResolution().isEmpty()) {
+            where.append(" AND p.screen_resolution IN :resolutions");
+            productParams.put("resolutions", filter.getScreenResolution());
+        }
+        if (filter.getRam() != null && !filter.getRam().isEmpty()) {
+            where.append(" AND o.ram IN :rams");
+            productParams.put("rams", filter.getRam());
+        }
+        if (filter.getRom() != null && !filter.getRom().isEmpty()) {
+            where.append(" AND o.rom IN :roms");
+            productParams.put("roms", filter.getRom());
+        }
+        if (filter.getMinPrice() != null) {
+            where.append(" AND o.price >= :minPrice");
+            productParams.put("minPrice", filter.getMinPrice());
+        }
+        if (filter.getMaxPrice() != null) {
+            where.append(" AND o.price <= :maxPrice");
+            productParams.put("maxPrice", filter.getMaxPrice());
+        }
+
+        String orderBy;
+        if (Boolean.TRUE.equals(filter.getSortByNewest())) {
+            orderBy = " ORDER BY p.update_at DESC";
+        } else {
+            orderBy = " ORDER BY p.id ASC";
+        }
+
+        String fullProductSql = productSql + where + orderBy + " LIMIT :limit OFFSET :offset";
+
+        String countSql = """
+        SELECT COUNT(DISTINCT p.id)
+        FROM product p
+        JOIN product_category c ON p.category_id = c.id
+        LEFT JOIN product_option o ON o.product_id = p.id
+        WHERE 1=1
+    """ + where;
+
+        Query productQuery = entityManager.createNativeQuery(fullProductSql, Product.class);
+        Query countQuery = entityManager.createNativeQuery(countSql);
+
+        productParams.forEach((k, v) -> {
+            productQuery.setParameter(k, v);
+            countQuery.setParameter(k, v);
+        });
+
+        productQuery.setParameter("limit", size);
+        productQuery.setParameter("offset", page * size);
+
+        @SuppressWarnings("unchecked")
+        List<Product> products = productQuery.getResultList();
+
+        // Lọc options nếu có sản phẩm
+        if (!products.isEmpty()) {
+            List<Long> productIds = products.stream().map(Product::getId).collect(Collectors.toList());
+
+            String optionSql = "SELECT o FROM ProductOption o WHERE o.product.id IN :productIds";
+            StringBuilder optionWhere = new StringBuilder();
+
+            if (filter.getRam() != null && !filter.getRam().isEmpty()) {
+                optionWhere.append(" AND o.ram IN :rams");
+            }
+            if (filter.getRom() != null && !filter.getRom().isEmpty()) {
+                optionWhere.append(" AND o.rom IN :roms");
+            }
+            if (filter.getMinPrice() != null) {
+                optionWhere.append(" AND o.price >= :minPrice");
+            }
+            if (filter.getMaxPrice() != null) {
+                optionWhere.append(" AND o.price <= :maxPrice");
+            }
+
+            TypedQuery<ProductOption> optionQuery = entityManager.createQuery(optionSql + optionWhere, ProductOption.class);
+            optionQuery.setParameter("productIds", productIds);
+
+            if (filter.getRam() != null && !filter.getRam().isEmpty()) {
+                optionQuery.setParameter("rams", filter.getRam());
+            }
+            if (filter.getRom() != null && !filter.getRom().isEmpty()) {
+                optionQuery.setParameter("roms", filter.getRom());
+            }
+            if (filter.getMinPrice() != null) {
+                optionQuery.setParameter("minPrice", filter.getMinPrice());
+            }
+            if (filter.getMaxPrice() != null) {
+                optionQuery.setParameter("maxPrice", filter.getMaxPrice());
+            }
+
+            List<ProductOption> filteredOptions = optionQuery.getResultList();
+
+            Map<Long, List<ProductOption>> optionsByProduct = filteredOptions.stream()
+                    .collect(Collectors.groupingBy(option -> option.getProduct().getId()));
+
             for (Product product : products) {
                 product.setProductOptions(optionsByProduct.getOrDefault(product.getId(), Collections.emptyList()));
             }

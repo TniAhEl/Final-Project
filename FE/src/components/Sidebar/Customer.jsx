@@ -1,42 +1,49 @@
-import { MdShoppingCart, MdPerson, MdAssignment, MdVerifiedUser, MdLogout, MdDashboard } from 'react-icons/md';
-import { FaClipboardList, FaShieldAlt } from 'react-icons/fa';
-import { Link } from 'react-router-dom';
+import {
+  MdShoppingCart,
+  MdPerson,
+  MdAssignment,
+  MdVerifiedUser,
+  MdLogout,
+  MdDashboard,
+} from "react-icons/md";
+import { FaClipboardList, FaShieldAlt } from "react-icons/fa";
+import { Link } from "react-router-dom";
 
 const menu = [
   {
-    label: 'Dashboard',
+    label: "Dashboard",
     icon: <MdDashboard className="text-xl text-gray-700" />,
-    to: '/customer/dashboard',
+    to: "/customer/dashboard",
   },
   {
-    label: 'My Orders',
+    label: "My Orders",
     icon: <FaClipboardList className="text-xl text-gray-700" />,
-    to: '/customer/orders',
+    to: "/customer/orders",
   },
   {
-    label: 'My Cart',
+    label: "My Cart",
     icon: <MdShoppingCart className="text-xl text-gray-700" />,
-    to: '/customer/cart',
+    to: "/customer/cart",
   },
   {
-    label: 'My Profile',
+    label: "My Profile",
     icon: <MdPerson className="text-xl text-gray-700" />,
-    to: '/customer/profile',
+    to: "/customer/profile",
   },
   {
-    label: 'My Order Warranty',
+    label: "My Order Warranty",
     icon: <MdVerifiedUser className="text-xl text-gray-700" />,
-    to: '/customer/warranty',
+    to: "/customer/warranty",
   },
   {
-    label: 'My Order Insurance',
+    label: "My Order Insurance",
     icon: <FaShieldAlt className="text-xl text-gray-700" />,
-    to: '/customer/insurance',
+    to: "/customer/insurance",
   },
   {
-    label: 'Logout',
+    label: "Logout",
     icon: <MdLogout className="text-xl text-gray-700" />,
-    to: '/signin',
+    to: "/signin",
   },
 ];
 

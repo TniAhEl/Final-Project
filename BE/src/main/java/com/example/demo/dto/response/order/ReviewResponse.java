@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
 @Data
 public class ReviewResponse {
     private String id;
-    private ProductReviewReply productReviewReply;
+    private ReviewReplyResponse reply;
     private UserReview user;
     private LocalDateTime createAt;
     private LocalDateTime updateAt;

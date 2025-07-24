@@ -7,6 +7,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Getter
@@ -25,6 +26,9 @@ public class OrderPromotion {
     @ManyToOne
     @JoinColumn(name = "order_id")
     private Order order;
+
+    @Column(name = "total_discount")
+    private BigDecimal totalDiscount;
 
     @ManyToOne
     @JoinColumn(name = "promotion_id")

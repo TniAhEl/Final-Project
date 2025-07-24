@@ -12,7 +12,7 @@ import {
 import { getProductById } from "../api/productService";
 import { addProductToCart } from "../api/cartService";
 
-// Hàm decode JWT để lấy userId từ token
+// Function to decode JWT to get userId from token
 function getUserIdFromToken() {
   const token = localStorage.getItem("token");
   if (!token) return null;
@@ -21,7 +21,7 @@ function getUserIdFromToken() {
     const decoded = JSON.parse(
       atob(payload.replace(/-/g, "+").replace(/_/g, "/"))
     );
-    // userId có thể là id, sub, userId tuỳ backend
+    // userId can be id, sub, userId depending on backend
     console.log(decoded);
     return decoded.userId || decoded.id || decoded.sub || null;
   } catch {
@@ -29,10 +29,10 @@ function getUserIdFromToken() {
   }
 }
 
-const ProductLayout = () => {
+const ProductLayout = ({ productData, onOptionChange }) => {
   const { id } = useParams();
   const [product, setProduct] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [selectedOption, setSelectedOption] = useState(null);
   const [selectedColor, setSelectedColor] = useState(null);
@@ -42,6 +42,38 @@ const ProductLayout = () => {
   const [addCartLoading, setAddCartLoading] = useState(false);
 
   useEffect(() => {
+    if (productData) {
+      // Use productData from props
+      setProduct(productData);
+      if (
+        productData &&
+        Array.isArray(productData.option) &&
+        productData.option.length > 0
+      ) {
+        setSelectedOption(productData.option[0]);
+        setSelectedColor(productData.option[0].colorName);
+        setSelectedRam(productData.option[0].ram);
+        setSelectedRom(productData.option[0].rom);
+      } else {
+        setSelectedOption(null);
+        setSelectedColor(null);
+        setSelectedRam(null);
+        setSelectedRom(null);
+      }
+      // Set default store if available
+      if (
+        productData &&
+        Array.isArray(productData.stores) &&
+        productData.stores.length > 0
+      ) {
+        setSelectedStore(productData.stores[0]);
+      } else {
+        setSelectedStore(null);
+      }
+      return;
+    }
+
+    // Only call API if no productData from props
     setLoading(true);
     getProductById(id)
       .then((data) => {
@@ -70,7 +102,7 @@ const ProductLayout = () => {
           setSelectedRam(null);
           setSelectedRom(null);
         }
-        // Set store mặc định nếu có
+        // Set default store if available
         if (prod && Array.isArray(prod.stores) && prod.stores.length > 0) {
           setSelectedStore(prod.stores[0]);
         } else {
@@ -81,54 +113,244 @@ const ProductLayout = () => {
         setError("Failed to load product details.");
         setLoading(false);
       });
-  }, [id]);
+  }, [id, productData]);
 
-  // Khi chọn màu, cập nhật lại danh sách ram/rom và selectedOption
+  // When color is selected, update ram/rom list and selectedOption
   useEffect(() => {
     if (!product || !Array.isArray(product.option)) return;
     const optionsByColor = product.option.filter(
-      (opt) => opt.colorName === selectedColor
+      (opt) => opt.colorName === selectedColor && opt.remainingQuantity > 0
     );
-    // Lấy danh sách ram/rom duy nhất cho màu này
+    // Get unique ram/rom list for this color
     const ramList = Array.from(new Set(optionsByColor.map((opt) => opt.ram)));
     const romList = Array.from(new Set(optionsByColor.map((opt) => opt.rom)));
-    // Nếu selectedRam không còn hợp lệ thì chọn ram đầu tiên
+    // If selectedRam is no longer valid, select first ram
     let ram = selectedRam;
     if (!ramList.includes(selectedRam)) ram = ramList[0];
-    // Nếu selectedRom không còn hợp lệ thì chọn rom đầu tiên
+    // If selectedRom is no longer valid, select first rom
     let rom = selectedRom;
     if (!romList.includes(selectedRom)) rom = romList[0];
     setSelectedRam(ram);
     setSelectedRom(rom);
-    // Cập nhật selectedOption
+    // Update selectedOption
     const found = optionsByColor.find(
       (opt) => opt.ram === ram && opt.rom === rom
     );
     if (found) setSelectedOption(found);
   }, [selectedColor, product]);
 
-  // Khi chọn ram hoặc rom, cập nhật selectedOption
+  // When ram or rom is selected, update selectedOption
   useEffect(() => {
     if (!product || !Array.isArray(product.option)) return;
-    // Lọc option hợp lệ với color, ram, rom
+    // Filter valid option with color, ram, rom
     const found = product.option.find(
       (opt) =>
         (selectedColor ? opt.colorName === selectedColor : true) &&
         (selectedRam ? opt.ram === selectedRam : true) &&
-        (selectedRom ? opt.rom === selectedRom : true)
+        (selectedRom ? opt.rom === selectedRom : true) &&
+        opt.remainingQuantity > 0
     );
     if (found) setSelectedOption(found);
   }, [selectedRam, selectedRom, selectedColor, product]);
 
-  // Hàm xử lý thêm vào giỏ hàng
+  // Auto update selectedOption when selection changes for Details page
+  useEffect(() => {
+    if (!product?.option || !Array.isArray(product.option)) return;
+    const found = product.option.find(
+      (opt) =>
+        opt &&
+        (selectedColor == null || opt.colorName === selectedColor) &&
+        (selectedRam == null || opt.ram === selectedRam) &&
+        (selectedRom == null || opt.rom === selectedRom) &&
+        opt.remainingQuantity > 0
+    );
+    if (found) {
+      setSelectedOption(found);
+      if (onOptionChange) onOptionChange(found);
+      return;
+    }
+    // Nếu không hợp lệ, ưu tiên giữ giá trị vừa chọn
+    if (selectedColor != null) {
+      const validOpt = product.option.find(
+        (opt) =>
+          opt && opt.colorName === selectedColor && opt.remainingQuantity > 0
+      );
+      if (validOpt) {
+        setSelectedRam(validOpt.ram);
+        setSelectedRom(validOpt.rom);
+        setSelectedOption(validOpt);
+        if (onOptionChange) onOptionChange(validOpt);
+        return;
+      }
+    }
+    if (selectedRam != null) {
+      const validOpt = product.option.find(
+        (opt) => opt && opt.ram === selectedRam && opt.remainingQuantity > 0
+      );
+      if (validOpt) {
+        setSelectedColor(validOpt.colorName);
+        setSelectedRom(validOpt.rom);
+        setSelectedOption(validOpt);
+        if (onOptionChange) onOptionChange(validOpt);
+        return;
+      }
+    }
+    if (selectedRom != null) {
+      const validOpt = product.option.find(
+        (opt) => opt && opt.rom === selectedRom && opt.remainingQuantity > 0
+      );
+      if (validOpt) {
+        setSelectedColor(validOpt.colorName);
+        setSelectedRam(validOpt.ram);
+        setSelectedOption(validOpt);
+        if (onOptionChange) onOptionChange(validOpt);
+        return;
+      }
+    }
+    // Nếu không có gì hợp lệ, chọn option đầu tiên có remaining quantity > 0
+    const firstAvailableOption = product.option.find(
+      (opt) => opt && opt.remainingQuantity > 0
+    );
+    if (firstAvailableOption) {
+      setSelectedColor(firstAvailableOption.colorName);
+      setSelectedRam(firstAvailableOption.ram);
+      setSelectedRom(firstAvailableOption.rom);
+      setSelectedOption(firstAvailableOption);
+      if (onOptionChange) onOptionChange(firstAvailableOption);
+    }
+  }, [
+    selectedColor,
+    selectedRam,
+    selectedRom,
+    product?.option,
+    onOptionChange,
+  ]);
+
+  // Helper functions to check option states
+  const getOptionState = (option) => {
+    if (!option) return "unavailable";
+
+    // Check if this is the currently selected option
+    const isSelected = selectedOption && selectedOption.id === option.id;
+    if (isSelected) return "selected";
+
+    // Check if this option is available (has remaining quantity)
+    if (option.remainingQuantity > 0) return "available";
+
+    return "unavailable";
+  };
+
+  const getColorState = (color) => {
+    if (!color) return "unavailable";
+
+    // Check if this color is currently selected
+    if (selectedColor === color) return "selected";
+
+    // Check if this color has any available options
+    const hasAvailableOptions = (product.option || []).some(
+      (opt) => opt.colorName === color && opt.remainingQuantity > 0
+    );
+
+    return hasAvailableOptions ? "available" : "unavailable";
+  };
+
+  const getRamState = (ram) => {
+    if (ram == null) return "unavailable";
+
+    // Check if this RAM is currently selected
+    if (selectedRam === ram) return "selected";
+
+    // Check if this RAM has any available options with current color
+    const hasAvailableOptions = (product.option || []).some(
+      (opt) =>
+        opt.ram === ram &&
+        opt.colorName === selectedColor &&
+        opt.remainingQuantity > 0
+    );
+
+    return hasAvailableOptions ? "available" : "unavailable";
+  };
+
+  const getRomState = (rom) => {
+    if (rom == null) return "unavailable";
+
+    // Check if this ROM is currently selected
+    if (selectedRom === rom) return "selected";
+
+    // Check if this ROM has any available options with current color and RAM
+    const hasAvailableOptions = (product.option || []).some(
+      (opt) =>
+        opt.rom === rom &&
+        opt.colorName === selectedColor &&
+        opt.ram === selectedRam &&
+        opt.remainingQuantity > 0
+    );
+
+    return hasAvailableOptions ? "available" : "unavailable";
+  };
+
+  // Handle option selection
+  const handleColorSelect = (color) => {
+    if (getColorState(color) === "unavailable") return;
+
+    // Find first available option with this color
+    const availableOption = (product.option || []).find(
+      (opt) => opt.colorName === color && opt.remainingQuantity > 0
+    );
+
+    if (availableOption) {
+      setSelectedColor(color);
+      setSelectedRam(availableOption.ram);
+      setSelectedRom(availableOption.rom);
+      setSelectedOption(availableOption);
+    }
+  };
+
+  const handleRamSelect = (ram) => {
+    if (getRamState(ram) === "unavailable") return;
+
+    // Find first available option with this RAM and current color
+    const availableOption = (product.option || []).find(
+      (opt) =>
+        opt.ram === ram &&
+        opt.colorName === selectedColor &&
+        opt.remainingQuantity > 0
+    );
+
+    if (availableOption) {
+      setSelectedRam(ram);
+      setSelectedRom(availableOption.rom);
+      setSelectedOption(availableOption);
+    }
+  };
+
+  const handleRomSelect = (rom) => {
+    if (getRomState(rom) === "unavailable") return;
+
+    // Find first available option with this ROM, current color and RAM
+    const availableOption = (product.option || []).find(
+      (opt) =>
+        opt.rom === rom &&
+        opt.colorName === selectedColor &&
+        opt.ram === selectedRam &&
+        opt.remainingQuantity > 0
+    );
+
+    if (availableOption) {
+      setSelectedRom(rom);
+      setSelectedOption(availableOption);
+    }
+  };
+
+  // Function to handle add to cart
   const handleAddToCart = async () => {
     if (!selectedOption || !selectedOption.id) {
-      alert("Vui lòng chọn phiên bản sản phẩm!");
+      alert("Please select a product version!");
       return;
     }
     const userId = getUserIdFromToken();
     if (!userId) {
-      alert("Bạn cần đăng nhập để thêm vào giỏ hàng!");
+      alert("You need to login to add to cart!");
       return;
     }
     setAddCartLoading(true);
@@ -137,9 +359,9 @@ const ProductLayout = () => {
         productOptionId: selectedOption.id,
         quantity: 1,
       });
-      alert("Đã thêm sản phẩm vào giỏ hàng!");
+      alert("Product added to cart!");
     } catch (err) {
-      alert("Thêm vào giỏ hàng thất bại!");
+      alert("Failed to add to cart!");
     } finally {
       setAddCartLoading(false);
     }
@@ -167,11 +389,15 @@ const ProductLayout = () => {
     </div>
   );
 
-  // Lấy danh sách màu duy nhất chỉ với option còn hàng
+  // Get unique color list only with available options
   const colorList = Array.from(
-    new Set((product.option || []).filter(opt => opt.remainingQuantity > 0).map(opt => opt.colorName))
+    new Set(
+      (product.option || [])
+        .filter((opt) => opt.remainingQuantity > 0)
+        .map((opt) => opt.colorName)
+    )
   );
-  // Lấy danh sách option hợp lệ theo từng lựa chọn
+  // Get valid options by each selection
   const optionsByColor = (product.option || []).filter(
     (opt) => opt.colorName === selectedColor && opt.remainingQuantity > 0
   );
@@ -182,65 +408,131 @@ const ProductLayout = () => {
     selectedRom ? opt.rom === selectedRom : true
   );
 
-  // Danh sách RAM hợp lệ cho màu đang chọn và ROM đang chọn, chỉ lấy option còn hàng
-  const ramList = Array.from(new Set(optionsByColorRom.filter(opt => opt.remainingQuantity > 0).map((opt) => opt.ram)));
-  // Danh sách ROM hợp lệ cho màu đang chọn và RAM đang chọn, chỉ lấy option còn hàng
-  const romList = Array.from(new Set(optionsByColorRam.filter(opt => opt.remainingQuantity > 0).map((opt) => opt.rom)));
-
-  // Lấy tất cả giá trị RAM và ROM có trong mọi option của màu đang chọn, chỉ lấy option còn hàng
-  const allRomList = Array.from(
+  // Valid RAM list for selected color and selected ROM, only with available options
+  const ramList = Array.from(
     new Set(
-      (product.option || [])
-        .filter((opt) => opt.colorName === selectedColor && opt.remainingQuantity > 0)
+      optionsByColorRom
+        .filter((opt) => opt.remainingQuantity > 0)
+        .map((opt) => opt.ram)
+    )
+  );
+  // Valid ROM list for selected color and selected RAM, only with available options
+  const romList = Array.from(
+    new Set(
+      optionsByColorRam
+        .filter((opt) => opt.remainingQuantity > 0)
         .map((opt) => opt.rom)
     )
   );
 
-  // Hàm kiểm tra tổ hợp hợp lệ
-  const isValidOption = (ram, rom) =>
-    (product.option || []).some(
-      (opt) =>
-        opt.colorName === selectedColor &&
-        opt.ram === ram &&
-        opt.rom === rom &&
-        opt.remainingQuantity > 0
-    );
+  // Get all RAM and ROM values from all options of the selected color, only with available options
+  const allRomList = Array.from(
+    new Set(
+      (product.option || [])
+        .filter(
+          (opt) => opt.colorName === selectedColor && opt.remainingQuantity > 0
+        )
+        .map((opt) => opt.rom)
+    )
+  );
 
-  // Lấy tất cả giá trị màu, RAM, ROM có trong mọi option (không lọc theo selectedColor), chỉ lấy option còn hàng
+  // Get all color, RAM, ROM values from all options (not filtered by selectedColor), only with available options
   const allColorList = Array.from(
-    new Set((product.option || []).filter(opt => opt.remainingQuantity > 0).map((opt) => opt.colorName))
+    new Set(
+      (product.option || [])
+        .filter((opt) => opt.remainingQuantity > 0)
+        .map((opt) => opt.colorName)
+    )
   );
   const allRamList = Array.from(
-    new Set((product.option || []).filter(opt => opt.remainingQuantity > 0).map((opt) => opt.ram))
+    new Set(
+      (product.option || [])
+        .filter((opt) => opt.remainingQuantity > 0)
+        .map((opt) => opt.ram)
+    )
   );
 
-  // Hàm kiểm tra tổ hợp hợp lệ cho từng màu/ram/rom, chỉ lấy option còn hàng
-  const isValidColor = (color) =>
-    (product.option || []).some(
-      (opt) =>
-        opt.colorName === color &&
-        opt.ram === selectedRam &&
-        opt.rom === selectedRom &&
-        opt.remainingQuantity > 0
-    );
-  const isValidRam = (ram) =>
-    (product.option || []).some(
-      (opt) =>
-        opt.colorName === selectedColor &&
-        opt.ram === ram &&
-        opt.rom === selectedRom &&
-        opt.remainingQuantity > 0
-    );
-  const isValidRom = (rom) =>
-    (product.option || []).some(
-      (opt) =>
-        opt.colorName === selectedColor &&
-        opt.ram === selectedRam &&
-        opt.rom === rom &&
-        opt.remainingQuantity > 0
-    );
+  // Get full list of values for Details page
+  const detailsColorList = Array.from(
+    new Set(
+      (product?.option || [])
+        .filter((opt) => opt && opt.colorName && opt.colorName.trim() !== "")
+        .map((opt) => opt.colorName)
+    )
+  );
+  const detailsRamList = Array.from(
+    new Set(
+      (product?.option || [])
+        .filter((opt) => opt && opt.ram != null && !isNaN(opt.ram))
+        .map((opt) => opt.ram)
+    )
+  );
+  const detailsRomList = Array.from(
+    new Set(
+      (product?.option || [])
+        .filter((opt) => opt && opt.rom != null && !isNaN(opt.rom))
+        .map((opt) => opt.rom)
+    )
+  );
 
-  // Lấy màu class cho hiển thị
+  // Helper to check validity for Details page
+  const isColorValid = (color, ram = selectedRam, rom = selectedRom) => {
+    if (!product?.option) return true;
+    if (ram != null && rom != null) {
+      return product.option.some(
+        (opt) =>
+          opt && opt.colorName === color && opt.ram === ram && opt.rom === rom
+      );
+    }
+    if (ram != null) {
+      return product.option.some(
+        (opt) => opt && opt.colorName === color && opt.ram === ram
+      );
+    }
+    if (rom != null) {
+      return product.option.some(
+        (opt) => opt && opt.colorName === color && opt.rom === rom
+      );
+    }
+    return true;
+  };
+  const isRamValid = (ram, color = selectedColor, rom = selectedRom) => {
+    if (!product?.option) return true;
+    if (color != null && rom != null) {
+      return product.option.some(
+        (opt) =>
+          opt && opt.ram === ram && opt.colorName === color && opt.rom === rom
+      );
+    }
+    if (color != null) {
+      return product.option.some(
+        (opt) => opt.ram === ram && opt.colorName === color
+      );
+    }
+    if (rom != null) {
+      return product.option.some((opt) => opt.ram === ram && opt.rom === rom);
+    }
+    return true;
+  };
+  const isRomValid = (rom, color = selectedColor, ram = selectedRam) => {
+    if (!product?.option) return true;
+    if (color != null && ram != null) {
+      return product.option.some(
+        (opt) => opt.rom === rom && opt.colorName === color && opt.ram === ram
+      );
+    }
+    if (color != null) {
+      return product.option.some(
+        (opt) => opt.rom === rom && opt.colorName === color
+      );
+    }
+    if (ram != null) {
+      return product.option.some((opt) => opt.rom === rom && opt.ram === ram);
+    }
+    return true;
+  };
+
+  // Get color class for display
   const colorClass = (color) => {
     switch (color?.toLowerCase()) {
       case "black":
@@ -264,7 +556,7 @@ const ProductLayout = () => {
 
   return (
     <div className="self-stretch px-40 py-10 inline-flex justify-start items-center gap-12">
-      {/* Hình ảnh sản phẩm và các ảnh nhỏ */}
+      {/* Product image and thumbnails */}
       <div className="w-[536px] flex justify-start items-center gap-12">
         <div className="inline-flex flex-col justify-start items-center gap-6">
           <img
@@ -310,9 +602,9 @@ const ProductLayout = () => {
         />
       </div>
 
-      {/* Thông tin sản phẩm */}
+      {/* Product details */}
       <div className="flex-1 inline-flex flex-col justify-start items-start gap-4">
-        {/* Tên và giá */}
+        {/* Name and price */}
         <div className="self-stretch flex flex-col justify-start items-start gap-4">
           <div className="self-stretch flex flex-col justify-start items-start gap-4">
             <div className="self-stretch justify-start text-black text-[40px] font-bold font-['Inter'] leading-10">
@@ -328,7 +620,7 @@ const ProductLayout = () => {
               </div>
             </div>
           </div>
-          {/* Chọn màu */}
+          {/* Select color */}
           <div className="self-stretch flex flex-col justify-start items-start gap-4">
             <div className="self-stretch inline-flex justify-start items-center gap-4">
               <div className="justify-center text-neutral-950 text-[15px] font-normal font-['Inter'] leading-normal">
@@ -337,24 +629,38 @@ const ProductLayout = () => {
               <div className="flex-1 self-stretch pr-[246px] flex justify-start items-center gap-2">
                 {allColorList.length > 0 ? (
                   allColorList.map((color, idx) => {
-                    const disabled = !isValidColor(color);
+                    const state = getColorState(color);
+                    const isSelected = state === "selected";
+                    const isAvailable = state === "available";
+                    const isUnavailable = state === "unavailable";
+
                     return (
                       <button
                         key={color}
-                        className={`flex items-center gap-2 px-3 py-1 text-sm rounded-full border ${
-                          selectedColor === color
-                            ? "border-blue-500 bg-blue-50"
-                            : "border-gray-300 bg-white"
-                        } ${disabled ? "opacity-50 pointer-events-none" : ""}`}
-                        onClick={() => setSelectedColor(color)}
-                        disabled={disabled}
+                        className={`flex items-center gap-2 px-3 py-1 text-sm rounded-full border transition-all ${
+                          isSelected
+                            ? "border-blue-500 bg-blue-50 text-blue-700"
+                            : isAvailable
+                            ? "border-gray-300 bg-white hover:border-blue-300 hover:bg-blue-50"
+                            : "border-gray-200 bg-gray-100 text-gray-400 opacity-50 cursor-not-allowed"
+                        }`}
+                        onClick={() => handleColorSelect(color)}
+                        disabled={isUnavailable}
                       >
                         <div
                           className={`w-4 h-4 rounded-full ${colorClass(
                             color
-                          )}`}
+                          )} ${isUnavailable ? "opacity-50" : ""}`}
                         />
-                        <span className="text-neutral-500 text-sm font-normal font-['Inter'] leading-normal">
+                        <span
+                          className={`text-sm font-normal font-['Inter'] leading-normal ${
+                            isSelected
+                              ? "text-blue-700"
+                              : isAvailable
+                              ? "text-neutral-700"
+                              : "text-gray-400"
+                          }`}
+                        >
                           {color}
                         </span>
                       </button>
@@ -365,7 +671,7 @@ const ProductLayout = () => {
                 )}
               </div>
             </div>
-            {/* Chọn RAM và ROM trên cùng một hàng */}
+            {/* Select RAM and ROM on the same row */}
             <div className="self-stretch flex flex-row gap-8">
               {/* RAM */}
               <div className="flex flex-col gap-1">
@@ -374,19 +680,23 @@ const ProductLayout = () => {
                 </div>
                 <div className="inline-flex justify-start items-center gap-2">
                   {allRamList.map((ram, idx) => {
-                    const disabled = !isValidRam(ram);
+                    const state = getRamState(ram);
+                    const isSelected = state === "selected";
+                    const isAvailable = state === "available";
+                    const isUnavailable = state === "unavailable";
+
                     return (
                       <button
                         key={ram}
-                        className={`px-4 py-2 text-base rounded-lg border ${
-                          selectedRam === ram
+                        className={`px-4 py-2 text-base rounded-lg border transition-all ${
+                          isSelected
                             ? "border-blue-500 bg-blue-50 text-blue-600 font-bold"
-                            : "border-gray-300 bg-white text-gray-700"
-                        } flex justify-center items-center gap-2 text-xs ${
-                          disabled ? "opacity-50 pointer-events-none" : ""
-                        }`}
-                        onClick={() => setSelectedRam(ram)}
-                        disabled={disabled}
+                            : isAvailable
+                            ? "border-gray-300 bg-white text-gray-700 hover:border-blue-300 hover:bg-blue-50"
+                            : "border-gray-200 bg-gray-100 text-gray-400 opacity-50 cursor-not-allowed"
+                        } flex justify-center items-center gap-2 text-xs`}
+                        onClick={() => handleRamSelect(ram)}
+                        disabled={isUnavailable}
                       >
                         {ram}GB
                       </button>
@@ -401,19 +711,23 @@ const ProductLayout = () => {
                 </div>
                 <div className="inline-flex justify-start items-center gap-2">
                   {allRomList.map((rom, idx) => {
-                    const disabled = !isValidRom(rom);
+                    const state = getRomState(rom);
+                    const isSelected = state === "selected";
+                    const isAvailable = state === "available";
+                    const isUnavailable = state === "unavailable";
+
                     return (
                       <button
                         key={rom}
-                        className={`px-4 py-2 text-base rounded-lg border ${
-                          selectedRom === rom
+                        className={`px-4 py-2 text-base rounded-lg border transition-all ${
+                          isSelected
                             ? "border-blue-500 bg-blue-50 text-blue-600 font-bold"
-                            : "border-gray-300 bg-white text-gray-700"
-                        } flex justify-center items-center gap-2 text-xs ${
-                          disabled ? "opacity-50 pointer-events-none" : ""
-                        }`}
-                        onClick={() => setSelectedRom(rom)}
-                        disabled={disabled}
+                            : isAvailable
+                            ? "border-gray-300 bg-white text-gray-700 hover:border-blue-300 hover:bg-blue-50"
+                            : "border-gray-200 bg-gray-100 text-gray-400 opacity-50 cursor-not-allowed"
+                        } flex justify-center items-center gap-2 text-xs`}
+                        onClick={() => handleRomSelect(rom)}
+                        disabled={isUnavailable}
                       >
                         {rom}GB
                       </button>
@@ -422,7 +736,7 @@ const ProductLayout = () => {
                 </div>
               </div>
             </div>
-            {/* Thông số nhanh */}
+            {/* Quick info */}
             <div className="self-stretch inline-flex justify-start items-start gap-4 flex-wrap content-start">
               <InfoQuick
                 icon={<MdPhoneIphone className="text-2xl text-neutral-600" />}
@@ -458,9 +772,9 @@ const ProductLayout = () => {
                     : "N/A"
                 }
               />
-              {/* Ram và Rom */}
+              {/* Ram and Rom */}
             </div>
-            {/* Mô tả ngắn */}
+            {/* Short description */}
             <div className="self-stretch h-[72px] justify-start">
               <span className="text-neutral-500 text-sm font-normal font-['Inter'] leading-normal tracking-wide">
                 {product.description || "No description."}
@@ -472,15 +786,18 @@ const ProductLayout = () => {
                 <label className="mr-2 font-medium">Store:</label>
                 <select
                   value={selectedStore?.id || ""}
-                  onChange={e => {
-                    const store = product.stores.find(s => s.id === Number(e.target.value));
+                  onChange={(e) => {
+                    const store = product.stores.find(
+                      (s) => s.id === Number(e.target.value)
+                    );
                     setSelectedStore(store);
                   }}
                   className="border rounded px-2 py-1"
                 >
-                  {product.stores.map(store => (
+                  {product.stores.map((store) => (
                     <option key={store.id} value={store.id}>
-                      {store.name}{store.location ? ` - ${store.location}` : ""}
+                      {store.name}
+                      {store.location ? ` - ${store.location}` : ""}
                     </option>
                   ))}
                 </select>
@@ -491,7 +808,7 @@ const ProductLayout = () => {
                 )}
               </div>
             )}
-            {/* Nút wishlist và add to cart */}
+            {/* Wishlist and add to cart buttons */}
             <div className="self-stretch inline-flex justify-start items-start gap-4 flex-wrap content-start">
               <div className="flex-1 min-w-[136px] px-14 py-4 bg-white rounded-md outline outline-1 outline-offset-[-1px] outline-black flex justify-center items-center gap-2">
                 <div className="text-center justify-start text-black text-base font-medium font-['Inter'] leading-normal">
@@ -508,7 +825,7 @@ const ProductLayout = () => {
                 </button>
               </div>
             </div>
-            {/* Thông tin giao hàng, bảo hành */}
+            {/* Shipping and warranty info */}
             <div className="self-stretch inline-flex justify-start items-center gap-8">
               {/* Free Delivery */}
               <div className="flex-1 rounded-lg flex justify-start items-center gap-4">
@@ -552,8 +869,8 @@ const ProductLayout = () => {
                   </span>
                   <span className="text-black text-sm font-medium font-['Inter'] leading-normal">
                     {product.warranty?.duration
-                      ? `${product.warranty.duration} year`
-                      : "1 year"}
+                      ? `${product.warranty.duration} months`
+                      : "12 months"}
                   </span>
                 </div>
               </div>

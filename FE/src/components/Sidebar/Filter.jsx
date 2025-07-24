@@ -1,13 +1,42 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { MdCategory, MdMemory, MdStorage, MdBrandingWatermark, MdExpandMore, MdExpandLess, MdAttachMoney, MdClear } from 'react-icons/md';
-import { filterProducts } from '../../api/productService';
+import React, { useState, useEffect, useRef } from "react";
+import {
+  MdCategory,
+  MdMemory,
+  MdStorage,
+  MdBrandingWatermark,
+  MdExpandMore,
+  MdExpandLess,
+  MdAttachMoney,
+  MdClear,
+} from "react-icons/md";
+import { filterProducts } from "../../api/productService";
 
 const filterMenu = [
-  { label: 'Category', icon: <MdCategory className="text-lg text-gray-700" />, key: 'category' },
-  { label: 'Brand', icon: <MdBrandingWatermark className="text-lg text-gray-700" />, key: 'brand' },
-  { label: 'RAM', icon: <MdMemory className="text-lg text-gray-700" />, key: 'ram' },
-  { label: 'ROM', icon: <MdStorage className="text-lg text-gray-700" />, key: 'rom' },
-  { label: 'Price', icon: <MdAttachMoney className="text-lg text-gray-700" />, key: 'price' },
+  {
+    label: "Category",
+    icon: <MdCategory className="text-lg text-gray-700" />,
+    key: "category",
+  },
+  {
+    label: "Brand",
+    icon: <MdBrandingWatermark className="text-lg text-gray-700" />,
+    key: "brand",
+  },
+  {
+    label: "RAM",
+    icon: <MdMemory className="text-lg text-gray-700" />,
+    key: "ram",
+  },
+  {
+    label: "ROM",
+    icon: <MdStorage className="text-lg text-gray-700" />,
+    key: "rom",
+  },
+  {
+    label: "Price",
+    icon: <MdAttachMoney className="text-lg text-gray-700" />,
+    key: "price",
+  },
 ];
 
 const FilterBar = ({
@@ -18,6 +47,8 @@ const FilterBar = ({
   minPrice = 0,
   maxPrice = 5000,
   onFilterChange = () => {},
+  onDebounceChange = () => {}, // thêm prop mới
+  initialFilters = {},
 }) => {
   const optionsMap = {
     category: categories,
@@ -45,12 +76,12 @@ const FilterBar = ({
 
   // Thêm các khoảng giá nhanh
   const quickPriceRanges = [
-    { label: 'Dưới 2 triệu', value: [0, 2000000] },
-    { label: 'Từ 2 - 4 triệu', value: [2000000, 4000000] },
-    { label: 'Từ 4 - 7 triệu', value: [4000000, 7000000] },
-    { label: 'Từ 7 - 13 triệu', value: [7000000, 13000000] },
-    { label: 'Từ 13 - 20 triệu', value: [13000000, 20000000] },
-    { label: 'Trên 20 triệu', value: [20000000, maxPrice] },
+    { label: "Under 2 million", value: [0, 2000000] },
+    { label: "From 2 - 4 million", value: [2000000, 4000000] },
+    { label: "From 4 - 7 million", value: [4000000, 7000000] },
+    { label: "From 7 - 13 million", value: [7000000, 13000000] },
+    { label: "From 13 - 20 million", value: [13000000, 20000000] },
+    { label: "Over 20 million", value: [20000000, maxPrice] },
   ];
 
   // Accordion cho chọn giá tuỳ chỉnh
@@ -65,59 +96,110 @@ const FilterBar = ({
   // Thêm state lưu index option giá nhanh đang chọn, null nếu không chọn
   const [selectedQuickPriceIdx, setSelectedQuickPriceIdx] = useState(null);
 
-  // Hàm tạo object filter để gửi lên API
+  // Function to create filter object to send to API
   const createFilterObject = () => {
     const filter = {};
-    if (activeFilters.category.length > 0) filter.category = activeFilters.category;
+    if (activeFilters.category.length > 0)
+      filter.category = activeFilters.category;
     if (activeFilters.brand.length > 0) filter.brand = activeFilters.brand;
     if (activeFilters.ram.length > 0) filter.ram = activeFilters.ram;
     if (activeFilters.rom.length > 0) filter.rom = activeFilters.rom;
-    if (activeFilters.price[0] !== minPrice || activeFilters.price[1] !== maxPrice) {
+    if (
+      activeFilters.price[0] !== minPrice ||
+      activeFilters.price[1] !== maxPrice
+    ) {
       filter.minPrice = activeFilters.price[0];
       filter.maxPrice = activeFilters.price[1];
     }
     return filter;
   };
 
-  // Hàm gọi API filter
+  // Function to call filter API
   const applyFilters = async () => {
     setIsLoading(true);
     try {
       const filterObject = createFilterObject();
       onFilterChange(filterObject);
     } catch (error) {
-      console.error('Lỗi khi lọc sản phẩm:', error);
+      console.error("Error filtering products:", error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Debounce: chỉ truyền filter object ra ngoài sau 0.5s không thay đổi
+  // Debounce: only send filter object outside after 0.5s without changes
   useEffect(() => {
-    if (Object.keys(activeFilters).every(key => 
-      key === 'price' ? 
-        activeFilters[key][0] === minPrice && activeFilters[key][1] === maxPrice :
-        activeFilters[key].length === 0
-    )) {
+    if (
+      Object.keys(activeFilters).every((key) =>
+        key === "price"
+          ? activeFilters[key][0] === minPrice &&
+            activeFilters[key][1] === maxPrice
+          : activeFilters[key].length === 0
+      )
+    ) {
       onFilterChange({});
+      onDebounceChange(false);
       return;
     }
     if (debounceRef.current) clearTimeout(debounceRef.current);
+    onDebounceChange(true); // notify parent that debouncing
     debounceRef.current = setTimeout(() => {
       onFilterChange(createFilterObject());
-    }, 500);
+      onDebounceChange(false); // notify parent that debounce is done
+    }, 200);
     return () => clearTimeout(debounceRef.current);
     // eslint-disable-next-line
   }, [activeFilters]);
 
-  // Dropdown: chỉ mở 1 dropdown tại 1 thời điểm
+  // When initialFilters changes, set activeFilters (only run once when mount)
+  useEffect(() => {
+    if (initialFilters && Object.keys(initialFilters).length > 0) {
+      const newActiveFilters = {
+        category: [],
+        brand: [],
+        ram: [],
+        rom: [],
+        price: [minPrice, maxPrice],
+      };
+
+      // Process regular filters
+      ["category", "brand", "ram", "rom"].forEach((key) => {
+        if (initialFilters[key]) {
+          newActiveFilters[key] = Array.isArray(initialFilters[key])
+            ? initialFilters[key]
+            : [initialFilters[key]];
+        }
+      });
+
+      // Process price
+      if (
+        initialFilters.minPrice !== undefined ||
+        initialFilters.maxPrice !== undefined
+      ) {
+        newActiveFilters.price = [
+          initialFilters.minPrice !== undefined
+            ? Number(initialFilters.minPrice)
+            : minPrice,
+          initialFilters.maxPrice !== undefined
+            ? Number(initialFilters.maxPrice)
+            : maxPrice,
+        ];
+        setPrice(newActiveFilters.price);
+      }
+
+      setActiveFilters(newActiveFilters);
+    }
+    // eslint-disable-next-line
+  }, []); // Only run once when mount
+
+  // Dropdown: only open 1 dropdown at a time
   const handleToggleDropdown = (key) => {
     setOpenDropdown(openDropdown === key ? null : key);
   };
 
-  // Multi-select cho filter
+  // Multi-select for filter
   const handleFilterChange = (key, value) => {
-    if (key === 'price') {
+    if (key === "price") {
       setActiveFilters((prev) => ({ ...prev, price: value }));
     } else {
       setActiveFilters((prev) => {
@@ -133,11 +215,11 @@ const FilterBar = ({
     }
   };
 
-  // Sửa lại handlePriceInputChange và handlePriceChange để bỏ chọn option giá nhanh khi nhập tay hoặc kéo slider
+  // Fix handlePriceInputChange and handlePriceChange to deselect quick price option when typing or dragging slider
   const handlePriceInputChange = (e, idx) => {
-    let raw = e.target.value.replace(/[^0-9]/g, '');
+    let raw = e.target.value.replace(/[^0-9]/g, "");
     if (!raw || Number(raw) < 1000) {
-      raw = '1000';
+      raw = "1000";
     }
     setPriceInput((prev) => {
       const next = [...prev];
@@ -151,9 +233,9 @@ const FilterBar = ({
       if (idx === 0) newPrice[1] = newPrice[0];
       else newPrice[0] = newPrice[1];
     }
-    setSelectedQuickPriceIdx(null); // Bỏ chọn option giá nhanh
+    setSelectedQuickPriceIdx(null); // Deselect quick price option
     setPrice(newPrice);
-    handleFilterChange('price', newPrice);
+    handleFilterChange("price", newPrice);
   };
 
   const handlePriceChange = (e, idx) => {
@@ -163,23 +245,23 @@ const FilterBar = ({
       if (idx === 0) newPrice[1] = newPrice[0];
       else newPrice[0] = newPrice[1];
     }
-    setSelectedQuickPriceIdx(null); // Bỏ chọn option giá nhanh
+    setSelectedQuickPriceIdx(null); // Deselect quick price option
     setPrice(newPrice);
-    handleFilterChange('price', newPrice);
+    handleFilterChange("price", newPrice);
   };
 
-  // Sửa lại handleQuickPrice
+  // Fix handleQuickPrice
   const handleQuickPrice = (range, idx) => {
     setSelectedQuickPriceIdx(idx);
     setPrice(range);
     setActiveFilters((prev) => ({ ...prev, price: range }));
   };
 
-  // Khi chọn nhanh hoặc slider, đồng bộ lại input raw
+  // When selecting quick or slider, sync raw input
   useEffect(() => {
     setPriceInput([
-      price[0] ? price[0].toString() : '1000',
-      price[1] ? price[1].toString() : '1000',
+      price[0] ? price[0].toString() : "1000",
+      price[1] ? price[1].toString() : "1000",
     ]);
   }, [price[0], price[1]]);
 
@@ -194,28 +276,28 @@ const FilterBar = ({
     setPrice([minPrice, maxPrice]);
   };
 
-  // Đóng dropdown khi click ra ngoài
+  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (!event.target.closest('.filter-dropdown')) {
+      if (!event.target.closest(".filter-dropdown")) {
         setOpenDropdown(null);
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   // Render selected filters
   const renderSelectedFilters = () => {
     const selected = [];
     Object.entries(activeFilters).forEach(([key, values]) => {
-      if (key !== 'price' && values.length > 0) {
-        values.forEach(value => {
+      if (key !== "price" && values.length > 0) {
+        values.forEach((value) => {
           selected.push({ key, value });
         });
       }
     });
-    
+
     if (selected.length === 0) return null;
 
     return (
@@ -254,12 +336,14 @@ const FilterBar = ({
               <button
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-all duration-200 ${
                   openDropdown === item.key
-                    ? 'border-blue-500 bg-blue-50 text-blue-700'
-                    : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
+                    ? "border-blue-500 bg-blue-50 text-blue-700"
+                    : "border-gray-300 bg-white text-gray-700 hover:border-gray-400"
                 }`}
                 onClick={() => handleToggleDropdown(item.key)}
               >
-                <span className="flex items-center justify-center">{item.icon}</span>
+                <span className="flex items-center justify-center">
+                  {item.icon}
+                </span>
                 <span className="text-sm font-medium">{item.label}</span>
                 {openDropdown === item.key ? (
                   <MdExpandLess className="text-lg" />
@@ -271,7 +355,7 @@ const FilterBar = ({
               {/* Dropdown content */}
               {openDropdown === item.key && (
                 <div className="absolute top-full left-0 mt-1 w-80 bg-white border border-gray-200 rounded-lg shadow-lg z-50 p-4">
-                  {item.key !== 'price' ? (
+                  {item.key !== "price" ? (
                     <div className="space-y-2">
                       <div className="text-sm font-medium text-gray-700 mb-2">
                         Select {item.label}
@@ -283,8 +367,8 @@ const FilterBar = ({
                             onClick={() => handleFilterChange(item.key, opt)}
                             className={`px-3 py-1.5 text-xs rounded-full border transition-all duration-200 ${
                               activeFilters[item.key].includes(opt)
-                                ? 'bg-blue-500 text-white border-blue-500'
-                                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                                ? "bg-blue-500 text-white border-blue-500"
+                                : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
                             }`}
                           >
                             {opt}
@@ -294,8 +378,10 @@ const FilterBar = ({
                     </div>
                   ) : (
                     <div className="space-y-3">
-                      <div className="text-base font-semibold text-gray-800 mb-2">Giá</div>
-                      {/* Nút chọn nhanh khoảng giá */}
+                      <div className="text-base font-semibold text-gray-800 mb-2">
+                        Price
+                      </div>
+                      {/* Quick price range button */}
                       <div className="flex flex-wrap gap-2 mb-2">
                         {quickPriceRanges.map((range, idx) => (
                           <button
@@ -303,22 +389,22 @@ const FilterBar = ({
                             onClick={() => handleQuickPrice(range.value, idx)}
                             className={`px-3 py-1.5 text-xs rounded-full border transition-all duration-200 ${
                               selectedQuickPriceIdx === idx
-                                ? 'bg-blue-500 text-white border-blue-500'
-                                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                                ? "bg-blue-500 text-white border-blue-500"
+                                : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
                             }`}
                           >
                             {range.label}
                           </button>
                         ))}
                       </div>
-                      {/* Accordion chọn mức giá tuỳ chỉnh */}
+                      {/* Accordion for custom price */}
                       <button
                         className="flex items-center gap-1 text-blue-600 text-sm font-medium focus:outline-none mb-2"
                         onClick={() => setShowCustomPrice((v) => !v)}
                         type="button"
                       >
                         <MdAttachMoney className="inline-block" />
-                        Hoặc chọn mức giá phù hợp với bạn
+                        Or choose a price range that suits you
                         {showCustomPrice ? <MdExpandLess /> : <MdExpandMore />}
                       </button>
                       {showCustomPrice && (
@@ -329,8 +415,10 @@ const FilterBar = ({
                               inputMode="numeric"
                               min={minPrice}
                               max={price[1]}
-                              value={Number(priceInput[0]).toLocaleString('vi-VN')}
-                              onChange={e => handlePriceInputChange(e, 0)}
+                              value={Number(priceInput[0]).toLocaleString(
+                                "vi-VN"
+                              )}
+                              onChange={(e) => handlePriceInputChange(e, 0)}
                               className="w-24 border rounded px-2 py-1 text-sm text-right"
                             />
                             <span className="text-gray-500">đ</span>
@@ -340,13 +428,15 @@ const FilterBar = ({
                               inputMode="numeric"
                               min={price[0]}
                               max={maxPrice}
-                              value={Number(priceInput[1]).toLocaleString('vi-VN')}
-                              onChange={e => handlePriceInputChange(e, 1)}
+                              value={Number(priceInput[1]).toLocaleString(
+                                "vi-VN"
+                              )}
+                              onChange={(e) => handlePriceInputChange(e, 1)}
                               className="w-24 border rounded px-2 py-1 text-sm text-right"
                             />
                             <span className="text-gray-500">đ</span>
                           </div>
-                          {/* Slider giữ nguyên */}
+                          {/* Slider remains the same */}
                           <div className="flex items-center gap-2">
                             <input
                               type="range"
@@ -354,7 +444,7 @@ const FilterBar = ({
                               max={maxPrice}
                               step={100000}
                               value={price[0]}
-                              onChange={e => handlePriceChange(e, 0)}
+                              onChange={(e) => handlePriceChange(e, 0)}
                               className="w-full accent-blue-500"
                             />
                             <input
@@ -363,13 +453,13 @@ const FilterBar = ({
                               max={maxPrice}
                               step={100000}
                               value={price[1]}
-                              onChange={e => handlePriceChange(e, 1)}
+                              onChange={(e) => handlePriceChange(e, 1)}
                               className="w-full accent-blue-500"
                             />
                           </div>
                           <div className="flex justify-between text-xs text-gray-500">
-                            <span>{price[0].toLocaleString('vi-VN')}đ</span>
-                            <span>{price[1].toLocaleString('vi-VN')}đ</span>
+                            <span>{price[0].toLocaleString("vi-VN")}đ</span>
+                            <span>{price[1].toLocaleString("vi-VN")}đ</span>
                           </div>
                         </div>
                       )}
@@ -384,7 +474,7 @@ const FilterBar = ({
         {isLoading && (
           <div className="flex items-center gap-2 text-sm text-gray-600">
             <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-            Đang lọc...
+            Filtering...
           </div>
         )}
       </div>

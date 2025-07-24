@@ -16,28 +16,57 @@ const PromotionTable = ({
       <div className="divide-y divide-slate-300">
         {/* Header */}
         <div className="flex bg-neutral-50">
-          <div className="w-40 p-4 text-slate-800/90 text-sm font-medium">Tên khuyến mãi</div>
-          <div className="w-32 p-4 text-slate-800/90 text-sm font-medium">Mã</div>
-          <div className="w-32 p-4 text-slate-800/90 text-sm font-medium">Loại</div>
-          <div className="w-24 p-4 text-slate-800/90 text-sm font-medium">Giá trị</div>
-          <div className="w-32 p-4 text-slate-800/90 text-sm font-medium">Bắt đầu</div>
-          <div className="w-32 p-4 text-slate-800/90 text-sm font-medium">Kết thúc</div>
-          <div className="w-24 p-4 text-slate-800/90 text-sm font-medium">Trạng thái</div>
-          <div className="w-32 p-4 text-slate-800/90 text-sm font-medium">Thao tác</div>
+          <div className="w-40 p-4 text-slate-800/90 text-sm font-medium">
+            Tên khuyến mãi
+          </div>
+          <div className="w-32 p-4 text-slate-800/90 text-sm font-medium">
+            Mã
+          </div>
+          <div className="w-32 p-4 text-slate-800/90 text-sm font-medium">
+            Loại
+          </div>
+          <div className="w-24 p-4 text-slate-800/90 text-sm font-medium">
+            Giá trị
+          </div>
+          <div className="w-32 p-4 text-slate-800/90 text-sm font-medium">
+            Bắt đầu
+          </div>
+          <div className="w-32 p-4 text-slate-800/90 text-sm font-medium">
+            Kết thúc
+          </div>
+          <div className="w-24 p-4 text-slate-800/90 text-sm font-medium">
+            Trạng thái
+          </div>
+          <div className="w-32 p-4 text-slate-800/90 text-sm font-medium">
+            Thao tác
+          </div>
         </div>
         {/* Rows */}
         {promotions.length === 0 && (
-          <div className="p-6 text-center text-gray-400 w-full">Không có khuyến mãi nào.</div>
+          <div className="p-6 text-center text-gray-400 w-full">
+            No promotions found.
+          </div>
         )}
         {promotions.map((promo, idx) => (
-          <div key={promo.code + idx} className="flex items-center bg-white hover:bg-blue-50/50 divide-x divide-slate-300">
+          <div
+            key={promo.code + idx}
+            className="flex items-center bg-white hover:bg-blue-50/50 divide-x divide-slate-300"
+          >
             <div className="w-40 p-4 text-zinc-800 text-sm">{promo.name}</div>
             <div className="w-32 p-4 text-zinc-800 text-sm">{promo.code}</div>
             <div className="w-32 p-4 text-zinc-800 text-sm">{promo.type}</div>
             <div className="w-24 p-4 text-zinc-800 text-sm">{promo.value}</div>
-            <div className="w-32 p-4 text-zinc-800 text-sm">{promo.startDate}</div>
-            <div className="w-32 p-4 text-zinc-800 text-sm">{promo.endDate}</div>
-            <div className={`w-24 p-4 text-sm ${statusColor[promo.status] || ""}`}>{promo.status}</div>
+            <div className="w-32 p-4 text-zinc-800 text-sm">
+              {promo.startDate}
+            </div>
+            <div className="w-32 p-4 text-zinc-800 text-sm">
+              {promo.endDate}
+            </div>
+            <div
+              className={`w-24 p-4 text-sm ${statusColor[promo.status] || ""}`}
+            >
+              {promo.status}
+            </div>
             <div className="w-32 p-4 flex gap-2">
               <button
                 onClick={() => onView(promo)}

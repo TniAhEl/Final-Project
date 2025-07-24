@@ -33,7 +33,6 @@ const SignInPage = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-
   useEffect(() => {
     const handleMouseMove = (e) => {
       if (e.clientY < 80) {
@@ -54,7 +53,9 @@ const SignInPage = () => {
       >
         <Header />
       </div>
-      <div className="pt-[64px]"> {/* Để tránh che mất phần trên */}
+      <div className="pt-[64px]">
+        {" "}
+        {/* Để tránh che mất phần trên */}
         <SignInLayout>
           <SignInForm />
         </SignInLayout>

@@ -10,7 +10,7 @@ import java.time.LocalDate;
 public class UpdateInsuranceRequest {
     private String name;
     private LocalDate releaseAt;
-    private String  insured;
+    private int  insured;
     private String terms;
     private InsuranceStatus status;
     private BigDecimal coverageMoney;

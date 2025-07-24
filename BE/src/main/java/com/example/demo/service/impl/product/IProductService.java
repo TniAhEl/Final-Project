@@ -18,6 +18,8 @@ public interface IProductService {
     ProductResponse convertToResponse(Product product);
     List<ProductResponse> convertToResponses(List<Product> products);
 
+    Map<String, Object> filterAdminProducts(ProductFilterRequest filter, int page, int size);
+
     Product getProductById(Long id);
 
     Map<String, Object> filterProducts(ProductFilterRequest filter, int page, int size);

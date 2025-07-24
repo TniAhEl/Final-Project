@@ -1,15 +1,19 @@
 package com.example.demo.controller;
 
 import com.example.demo.dto.request.ProductFilterRequest;
+import com.example.demo.dto.request.orders.ReviewFilterRequest;
 import com.example.demo.dto.request.products.*;
 import com.example.demo.dto.response.ApiResponse;
+import com.example.demo.dto.response.order.ReviewResponse;
 import com.example.demo.dto.response.product.ProductOptionResponse;
 import com.example.demo.dto.response.product.ProductResponse;
 import com.example.demo.dto.response.product.ProductSerialResponse;
 import com.example.demo.exception.ResourceNotFoundException;
 import com.example.demo.model.product.Product;
 import com.example.demo.model.product.ProductOption;
+import com.example.demo.model.product.ProductReview;
 import com.example.demo.model.product.ProductSerial;
+import com.example.demo.service.impl.order.IOrderReviewService;
 import com.example.demo.service.impl.product.IProductOptionService;
 import com.example.demo.service.impl.product.IProductSerialService;
 import com.example.demo.service.impl.product.IProductService;
@@ -19,6 +23,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.parameters.P;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -35,6 +40,7 @@ public class ProductController {
     private final IProductOptionService productOptionService;
     private final IProductSerialService productSerialService;
     private final IStoreService storeService;
+    private final IOrderReviewService orderReviewService;
 
     @GetMapping("/product/{id}")
     public ResponseEntity<ApiResponse> getProductById(@PathVariable Long id){
@@ -54,6 +60,17 @@ public class ProductController {
             @RequestParam(defaultValue = "10") int size
     ) {
         Map<String, Object> result = productService.filterProducts(filter, page, size);
+        return ResponseEntity.ok(result);
+    }
+
+    @PostMapping("/admin/filter")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Map<String, Object>> filterAdminProducts(
+            @RequestBody ProductFilterRequest filter,
+            @RequestParam int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        Map<String, Object> result = productService.filterAdminProducts(filter, page, size);
         return ResponseEntity.ok(result);
     }
 
@@ -144,6 +161,27 @@ public class ProductController {
     public ResponseEntity<ApiResponse> getAllBrand(){
         List<String> brand = productService.getAllBrand();
         return  ResponseEntity.ok(new ApiResponse("Get all brand success", brand));
+    }
+
+    @GetMapping("/{productId}/review/all")
+    public ResponseEntity<ApiResponse> getAllReview(@PathVariable Long productId){
+        List<ProductReview> review = orderReviewService.getAllReviewByProductId(productId);
+        List<ReviewResponse> reviewResponses = orderReviewService.convertToResponses(review);
+        return ResponseEntity.ok(new ApiResponse("Get all review success", reviewResponses));
+
+    }
+
+    @PostMapping("/all/review")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse> getAllReviews(
+            @RequestBody ReviewFilterRequest request,
+            @RequestParam int page,
+            @RequestParam int size
+
+    ){
+        Map<String, Object> response = orderReviewService.filterReviews(request, page, size);
+        return ResponseEntity.ok(new ApiResponse("success", response));
+
     }
 
 }

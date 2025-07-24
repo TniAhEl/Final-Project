@@ -34,8 +34,10 @@ public class CartProductService implements ICartProductService {
 
         if (existing.isPresent()){
             cartProduct = existing.get();
-            if(cartProduct.getQuantity()<productOption.getRemainingQuantity()||(cartProduct.getQuantity()+quantity)<productOption.getRemainingQuantity()){
-            cartProduct.setQuantity(cartProduct.getQuantity()+quantity);}
+            if(cartProduct.getQuantity()<productOption.getRemainingQuantity()||(cartProduct.getQuantity()+quantity)<=productOption.getRemainingQuantity()){
+                // calculating the total money
+                cart.setTotalMoney(cart.getTotalMoney().add(productOption.getPrice().multiply(BigDecimal.valueOf(quantity))));
+                cartProduct.setQuantity(cartProduct.getQuantity()+quantity);}
             else {
                 throw new OutOfRemainingResourceException("The remaining quantity is not enough!");
             }
@@ -43,8 +45,9 @@ public class CartProductService implements ICartProductService {
             cartProduct = new CartProduct();
             cartProduct.setCart(cart);
             cartProduct.setProductOption(productOption);
-            if(quantity<productOption.getRemainingQuantity()){
-            cartProduct.setQuantity(quantity);}
+            if(quantity<=productOption.getRemainingQuantity()){
+                cart.setTotalMoney(productOption.getPrice().multiply(BigDecimal.valueOf(quantity)));
+                cartProduct.setQuantity(quantity);}
             else {
                 throw new OutOfRemainingResourceException("The remaining quantity is not enough!");
             }
@@ -52,7 +55,7 @@ public class CartProductService implements ICartProductService {
 
 
         cart.setUpdateAt(LocalDateTime.now());
-        cart.setTotalMoney(productOption.getPrice().multiply(BigDecimal.valueOf(quantity+cartProduct.getQuantity())));
+       // cart.setTotalMoney(productOption.getPrice().multiply(BigDecimal.valueOf(cartProduct.getQuantity())));
         cartRepository.save(cart);
         cartProductRepository.save(cartProduct);
     }
@@ -61,6 +64,9 @@ public class CartProductService implements ICartProductService {
     public void removeProductFromCart(Long userId, Long productOptionId) {
         CartProduct cartProduct = cartProductRepository.findByCart_User_IdAndProductOption_Id(userId, productOptionId)
                 .orElseThrow(()-> new ResourceNotFoundException("Product not found in cart!"));
+        Cart cart = cartRepository.findByUserId(userId);
+        cart.setTotalMoney(cart.getTotalMoney().subtract(cartProduct.getProductOption().getPrice().multiply(BigDecimal.valueOf(cartProduct.getQuantity()))));
+        cartRepository.save(cart);
         cartProductRepository.delete(cartProduct);
     }
 
@@ -70,11 +76,21 @@ public class CartProductService implements ICartProductService {
                 .orElseThrow(()->new ResourceNotFoundException("Product not found in cart!"));
         ProductOption productOption = productOptionService.getOptionById(productOptionId);
         if(quantity > 0 && quantity <= productOption.getRemainingQuantity()){
-        cartProduct.setQuantity(quantity);}
+            Cart cart = cartRepository.findByUserId(userId);
+            cart.setTotalMoney(cart.getTotalMoney().add(productOption.getPrice().multiply(BigDecimal.valueOf(quantity)).subtract(productOption.getPrice().multiply(BigDecimal.valueOf(cartProduct.getQuantity())))));
+            cartProduct.setQuantity(quantity);
+            cartProductRepository.save(cartProduct);
+        }
+        else if(quantity == 0){
+            Cart cart = cartRepository.findByUserId(userId);
+            cart.setTotalMoney(cart.getTotalMoney().add(productOption.getPrice().multiply(BigDecimal.valueOf(quantity)).subtract(productOption.getPrice().multiply(BigDecimal.valueOf(cartProduct.getQuantity())))));
+            cartProductRepository.delete(cartProduct);
+
+        }
         else {
             throw new OutOfRemainingResourceException("The remaining quantity is not enough!");
         }
-        cartProductRepository.save(cartProduct);
+
     }
 
     @Override

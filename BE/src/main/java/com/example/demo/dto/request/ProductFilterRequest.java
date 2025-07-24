@@ -16,4 +16,6 @@ public class ProductFilterRequest {
     private List<Integer> battery;
     private List<String> os;
     private List<String> screenResolution;
+    private Boolean sortByNewest;
+
 }
