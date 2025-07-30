@@ -1,6 +1,8 @@
 package com.example.demo.config;
 
 import com.example.demo.security.JwtAuthenticationFilter;
+import com.example.demo.service.impl.auth.CustomOAuth2UserService;
+import com.example.demo.service.impl.auth.OAuth2LoginSuccessHandler;
 import com.example.demo.service.impl.auth.CustomUserDetailsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -33,6 +35,12 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
+    @Autowired
+    private CustomOAuth2UserService customOAuth2UserService;
+
+    @Autowired
+    private OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
+
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config)
             throws Exception {
@@ -54,10 +62,16 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/warranties/add/**").hasRole("ADMIN")
                         .requestMatchers("/api/v1/warranties/update/**").hasRole("ADMIN")
                         .requestMatchers("/api/v1/warranties/delete/**").hasRole("ADMIN")
+//                        .requestMatchers("/oauth2/**", "/login/oauth2/**").permitAll()
                         .anyRequest().permitAll()
                 )
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
+                .oauth2Login(oauth2 -> oauth2
+                        .userInfoEndpoint(userInfo -> userInfo
+                                .userService(customOAuth2UserService))
+                        .successHandler(oAuth2LoginSuccessHandler)
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 

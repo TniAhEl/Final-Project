@@ -1,25 +1,112 @@
 import React, { useEffect, useState } from "react";
-import { fetchCustomerOrders } from "../../../api/orderService";
+import {
+  fetchCustomerOrders,
+  getOrderById,
+  updateCustomerOrderStatus,
+} from "../../../api/orderService";
 import { submitProductReview } from "../../../api/orderService";
 import { useNavigate } from "react-router-dom";
 import CustomerOrderFilter from "./CustomerOrderFilter";
 import ReviewPopup from "../../PopUp/Review";
 
+// Cancel Order Popup Component
+const CancelOrderPopup = ({ open, onClose, order, onConfirm }) => {
+  if (!open || !order) return null;
+
+  return (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center">
+      {/* Overlay */}
+      <div
+        className="absolute inset-0 bg-opacity-50 backdrop-blur-sm transition-opacity duration-300"
+        onClick={onClose}
+      ></div>
+      {/* Popup */}
+      <div
+        className="relative bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md mx-4 border border-slate-200"
+        style={{ zIndex: 10000 }}
+      >
+        <button
+          className="absolute top-3 right-3 text-gray-400 hover:text-red-500 text-2xl font-bold transition-colors duration-200 focus:outline-none"
+          onClick={onClose}
+          title="Close"
+        >
+          &times;
+        </button>
+
+        <div className="text-center">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg
+              className="w-8 h-8 text-red-500"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
+              />
+            </svg>
+          </div>
+
+          <h3 className="text-lg font-bold text-gray-900 mb-2">
+            Confirm Order Cancellation
+          </h3>
+
+          <div className="text-gray-600 mb-6">
+            <p>
+              Are you sure you want to cancel order{" "}
+              <span className="font-semibold">#{order.id}</span>?
+            </p>
+            <p className="text-sm text-red-500">
+              This action cannot be undone.
+            </p>
+            {order.status === "PENDING" && (
+              <p className="text-sm text-green-600 font-medium">
+                ✅ This order will be successfully canceled.
+              </p>
+            )}
+          </div>
+
+          <div className="flex gap-3 justify-center">
+            <button
+              onClick={onClose}
+              className="px-6 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 font-medium transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => {
+                onConfirm(order);
+                onClose();
+              }}
+              className="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 font-medium transition-colors"
+            >
+              Confirm Cancellation
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const statusColor = {
   Processing: "text-green-500",
   Deferred: "text-red-500 font-bold",
   Paused: "text-neutral-600",
+  CANCELLED: "text-red-500 font-bold",
+  PENDING: "text-yellow-600 font-medium",
 };
 
 const defaultColumns = [
   { key: "id", label: "Order #", width: "w-20" },
   { key: "type", label: "Type", width: "w-20" },
   { key: "status", label: "Status", width: "w-24" },
-  { key: "promotionCode", label: "Promotion Code", width: "w-32" },
   { key: "shippingAddress", label: "Address", width: "w-64" },
   { key: "createAt", label: "Date", width: "w-24" },
   { key: "totalMoney", label: "Total", width: "w-28" },
-  { key: "productCount", label: "Items", width: "w-16" },
 ];
 
 const OrderTable = ({
@@ -27,6 +114,7 @@ const OrderTable = ({
   columns = defaultColumns,
   onView = () => {},
   onDelete = () => {},
+  onCancel = () => {},
   showActions = true,
   compact = true,
 }) => {
@@ -49,7 +137,7 @@ const OrderTable = ({
           ))}
           {showActions && (
             <div
-              className={`w-20 ${compact ? "p-3" : "p-6"} text-slate-800/90 ${
+              className={`w-32 ${compact ? "p-3" : "p-6"} text-slate-800/90 ${
                 compact ? "text-xs" : "text-sm"
               } font-medium`}
             >
@@ -61,7 +149,8 @@ const OrderTable = ({
         {orders.map((order, idx) => (
           <div
             key={(order.id || order.number) + idx}
-            className="flex items-center bg-white hover:bg-blue-50/50 divide-x divide-slate-300"
+            className="flex items-center bg-white hover:bg-blue-50/50 divide-x divide-slate-300 cursor-pointer"
+            onClick={() => onView(order)}
           >
             {columns.map((col) => (
               <div
@@ -110,21 +199,6 @@ const OrderTable = ({
                   >
                     {order.shippingAddress}
                   </span>
-                ) : col.key === "productCount" ? (
-                  <span
-                    className={`${
-                      compact ? "text-xs" : "text-sm"
-                    } font-medium text-blue-600`}
-                  >
-                    {order.orderProducts ? order.orderProducts.length : 0}
-                  </span>
-                ) : col.key === "promotionCode" ? (
-                  <span
-                    className={`${compact ? "text-xs" : "text-sm"} truncate`}
-                    title={order.promotionResponse?.promotionInfo?.code || "-"}
-                  >
-                    {order.promotionResponse?.promotionInfo?.code || "-"}
-                  </span>
                 ) : (
                   <span
                     className={`${compact ? "text-xs" : "text-sm"} truncate`}
@@ -136,7 +210,10 @@ const OrderTable = ({
               </div>
             ))}
             {showActions && (
-              <div className={`w-20 ${compact ? "p-3" : "p-6"} flex gap-1`}>
+              <div
+                className={`w-32 ${compact ? "p-3" : "p-6"} flex gap-1`}
+                onClick={(e) => e.stopPropagation()}
+              >
                 <button
                   onClick={() => onView(order)}
                   className={`${
@@ -146,15 +223,17 @@ const OrderTable = ({
                 >
                   {compact ? "V" : "View"}
                 </button>
-                <button
-                  onClick={() => onDelete(order)}
-                  className={`${
-                    compact ? "px-2 py-1 text-xs" : "px-3 py-1 text-xs"
-                  } rounded bg-red-500 text-white hover:bg-red-600 font-medium`}
-                  title="Delete Order"
-                >
-                  {compact ? "D" : "Delete"}
-                </button>
+                {order.status === "PENDING" && (
+                  <button
+                    onClick={() => onCancel(order)}
+                    className={`${
+                      compact ? "px-2 py-1 text-xs" : "px-3 py-1 text-xs"
+                    } rounded bg-orange-500 text-white hover:bg-orange-600 font-medium`}
+                    title="Cancel Order"
+                  >
+                    {compact ? "C" : "Cancel"}
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -179,19 +258,48 @@ const CustomerOrderPage = () => {
   const [error, setError] = useState(null);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [page, setPage] = useState(0);
-  const [size, setSize] = useState(10);
+  const [size, setSize] = useState(20);
   const [totalPages, setTotalPages] = useState(1);
   const [filter, setFilter] = useState({});
   const navigate = useNavigate();
   const [reviewProduct, setReviewProduct] = useState(null);
   const [reviewOpen, setReviewOpen] = useState(false);
+  const [cancelOrderPopup, setCancelOrderPopup] = useState({
+    open: false,
+    order: null,
+  });
+
+  // Handle cancel order
+  const handleCancelOrder = async (order) => {
+    setCancelOrderPopup({ open: true, order: order });
+  };
+
+  const handleConfirmCancelOrder = async (order) => {
+    try {
+      await updateCustomerOrderStatus(order.id, "CANCELLED");
+      // Refresh orders list
+      const userId = localStorage.getItem("userId");
+      const data = await fetchCustomerOrders(userId, page, size, filter);
+      setOrders(data.content || []);
+      // Close modal if it's open
+      if (selectedOrder && selectedOrder.id === order.id) {
+        setSelectedOrder(null);
+      }
+      // Close popup
+      setCancelOrderPopup({ open: false, order: null });
+      alert("This order has been successfully canceled!");
+    } catch (error) {
+      console.error("Error cancelling order:", error);
+      alert("An error occurred while canceling the order!");
+    }
+  };
 
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       setError(null);
       try {
-        // Lấy userId từ localStorage
+        // Get userId from localStorage
         const userId = localStorage.getItem("userId");
         if (!userId) {
           setError("User ID not found in localStorage.");
@@ -199,6 +307,7 @@ const CustomerOrderPage = () => {
           return;
         }
         const data = await fetchCustomerOrders(userId, page, size, filter);
+        console.log(data);
         setOrders(data.content || []);
         setTotalPages(data.totalPages || 1);
       } catch (err) {
@@ -211,7 +320,17 @@ const CustomerOrderPage = () => {
   }, [filter, page, size]);
 
   const handleView = (order) => {
-    setSelectedOrder(order);
+    const fetchOrderDetail = async () => {
+      try {
+        const orderDetail = await getOrderById(order.id);
+        setSelectedOrder(orderDetail);
+      } catch (error) {
+        console.error("Error fetching order detail:", error);
+        // Fallback to using order from list if API fails
+        setSelectedOrder(order);
+      }
+    };
+    fetchOrderDetail();
   };
 
   const handleCloseModal = () => {
@@ -229,17 +348,21 @@ const CustomerOrderPage = () => {
         <div className="text-red-500">
           {error
             .replace(
-              "Không thể tải danh sách đơn hàng.",
+              "Could not load orders.",
               "Could not load orders."
             )
             .replace(
-              "Không tìm thấy userId trong localStorage.",
+              "User ID not found in localStorage.",
               "User ID not found in localStorage."
             )}
         </div>
       ) : (
         <>
-          <OrderTable orders={orders} onView={handleView} />
+          <OrderTable
+            orders={orders}
+            onView={handleView}
+            onCancel={handleCancelOrder}
+          />
           {/* Pagination */}
           <div className="flex flex-wrap justify-center items-center gap-2 mt-6 select-none">
             <button
@@ -258,7 +381,7 @@ const CustomerOrderPage = () => {
             >
               &#8249;
             </button>
-            {/* Hiển thị dãy số trang */}
+            {/* Page numbers */}
             {Array.from({ length: totalPages }, (_, i) => i)
               .filter(
                 (i) =>
@@ -309,7 +432,7 @@ const CustomerOrderPage = () => {
                 }}
                 className="px-2 py-1 border rounded text-sm"
               >
-                {[5, 10, 20, 50].map((opt) => (
+                {[20, 50].map((opt) => (
                   <option key={opt} value={opt}>
                     {opt}
                   </option>
@@ -320,7 +443,7 @@ const CustomerOrderPage = () => {
         </>
       )}
 
-      {/* Modal hiển thị chi tiết đơn hàng */}
+      {/* Modal for order details */}
       {selectedOrder && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           {/* Overlay */}
@@ -340,9 +463,19 @@ const CustomerOrderPage = () => {
             >
               &times;
             </button>
-            <h2 className="text-xl font-bold mb-4 text-blue-700">
-              Order Details #{selectedOrder.id || selectedOrder.number}
-            </h2>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold text-blue-700">
+                Order Details #{selectedOrder.id || selectedOrder.number}
+              </h2>
+              {selectedOrder.status === "PENDING" && (
+                <button
+                  onClick={() => handleCancelOrder(selectedOrder)}
+                  className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 font-medium text-sm"
+                >
+                  Cancel Order
+                </button>
+              )}
+            </div>
             {/* User Info */}
             <div className="mb-4 p-4 rounded bg-blue-50 border border-blue-100">
               <h3 className="font-semibold text-blue-800 mb-2 text-base">
@@ -575,9 +708,16 @@ const CustomerOrderPage = () => {
           const userId = localStorage.getItem("userId");
           const orderProductId = reviewProduct?.id;
           if (!userId || !orderProductId)
-            throw new Error("Thiếu thông tin đánh giá");
+            throw new Error("Missing information to submit review");
           await submitProductReview({ orderProductId, userId, rating, review });
         }}
+      />
+      {/* Cancel Order Popup */}
+      <CancelOrderPopup
+        open={cancelOrderPopup.open}
+        onClose={() => setCancelOrderPopup({ open: false, order: null })}
+        order={cancelOrderPopup.order}
+        onConfirm={handleConfirmCancelOrder}
       />
     </div>
   );

@@ -39,10 +39,27 @@ const ViewAllOptions = ({ product, onClose, onAddSerial }) => {
       setError("");
       setSuccess("");
 
+      // Fix triệt để: lấy id từ option nếu đang null/undefined
+      let optionId = selectedOptionForSerial?.id;
+      if ((optionId === null || optionId === undefined) && product && Array.isArray(product.option)) {
+        const found = product.option.find(
+          (opt) => JSON.stringify(opt) === JSON.stringify(selectedOptionForSerial)
+        );
+        if (found && found.id !== undefined && found.id !== null) {
+          optionId = found.id;
+        }
+      }
+      const validId = optionId !== undefined && optionId !== null && optionId !== '';
+      if (!validId) {
+        setError("No valid product option selected for serial.");
+        setLoading(false);
+        return;
+      }
+
       // Prepare data for API
       const apiData = {
         serialNumber: serialData.serialNumber,
-        productOptionId: selectedOptionForSerial.id.toString(),
+        productOptionId: String(optionId),
       };
 
       console.log("Sending serial data to API:", apiData);
@@ -167,12 +184,12 @@ const ViewAllOptions = ({ product, onClose, onAddSerial }) => {
     }
   }, [product.option]);
 
-  // Lấy danh sách store khi mở form update serial
+  // get all stores when update serial form is shown
   useEffect(() => {
     if (showUpdateSerialForm) {
       getAllStores()
         .then((data) => {
-          // Nếu API trả về object có thuộc tính data là mảng
+          // If API returns an object with a data property that is an array
           if (data && Array.isArray(data.data)) {
             setStores(data.data);
           } else if (Array.isArray(data)) {
@@ -288,7 +305,7 @@ const ViewAllOptions = ({ product, onClose, onAddSerial }) => {
           <div className="bg-white rounded-lg w-full max-w-md shadow-lg">
             <div className="flex justify-between items-center p-6 border-b border-gray-200">
               <h2 className="text-xl font-semibold text-gray-800">
-                Cập nhật Serial
+                Update Serial
               </h2>
               <button
                 onClick={handleCloseUpdateSerialForm}
@@ -391,7 +408,7 @@ const OptionCard = ({
             onClick={() => setShowSerials(!showSerials)}
             className="flex-1 px-3 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors text-sm font-medium"
           >
-            {showSerials ? "Ẩn Serials" : "View Serials"}
+            {showSerials ? "Disable Serials" : "View Serials"}
           </button>
           <button
             onClick={() => onAddSerial(option)}
@@ -719,7 +736,7 @@ const UpdateSerialForm = ({
           disabled={loading}
         />
       </div>
-      {/* Store chọn từ danh sách */}
+      {/* Store from list */}
       <div>
         <label
           htmlFor="storeId"

@@ -13,8 +13,9 @@ import InsuranceTable from "../components/Table/Customer/Insurance";
 import CartTable from "../components/Table/Customer/Cart";
 import CheckOut from "../components/Form/User/Checkout";
 import OrderCheckout from "../pages/Order/Checkout";
+import ComparePage from "../pages/Product/Compare";
 
-// Import các trang con cho admin
+// Import admin page
 import Dashboard from "../layouts/DashBoard";
 import UserManagement from "../components/Table/Admin/User";
 import ProductManagement from "../components/Table/Admin/Product";
@@ -26,9 +27,12 @@ import ReviewAdminTable from "../components/Table/Admin/Review";
 
 import PageNotFound from "../pages/Exception/404";
 import AboutUs from "../pages/Home/AboutUs";
+import Jobs from "../pages/Home/Jobs";
+import TermsOfService from "../pages/Home/TermsOfService";
+import PrivacyPolicy from "../pages/Home/PrivacyPolicy";
 import CustomerDashboard from "../layouts/CustomerDashboard";
 
-// import các trang con khác nếu cần
+
 
 const AppRoutes = () => (
   <Routes>
@@ -38,8 +42,9 @@ const AppRoutes = () => (
     <Route path="/signup" element={<PageSignUp />} />
     <Route path="/signin" element={<PageSignIn />} />
     <Route path="/order/checkout" element={<OrderCheckout />} />
+    <Route path="/compare" element={<ComparePage />} />
 
-    {/* Route lồng nhau cho customer */}
+    {/* Route nested for customer */}
     <Route path="/customer" element={<CustomerLayout />}>
       <Route index element={<Orders />} />
       <Route path="orders" element={<Orders />} />
@@ -49,10 +54,9 @@ const AppRoutes = () => (
       <Route path="insurance" element={<InsuranceTable />} />
       <Route path="checkout" element={<CheckOut />} />
       <Route path="dashboard" element={<CustomerDashboard />} />
-      {/* Thêm các route con khác nếu muốn */}
     </Route>
 
-    {/* Route lồng nhau cho admin */}
+    {/* Route nested for admin */}
     <Route path="/admin" element={<AdminLayout />}>
       <Route index element={<Dashboard />} />
       <Route path="dashboard" element={<Dashboard />} />
@@ -66,6 +70,9 @@ const AppRoutes = () => (
     </Route>
 
     <Route path="/about-us" element={<AboutUs />} />
+    <Route path="/jobs" element={<Jobs />} />
+    <Route path="/terms" element={<TermsOfService  />} />
+    <Route path="/privacy-policy" element={<PrivacyPolicy />} />
     <Route path="*" element={<PageNotFound />} />
   </Routes>
 );

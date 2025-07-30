@@ -4,9 +4,15 @@ import HeaderAuth from "../../components/Header/HeaderAuth";
 import Footer from "../../components/Footer/Footer";
 import ProductLayout from "../../layouts/ProductLayout";
 import ProductReviewSummary from "../../components/Card/ProductReviewSummary";
+import CompareSidebar from "../../components/Sidebar/Compare";
 import { getProductReviews } from "../../api/orderService";
-
 import { getProductById } from "../../api/productService";
+import { 
+  addToLocalCart, 
+  isAuthenticated, 
+  getLocalCartItemCount 
+} from "../../services/localCartService";
+import { addProductToCart } from "../../api/cartService";
 
 const Details = () => {
   const { id } = useParams();
@@ -22,6 +28,11 @@ const Details = () => {
     ratingCounts: {},
     reviews: [],
   });
+  
+  // Cart state
+  const [cartItemCount, setCartItemCount] = useState(0);
+  const [addToCartLoading, setAddToCartLoading] = useState(false);
+  const [addToCartMessage, setAddToCartMessage] = useState("");
 
   useEffect(() => {
     setLoading(true);
@@ -40,7 +51,7 @@ const Details = () => {
         }
         setProduct(prod);
         setLoading(false);
-        // Lấy review thật
+        // Get real reviews
         if (prod && prod.id) {
           getProductReviews(prod.id)
             .then((res) => {
@@ -92,6 +103,52 @@ const Details = () => {
   // Callback to receive selected option from ProductLayout
   const handleOptionChange = (option) => {
     setSelectedOption(option);
+  };
+
+  // Update cart item count
+  useEffect(() => {
+    setCartItemCount(getLocalCartItemCount());
+  }, []);
+
+  // Handle add to cart
+  const handleAddToCart = async (quantity = 1) => {
+    if (!selectedOption || !selectedOption.id) {
+      setAddToCartMessage("Please select a product version!");
+      return;
+    }
+
+    setAddToCartLoading(true);
+    setAddToCartMessage("");
+
+    try {
+      if (isAuthenticated()) {
+        // User is logged in - add to server cart
+        const userId = localStorage.getItem('userId');
+        await addProductToCart(userId, {
+          productOptionId: selectedOption.id,
+          quantity: quantity
+        });
+        setAddToCartMessage("Product added to cart!");
+      } else {
+        // User is not logged in - add to local cart
+        addToLocalCart({
+          productOptionId: selectedOption.id,
+          quantity: quantity,
+          name: product.name,
+          price: selectedOption.price,
+          image: product.image || 'https://placehold.co/80x80'
+        });
+        setAddToCartMessage("Product added to temporary cart!");
+        setCartItemCount(getLocalCartItemCount());
+      }
+    } catch (error) {
+      console.error('Error adding to cart:', error);
+      setAddToCartMessage("An error occurred while adding to cart!");
+    } finally {
+      setAddToCartLoading(false);
+      // Clear message after 3 seconds
+      setTimeout(() => setAddToCartMessage(""), 3000);
+    }
   };
 
   if (loading)
@@ -151,6 +208,10 @@ const Details = () => {
       <ProductLayout
         productData={product}
         onOptionChange={handleOptionChange}
+        onAddToCart={handleAddToCart}
+        addToCartLoading={addToCartLoading}
+        addToCartMessage={addToCartMessage}
+        cartItemCount={cartItemCount}
       />
       <div className="flex-1 max-w-7xl mx-auto py-8 px-4 flex flex-col md:flex-row gap-8">
         {/* Left: Product Info */}
@@ -293,6 +354,9 @@ const Details = () => {
         </div>
       </div>
       <Footer />
+      
+      {/* Compare Sidebar */}
+      <CompareSidebar />
     </div>
   );
 };

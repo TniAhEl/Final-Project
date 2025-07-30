@@ -19,7 +19,7 @@ const SignUpForm = () => {
     try {
       await registerCustomer(form);
       alert("Sign up successfully");
-      navigate("/");
+      navigate("/signin");
     } catch (error) {
       alert("Sign up failed");
     }

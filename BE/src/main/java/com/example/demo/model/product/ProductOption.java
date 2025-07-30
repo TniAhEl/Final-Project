@@ -32,7 +32,6 @@ public class ProductOption {
     private int ram;
     @Column(name = "rom")
     private int rom;
-
     @Column(name = "remaining_quantity")
     private int remainingQuantity;
 

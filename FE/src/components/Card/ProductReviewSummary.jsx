@@ -5,10 +5,10 @@ import ReviewCard from "./Review";
 /**
  * ProductReviewSummary component
  * @param {Object} props
- * @param {number} props.avgRating - Điểm trung bình
- * @param {number} props.total - Tổng số đánh giá
- * @param {Object} props.ratingCounts - Số lượng đánh giá theo từng mức sao (ví dụ: {5: 10, 4: 3, ...})
- * @param {Array} props.reviews - Danh sách review (mỗi phần tử là object truyền cho ReviewCard)
+ * @param {number} props.avgRating - Average rating
+ * @param {number} props.total - Total reviews
+ * @param {Object} props.ratingCounts - Number of reviews by star rating (e.g., {5: 10, 4: 3, ...})
+ * @param {Array} props.reviews - List of reviews (each element is an object passed to ReviewCard)
  */
 const ProductReviewSummary = ({
   avgRating = 0,
@@ -18,7 +18,7 @@ const ProductReviewSummary = ({
 }) => {
   return (
     <div className="w-full  mx-auto bg-white rounded shadow p-6 flex flex-col gap-6">
-      {/* Tổng quan điểm trung bình và tổng số đánh giá */}
+      {/* Overview */}
       <div className="flex flex-col md:flex-row md:items-center gap-6">
         <div className="flex flex-col items-center md:w-1/3">
           <div className="text-4xl font-bold text-yellow-500">
@@ -40,7 +40,7 @@ const ProductReviewSummary = ({
             Trung bình trên {total} đánh giá
           </div>
         </div>
-        {/* Biểu đồ số lượng đánh giá theo từng mức sao */}
+        {/* Chart of review counts by star rating */}
         <div className="flex-1 flex flex-col gap-1">
           {[5, 4, 3, 2, 1].map((star) => (
             <div key={star} className="flex items-center gap-2">
@@ -64,11 +64,11 @@ const ProductReviewSummary = ({
           ))}
         </div>
       </div>
-      {/* Danh sách review card */}
+      {/* List of review cards */}
       <div className="flex flex-col gap-4">
         {reviews.length === 0 ? (
           <div className="text-gray-400 text-center">
-            Chưa có đánh giá nào cho sản phẩm này.
+            No reviews for this product yet.
           </div>
         ) : (
           reviews.map((r, idx) => (
@@ -77,7 +77,7 @@ const ProductReviewSummary = ({
                 {r.reviewer}
               </div>
               <ReviewCard {...r} />
-              {/* Hiển thị reply nếu có */}
+              {/* Show reply if exists */}
               {r.reply && r.reply.reply && (
                 <div className="mt-2 ml-4 p-3 bg-gray-50 border-l-4 border-blue-300 rounded">
                   <div className="flex items-center gap-2 mb-1">

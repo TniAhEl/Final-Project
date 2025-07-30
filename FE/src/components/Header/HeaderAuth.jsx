@@ -40,6 +40,8 @@ const HeaderAuth = () => {
 
   const handleLogout = () => {
     localStorage.removeItem("token");
+    localStorage.removeItem("role");
+    localStorage.removeItem("userId");
     navigate("/signin");
   };
 
@@ -156,7 +158,7 @@ const HeaderAuth = () => {
         </div>
       </header>
 
-      {/* Overlay mờ khi mở sidebar */}
+      {/* Overlay when cart is open */}
       {openCart && (
         <div
           className="fixed inset-0 z-40"

@@ -22,6 +22,9 @@ public class CartProduct {
     @Column(name = "quantity")
     private int quantity;
 
+    @Transient
+    private int availableQuantity;
+
     @ManyToOne
     @JoinColumn(name = "product_option_id")
     private ProductOption productOption;

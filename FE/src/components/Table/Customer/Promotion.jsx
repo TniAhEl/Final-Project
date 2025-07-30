@@ -17,28 +17,28 @@ const PromotionTable = ({
         {/* Header */}
         <div className="flex bg-neutral-50">
           <div className="w-40 p-4 text-slate-800/90 text-sm font-medium">
-            Tên khuyến mãi
+            Name
           </div>
           <div className="w-32 p-4 text-slate-800/90 text-sm font-medium">
-            Mã
+            Code
           </div>
           <div className="w-32 p-4 text-slate-800/90 text-sm font-medium">
-            Loại
+            Type
           </div>
           <div className="w-24 p-4 text-slate-800/90 text-sm font-medium">
-            Giá trị
+            Value
           </div>
           <div className="w-32 p-4 text-slate-800/90 text-sm font-medium">
-            Bắt đầu
+            Start Date
           </div>
           <div className="w-32 p-4 text-slate-800/90 text-sm font-medium">
-            Kết thúc
+            End Date
           </div>
           <div className="w-24 p-4 text-slate-800/90 text-sm font-medium">
-            Trạng thái
+            Status
           </div>
           <div className="w-32 p-4 text-slate-800/90 text-sm font-medium">
-            Thao tác
+            Actions
           </div>
         </div>
         {/* Rows */}

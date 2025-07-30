@@ -12,7 +12,7 @@ const WarrantyTable = ({ onDelete = () => {} }) => {
   const [loading, setLoading] = useState(true);
   const [selectedWarrantyId, setSelectedWarrantyId] = useState(null);
 
-  // Lấy userId từ localStorage
+  // Get userId from localStorage
   const userId = localStorage.getItem("userId");
 
   useEffect(() => {
@@ -41,25 +41,25 @@ const WarrantyTable = ({ onDelete = () => {} }) => {
             Serial
           </div>
           <div className="w-40 p-4 text-slate-800/90 text-sm font-medium">
-            Sản phẩm
+            Product
           </div>
           <div className="w-32 p-4 text-slate-800/90 text-sm font-medium">
-            Ngày bắt đầu
+            Start Date
           </div>
           <div className="w-32 p-4 text-slate-800/90 text-sm font-medium">
-            Ngày kết thúc
+            End Date
           </div>
           <div className="w-24 p-4 text-slate-800/90 text-sm font-medium">
-            Trạng thái
+            Status
           </div>
           <div className="w-32 p-4 text-slate-800/90 text-sm font-medium">
-            Thao tác
+            Actions
           </div>
         </div>
         {/* Rows */}
         {loading ? (
           <div className="p-6 text-center text-gray-400 w-full">
-            Đang tải...
+            Loading...
           </div>
         ) : warranties.length === 0 ? (
           <div className="p-6 text-center text-gray-400 w-full">
@@ -88,7 +88,7 @@ const WarrantyTable = ({ onDelete = () => {} }) => {
                     }
                     className="px-3 py-1 rounded bg-blue-600 text-white hover:bg-blue-700 text-xs font-medium"
                   >
-                    {selectedWarrantyId === item.warrantyId ? "Đóng" : "Xem"}
+                    {selectedWarrantyId === item.warrantyId ? "Close" : "View"}
                   </button>
                   <button
                     onClick={() => onDelete(item)}
@@ -98,29 +98,29 @@ const WarrantyTable = ({ onDelete = () => {} }) => {
                   </button>
                 </div>
               </div>
-              {/* Chi tiết bảo hành đổ xuống */}
+              {/* Warranty details expand */}
               {selectedWarrantyId === item.warrantyId && item.warrantyPolicy && (
                 <div
                   className="bg-gray-50 border-l-4 border-blue-400 p-6 text-sm"
                   style={{ gridColumn: "1 / -1" }}
                 >
                   <div className="mb-2">
-                    <span className="font-medium">Thời hạn:</span> {item.warrantyPolicy.duration} tháng
+                    <span className="font-medium">Expired time:</span> {item.warrantyPolicy.duration} months
                   </div>
                   <div className="mb-2">
-                    <span className="font-medium">Điều kiện:</span> {item.warrantyPolicy.condition}
+                    <span className="font-medium">Condition:</span> {item.warrantyPolicy.condition}
                   </div>
                   <div className="mb-2">
-                    <span className="font-medium">Ngoại lệ:</span> {item.warrantyPolicy.exception}
+                    <span className="font-medium">Exception:</span> {item.warrantyPolicy.exception}
                   </div>
                   <div className="mb-2">
-                    <span className="font-medium">Ghi chú:</span> {item.warrantyPolicy.note}
+                    <span className="font-medium">Note:</span> {item.warrantyPolicy.note}
                   </div>
                   <div className="mb-2">
-                    <span className="font-medium">Tên chính sách:</span> {item.warrantyPolicy.name}
+                    <span className="font-medium">Policy Name:</span> {item.warrantyPolicy.name}
                   </div>
                   <div className="mb-2">
-                    <span className="font-medium">Cấu hình:</span> {item.optionResponse?.ram}GB RAM, {item.optionResponse?.rom}GB ROM, Màu: {item.optionResponse?.colorName}, Giá: {item.optionResponse?.price?.toLocaleString()}₫
+                    <span className="font-medium">Configuration:</span> {item.optionResponse?.ram}GB RAM, {item.optionResponse?.rom}GB ROM, Color: {item.optionResponse?.colorName}, Price: {item.optionResponse?.price?.toLocaleString()}₫
                   </div>
                 </div>
               )}

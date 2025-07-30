@@ -94,7 +94,7 @@ public class CartProductService implements ICartProductService {
     }
 
     @Override
-    public CartProduct getCartProduct(Long userId, Long productId) {
+    public CartProduct getCartProduct( Long productOptionId) {
         return null;
     }
 }

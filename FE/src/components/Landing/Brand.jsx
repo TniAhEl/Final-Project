@@ -33,7 +33,6 @@ const Brand = () => {
   useEffect(() => {
     getAllBrands()
       .then((data) => {
-        // Nếu data là mảng string, chuyển thành mảng object { name }
         if (Array.isArray(data) && typeof data[0] === "string") {
           setBrands(data.map((name) => ({ name })));
           console.log(
@@ -52,7 +51,6 @@ const Brand = () => {
   }, []);
 
   const handleBrandClick = (brandName) => {
-    // Chuyển sang trang category, truyền filter qua state với key 'brands'
     navigate("/products", { state: { filter: { brand: [brandName] } } });
   };
 

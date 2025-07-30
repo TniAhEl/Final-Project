@@ -1,5 +1,4 @@
 import React from "react";
-// Nếu bạn đã cài: npm install react-chartjs-2 chart.js
 import { Bar } from "react-chartjs-2";
 import {
   Chart as ChartJS,
@@ -20,29 +19,33 @@ ChartJS.register(
   Legend
 );
 
-const SpendingChart = ({
-  labels = [
-    "Jan",
-    "Feb",
-    "Mar",
-    "Apr",
-    "May",
-    "Jun",
-    "Jul",
-    "Aug",
-    "Sep",
-    "Oct",
-    "Nov",
-    "Dec",
-  ],
-  data = [120, 90, 150, 80, 200, 170, 130, 110, 160, 140, 100, 180],
-}) => {
+const SpendingChart = ({ data = [], loading }) => {
+  const labels = data.length
+    ? data.map((d) => `Month ${d.month}`)
+    : [
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "May",
+        "Jun",
+        "Jul",
+        "Aug",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Dec",
+      ];
+  const chartDataArr = data.length
+    ? data.map((d) => d.totalSpendMoney || 0)
+    : [120, 90, 150, 80, 200, 170, 130, 110, 160, 140, 100, 180];
+
   const chartData = {
     labels,
     datasets: [
       {
-        label: "Spending ($)",
-        data,
+        label: "Spending (₫)",
+        data: chartDataArr,
         backgroundColor: "rgba(37, 99, 235, 0.7)",
         borderRadius: 8,
       },
@@ -64,6 +67,13 @@ const SpendingChart = ({
       x: { ticks: { color: "#64748b", font: { family: "Inter" } } },
     },
   };
+
+  if (loading) {
+    return <div className="p-8 text-center">Loading chart...</div>;
+  }
+  if (!data || data.length === 0) {
+    return <div className="p-8 text-center text-gray-400">No spending data available.</div>;
+  }
 
   return (
     <div

@@ -18,16 +18,20 @@ function NewArrivalsAd(props) {
   const navigate = useNavigate();
   const PAGE_SIZE = 5;
 
-  // Fetch products mới nhất
+  // Fetch newest products
   const fetchProducts = async (pageToFetch = 0, append = false) => {
     setLoading(true);
     try {
-      const res = await filterProducts({ sortByNewest: true }, pageToFetch, PAGE_SIZE);
+      const res = await filterProducts(
+        { sortByNewest: true },
+        pageToFetch,
+        PAGE_SIZE
+      );
       const newProducts = res.content || [];
       setProducts((prev) => (append ? [...prev, ...newProducts] : newProducts));
       setHasMore((pageToFetch + 1) * PAGE_SIZE < (res.totalElements || 0));
     } catch (err) {
-      // Có thể show thông báo lỗi nếu muốn
+      // can show the error
     }
     setLoading(false);
   };
@@ -64,7 +68,10 @@ function NewArrivalsAd(props) {
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-8 mt-2">
         {products.map((product, idx) => (
           <div key={product.id || idx} className="w-full">
-            <ProductCard {...product} className="w-full max-w-[200px] mx-auto" />
+            <ProductCard
+              {...product}
+              className="w-full max-w-[200px] mx-auto"
+            />
           </div>
         ))}
       </div>
@@ -75,7 +82,9 @@ function NewArrivalsAd(props) {
         >
           More <FiChevronDown className="ml-1 text-xl" />
         </span>
-        {loading && <span className="mt-2 text-xs text-gray-500">Loading...</span>}
+        {loading && (
+          <span className="mt-2 text-xs text-gray-500">Loading...</span>
+        )}
       </div>
     </div>
   );

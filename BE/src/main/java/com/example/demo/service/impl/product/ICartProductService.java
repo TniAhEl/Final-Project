@@ -7,5 +7,5 @@ public interface ICartProductService {
     void removeProductFromCart(Long userId, Long productOptionId);
     void updateCartProductqQuantity(Long userId, Long productOptionId, int quantity);
 
-    CartProduct getCartProduct(Long userId, Long productId);
+    CartProduct getCartProduct( Long productOptionId);
 }

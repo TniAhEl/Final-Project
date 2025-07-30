@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import SignUpLayout from "../../layouts/SignUp";
-import SignUpForm from "../../components/Form/User/SignUp"; // hoặc SignUp, Information, ...
+import SignUpForm from "../../components/Form/User/SignUp"; 
 import Footer from "../../components/Footer/Footer";
 import Header from "../../components/Header/Header";
 
@@ -9,7 +9,7 @@ const SignUpPage = () => {
   const lastScrollY = useRef(0);
   const ticking = useRef(false);
 
-  // Xử lý scroll để ẩn/hiện header
+  // Handle scroll to hide/show header
   useEffect(() => {
     const handleScroll = () => {
       if (!ticking.current) {
@@ -18,10 +18,10 @@ const SignUpPage = () => {
           if (currentScrollY < 10) {
             setShowHeader(true);
           } else if (currentScrollY > lastScrollY.current) {
-            // Cuộn xuống
+            // Scroll down
             setShowHeader(false);
           } else {
-            // Cuộn lên
+            // Scroll up
             setShowHeader(true);
           }
           lastScrollY.current = currentScrollY;
@@ -34,7 +34,7 @@ const SignUpPage = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Xử lý mouse move lên vùng trên cùng để hiện header
+  // Handle mouse move to top area to show header
   useEffect(() => {
     const handleMouseMove = (e) => {
       if (e.clientY < 80) {
@@ -57,7 +57,7 @@ const SignUpPage = () => {
       </div>
       <div className="pt-[64px]">
         {" "}
-        {/* Để tránh che mất phần trên */}
+        {/* To avoid hiding the top part */}
         <SignUpLayout>
           <SignUpForm />
         </SignUpLayout>

@@ -16,7 +16,7 @@ const TotalOrder = ({ value = 0, compareValue = 0, compareType = "up" }) => (
       style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}
     >
       <FaShoppingCart size={24} color="#1976d2" />
-      <span style={{ fontSize: 18, color: "#888" }}>Tổng số đơn</span>
+      <span style={{ fontSize: 18, color: "#888" }}>Total Order</span>
     </div>
     <div style={{ fontSize: 32, fontWeight: "bold", color: "#1976d2" }}>
       {value}
@@ -28,8 +28,7 @@ const TotalOrder = ({ value = 0, compareValue = 0, compareType = "up" }) => (
         color: compareType === "up" ? "#43a047" : "#e53935",
       }}
     >
-      {compareType === "up" ? "▲" : "▼"} {Math.abs(compareValue)}% so với tuần
-      trước
+      {compareType === "up" ? "▲" : "▼"} {Math.abs(compareValue)}% compared to last week
     </div>
   </div>
 );

@@ -17,28 +17,28 @@ const CartTable = ({
         {/* Header */}
         <div className="flex bg-neutral-50">
           <div className="w-24 p-4 text-slate-800/90 text-sm font-medium">
-            Ảnh
+            Picture
           </div>
           <div className="flex-1 p-4 text-slate-800/90 text-sm font-medium">
-            Sản phẩm
+            Product
           </div>
           <div className="w-32 p-4 text-slate-800/90 text-sm font-medium">
-            Giá
+            Price
           </div>
           <div className="w-32 p-4 text-slate-800/90 text-sm font-medium">
-            Số lượng
+            Quantity
           </div>
           <div className="w-32 p-4 text-slate-800/90 text-sm font-medium">
-            Thành tiền
+            Total
           </div>
           <div className="w-24 p-4 text-slate-800/90 text-sm font-medium">
-            Thao tác
+            Actions
           </div>
         </div>
         {/* Rows */}
         {cartItems.length === 0 && (
           <div className="p-6 text-center text-gray-400 w-full">
-            Giỏ hàng trống.
+            Cart is empty.
           </div>
         )}
         {cartItems.map((item, idx) => (
@@ -80,15 +80,15 @@ const CartTable = ({
                 onClick={() => onRemove(item)}
                 className="px-3 py-1 rounded bg-red-500 text-white hover:bg-red-600 text-xs font-medium"
               >
-                Xóa
+                Remove
               </button>
             </div>
           </div>
         ))}
-        {/* Tổng tiền */}
+        {/* Total */}
         {cartItems.length > 0 && (
           <div className="flex bg-neutral-100 font-bold text-lg">
-            <div className="flex-1 p-4 text-right">Tổng cộng:</div>
+            <div className="flex-1 p-4 text-right">Total:</div>
             <div className="w-32 p-4 text-violet-600">
               {total.toLocaleString()}₫
             </div>

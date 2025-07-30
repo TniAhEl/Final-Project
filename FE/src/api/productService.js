@@ -140,16 +140,15 @@ export const updatePromotion = async (id, data) => {
   return res.data;
 };
 
-// Lấy danh sách tất cả store
+// Get all store 
 export const getAllStores = async () => {
   const res = await api.get("/stores/all");
   return res.data;
 };
 
-// Lấy tất cả brand
+// get all brand
 export const getAllBrands = async () => {
   const res = await api.get("/products/brand/all");
-  // Nếu trả về object có thuộc tính data là mảng
   if (res.data && Array.isArray(res.data.data)) {
     return res.data.data;
   } else if (Array.isArray(res.data)) {
@@ -159,7 +158,20 @@ export const getAllBrands = async () => {
   }
 };
 
+// get all promotions
 export const getAllPromotions = async () => {
   const res = await api.get("/promotions/all");
   return res.data.data;
+};
+
+// Get product details for guest cart
+export const getGuestProducts = async (products) => {
+  const res = await api.post("/products/guest/product", { products });
+  return res.data;
+};
+
+// Compare products
+export const compareProducts = async (productIds) => {
+  const res = await api.post("/products/compare", { productId: productIds });
+  return res.data;
 };

@@ -30,7 +30,25 @@ public class CartService implements ICartService {
     private final AtomicLong cartIdGenerator = new AtomicLong();
     @Override
     public Cart getCart(Long userId) {
-        return cartRepository.findByUserId(userId);
+        Cart cart = cartRepository.findByUserId(userId);
+
+        if (cart == null) return null;
+
+        for (CartProduct cartProduct : cart.getCartProducts()) {
+            ProductOption option = cartProduct.getProductOption();
+
+            int remaining = option.getRemainingQuantity();
+            int reserved = option.getReversedQuantity();
+
+            int available = remaining - reserved;
+            cartProduct.setAvailableQuantity(Math.max(available, 0));
+            cartProduct.setQuantity(Math.min(available, cartProduct.getQuantity()));
+        }
+
+        cart.setUpdateAt(LocalDateTime.now());
+
+        return cart;
+
     }
 
 
@@ -80,6 +98,7 @@ public class CartService implements ICartService {
         CartProductResponse response = new CartProductResponse();
         response.setId(cartProduct.getId());
         response.setQuantity(cartProduct.getQuantity());
+        response.setAvailableQuantity(cartProduct.getAvailableQuantity());
 
         // Convert ProductOption → ProductOptionCartResponse
         ProductOptionCartResponse optionResponse = convertToProductOptionCartResponse(cartProduct.getProductOption());

@@ -2,12 +2,13 @@ import React, { useEffect, useState } from "react";
 import HeaderAuth from "../components/Header/HeaderAuth";
 import Header from "../components/Header/Header";
 import Footer from "../components/Footer/Footer";
+import CompareSidebar from "../components/Sidebar/Compare";
 
 const MainLayout = ({ children }) => {
   const [showHeader, setShowHeader] = useState(true);
   const [isHovering, setIsHovering] = useState(false);
 
-  // Hiệu ứng header trượt lên/xuống khi scroll
+  // Animate header visibility based on scroll position
   useEffect(() => {
     const handleScroll = () => {
       if (isHovering) return;
@@ -44,10 +45,10 @@ const MainLayout = ({ children }) => {
         {localStorage.getItem("token") ? <HeaderAuth /> : <Header />}
       </div>
 
-      {/* Để tránh nội dung bị che, thêm padding-top bằng chiều cao header (giả sử 64px) */}
+      {/* Avoid content being hidden, add padding-top equal to header height (assumed 64px) */}
       <div className="pt-16" />
 
-      {/* Nội dung chính */}
+      {/* Main content */}
       <main className="flex-1 flex justify-center items-start">
         <div className="w-full max-w-[1440px] px-4 py-8 flex flex-col gap-4">
           {children}
@@ -56,6 +57,9 @@ const MainLayout = ({ children }) => {
 
       {/* Footer */}
       <Footer />
+      
+      {/* Compare Sidebar */}
+      <CompareSidebar />
     </div>
   );
 };

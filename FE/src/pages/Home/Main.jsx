@@ -9,7 +9,7 @@ import Suggest from "../../components/Suggest/Suggest";
 const HomeMain = () => {
   return (
     <MainLayout>
-      {/* Nội dung trang chủ ở đây */}
+      {/* Content goes here */}
       <MainLanding />
       <BrandLanding />
       <BestSeller />

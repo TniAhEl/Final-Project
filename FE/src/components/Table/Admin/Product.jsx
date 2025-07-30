@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import ProductForm from "../../Form/Product/Product.jsx";
 import ProductOptionForm from "../../Form/Product/Options.jsx";
 import ViewAllOptions from "../../Form/Product/ViewAllOptions.jsx";
-import { filterAdminProducts } from "../../../api/productService";
+import { filterAdminProducts, getProductById } from "../../../api/productService";
 
 // Utility function to check if user is authenticated
 const checkAuth = () => {
@@ -85,7 +85,7 @@ const ProductTable = ({
       };
 
       const response = await filterAdminProducts(filter, page, customPageSize);
-
+      console.log(response);
       setProducts(response.content || response.data || []);
       setTotalPages(response.totalPages || 0);
       setTotalElements(response.totalElements || 0);
@@ -136,58 +136,65 @@ const ProductTable = ({
     setShowForm(true);
   };
 
-  const handleModifyProduct = (product) => {
-    // Convert product data to form format
-    const formData = {
-      productName: product.name,
-      description: product.description || "",
-      brand: product.brand || "",
-      status: product.status?.toUpperCase() || "DRAFT",
-      createAt: product.createAt || "",
-      updateAt: product.updateAt || "",
-      categoryId: product.category?.id?.toString() || "",
-      warrantyId: product.warranty?.id?.toString() || "",
-      os: product.os || "",
-      cpu: product.cpu || "",
-      cpuSpeed: product.cpuSpeed?.toString() || "",
-      gpu: product.gpu || "",
-      batteryCapacity: product.batteryCapacity?.toString() || "",
-      batteryType: product.batteryType || "",
-      chargeSupport: product.chargeSupport || "",
-      batteryTech: product.batteryTech || "",
-      screenDimension: product.screenDimension || "",
-      flash: product.flash || false,
-      frontCamera: product.frontCamera || "",
-      backCamera: product.backCamera || "",
-      screenTouch: product.screenTouch || "",
-      screenTech: product.screenTech || "",
-      screenResolution: product.screenResolution || "",
-      maxBrightness: product.maxBrightness || "",
-      backCameraTech: product.backCameraTech || "",
-      backCameraRecord: product.backCameraRecord || "",
-      mobileNetwork: product.mobileNetwork || "",
-      bluetooth: product.bluetooth || "",
-      sim: product.sim || "Dual SIM",
-      wifi: product.wifi || "",
-      gps: product.gps || "",
-      chargePort: product.chargePort || "",
-      earphonePort: product.earphonePort || "",
-      anotherPort: product.anotherPort || "",
-      design: product.design || "",
-      material: product.material || "",
-      dimension: product.dimension || "",
-      releaseYear: product.releaseYear?.toString() || "",
-      musicUtil: product.musicUtil || "",
-      movieUtil: product.movieUtil || "",
-      recordUtil: product.recordUtil || "",
-      resistanceUtil: product.resistanceUtil || "",
-      specialUtil: product.specialUtil || "",
-      advancedUtil: product.advancedUtil || "",
-    };
-
-    setEditingProduct({ ...product, formData });
-    setIsEditing(true);
-    setShowForm(true);
+  const handleModifyProduct = async (product) => {
+    try {
+      // Call API to get product detail
+      const productInfo = await getProductById(product.id || product.productId);
+      const productDetail = productInfo.data;
+      // Convert product data to form format
+      const formData = {
+        productName: productDetail.name || "",
+        description: productDetail.description || "",
+        brand: productDetail.brand || "",
+        status: productDetail.productStatus || "DRAFT",
+        createAt: productDetail.createAt || "",
+        updateAt: productDetail.updateAt || "",
+        categoryId: productDetail.category?.id?.toString() || "",
+        warrantyId: productDetail.warranty?.id?.toString() || "",
+        os: productDetail.os || "",
+        cpu: productDetail.cpu || "",
+        cpuSpeed: productDetail.cpuSpeed !== undefined && productDetail.cpuSpeed !== null ? productDetail.cpuSpeed.toString() : "",
+        gpu: productDetail.gpu || "",
+        batteryCapacity: productDetail.batteryCapacity !== undefined && productDetail.batteryCapacity !== null ? productDetail.batteryCapacity.toString() : "",
+        batteryType: productDetail.batteryType || "",
+        chargeSupport: productDetail.chargeSupport || "",
+        batteryTech: productDetail.batteryTech || "",
+        screenDimension: productDetail.screenDimension || "",
+        flash: productDetail.flash === true ? "true" : productDetail.flash === false ? "false" : "",
+        frontCamera: productDetail.frontCamera || "",
+        backCamera: productDetail.backCamera || "",
+        screenTouch: productDetail.screenTouch || "",
+        screenTech: productDetail.screenTech || "",
+        screenResolution: productDetail.screenResolution || "",
+        maxBrightness: productDetail.maxBrightness || "",
+        backCameraTech: productDetail.backCameraTech || "",
+        backCameraRecord: productDetail.backCameraRecord || "",
+        mobileNetwork: productDetail.mobileNetwork || "",
+        bluetooth: productDetail.bluetooth || "",
+        sim: productDetail.sim || "Dual SIM",
+        wifi: productDetail.wifi || "",
+        gps: productDetail.gps || "",
+        chargePort: productDetail.chargePort || "",
+        earphonePort: productDetail.earphonePort || "",
+        anotherPort: productDetail.anotherPort || "",
+        design: productDetail.design || "",
+        material: productDetail.material || "",
+        dimension: productDetail.dimension || "",
+        releaseYear: productDetail.releaseYear !== undefined && productDetail.releaseYear !== null ? productDetail.releaseYear.toString() : "",
+        musicUtil: productDetail.musicUtil || "",
+        movieUtil: productDetail.movieUtil || "",
+        recordUtil: productDetail.recordUtil || "",
+        resistanceUtil: productDetail.resistanceUtil || "",
+        specialUtil: productDetail.specialUtil || "",
+        advancedUtil: productDetail.advancedUtil || "",
+      };
+      setEditingProduct({ ...productDetail, formData });
+      setIsEditing(true);
+      setShowForm(true);
+    } catch (error) {
+      alert("Failed to fetch product details!");
+      console.error(error);
+    }
   };
 
   const handleDeleteClick = (product) => {
@@ -293,41 +300,50 @@ const ProductTable = ({
   }
 
   // Error state
-  if (error && products.length === 0) {
-    const isAuthError =
-      error.includes("Authentication") || error.includes("Session expired");
-
-    return (
-      <div className="w-full flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <div className="text-red-500 text-6xl mb-4">⚠️</div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
-            Error loading products
-          </h3>
-          <p className="text-gray-500 mb-4">{error}</p>
-          {isAuthError ? (
-            <button
-              onClick={() => (window.location.href = "/signin")}
-              className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors"
-            >
-              Go to Login
-            </button>
-          ) : (
-            <button
-              onClick={() => fetchProducts()}
-              className="px-4 py-2 bg-violet-500 text-white rounded-md hover:bg-violet-600 transition-colors"
-            >
-              Try Again
-            </button>
-          )}
-        </div>
-      </div>
-    );
-  }
+  // Xóa đoạn return sớm khi error, chỉ hiển thị error ở phần bảng
 
   return (
     <div className="w-full relative">
-      {/* If showing form, only display form, hide table */}
+      {/* Header with Add Button & Page Size Select */}
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-semibold text-gray-800">
+          Product Management
+        </h2>
+        <div className="flex items-center gap-4">
+          <label className="text-sm text-gray-700">Rows per page:</label>
+          <select
+            className="border rounded px-2 py-1 text-sm"
+            value={pageSize}
+            onChange={handlePageSizeChange}
+          >
+            <option value={5}>5</option>
+            <option value={10}>10</option>
+            <option value={12}>12</option>
+            <option value={20}>20</option>
+            <option value={50}>50</option>
+          </select>
+          <button
+            onClick={handleAddNewProduct}
+            className="px-4 py-2 bg-violet-500 text-white rounded-md hover:bg-violet-600 transition-colors flex items-center gap-2"
+          >
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 4v16m8-8H4"
+              />
+            </svg>
+            Add New Product
+          </button>
+        </div>
+      </div>
+      {/* Main Content */}
       {showForm ? (
         <div className="flex flex-col items-center justify-center min-h-[400px] py-8">
           <div className="bg-white rounded-lg max-w-6xl w-full shadow-lg border border-gray-200">
@@ -355,165 +371,105 @@ const ProductTable = ({
         </div>
       ) : (
         <>
-          {/* Header with Add Button & Page Size Select */}
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-semibold text-gray-800">
-              Product Management
-            </h2>
-            <div className="flex items-center gap-4">
-              <label className="text-sm text-gray-700">Rows per page:</label>
-              <select
-                className="border rounded px-2 py-1 text-sm"
-                value={pageSize}
-                onChange={handlePageSizeChange}
-              >
-                <option value={5}>5</option>
-                <option value={10}>10</option>
-                <option value={12}>12</option>
-                <option value={20}>20</option>
-                <option value={50}>50</option>
-              </select>
-              <button
-                onClick={handleAddNewProduct}
-                className="px-4 py-2 bg-violet-500 text-white rounded-md hover:bg-violet-600 transition-colors flex items-center gap-2"
-              >
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 4v16m8-8H4"
-                  />
-                </svg>
-                Add New Product
-              </button>
-            </div>
-          </div>
-
-          {/* Product Table */}
+          {/* Product Table or Error/Empty State */}
           <div className="rounded-lg overflow-hidden border border-slate-300 bg-white font-['Roboto'] shadow-sm">
             <div className="divide-y divide-slate-300">
               {/* Header */}
               <div className="grid grid-cols-10 bg-neutral-50 text-xs">
                 <div className="p-1 text-slate-800/90 font-semibold">ID</div>
                 <div className="p-2 text-slate-800/90 font-semibold">Name</div>
-                <div className="p-2 text-slate-800/90 font-semibold">
-                  Category
-                </div>
+                <div className="p-2 text-slate-800/90 font-semibold">Category</div>
                 <div className="p-2 text-slate-800/90 font-semibold">Price</div>
                 <div className="p-2 text-slate-800/90 font-semibold">Stock</div>
-                <div className="p-2 text-slate-800/90 font-semibold">
-                  Status
-                </div>
+                <div className="p-2 text-slate-800/90 font-semibold">Status</div>
                 <div className="p-2 text-slate-800/90 font-semibold">Brand</div>
                 <div className="p-2 text-slate-800/90 font-semibold">Year</div>
-                <div className="p-2 text-slate-800/90 font-semibold">
-                  Actions
-                </div>
+                <div className="p-2 text-slate-800/90 font-semibold">Actions</div>
               </div>
               {/* Rows */}
-              {products.map((product, idx) => (
-                <div
-                  key={product.id || product.productId || idx}
-                  className="grid grid-cols-10 bg-white hover:bg-blue-50/50 transition-colors text-xs min-h-[28px]"
-                >
-                  <div className="p-1 text-zinc-800 font-normal border-r border-slate-300">
-                    {product.id ||
-                      product.productId ||
-                      `P${String(idx + 1).padStart(3, "0")}`}
-                  </div>
-                  <div className="p-2 text-zinc-800 font-medium border-r border-slate-300">
-                    {product.name}
-                  </div>
-                  <div className="p-2 border-r border-slate-300">
-                    <div className="flex gap-1 flex-wrap">
-                      {product.category?.name ? (
-                        <span className="px-1.5 py-0.5 bg-emerald-100 rounded text-neutral-800 text-xs font-medium">
-                          {product.category.name}
-                        </span>
+              {error ? (
+                <div className="col-span-10 text-center py-12">
+                  <div className="text-red-500 text-6xl mb-4">⚠️</div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">
+                    Error loading products
+                  </h3>
+                  <p className="text-gray-500 mb-4">{error}</p>
+                  <button
+                    onClick={() => fetchProducts()}
+                    className="px-4 py-2 bg-violet-500 text-white rounded-md hover:bg-violet-600 transition-colors"
+                  >
+                    Try Again
+                  </button>
+                </div>
+              ) : products.length === 0 && !loading ? (
+                <div className="col-span-10 text-center py-12">
+                  <div className="text-gray-400 text-6xl mb-4">📦</div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">
+                    No products found
+                  </h3>
+                  <p className="text-gray-500 mb-4">
+                    Get started by adding your first product.
+                  </p>
+                  <button
+                    onClick={handleAddNewProduct}
+                    className="px-4 py-2 bg-violet-500 text-white rounded-md hover:bg-violet-600 transition-colors"
+                  >
+                    Add Your First Product
+                  </button>
+                </div>
+              ) : (
+                products.map((product, idx) => (
+                  <div
+                    key={product.id || product.productId || idx}
+                    className="grid grid-cols-10 bg-white hover:bg-blue-50/50 transition-colors text-xs min-h-[28px]"
+                  >
+                    {/* ID */}
+                    <div className="p-1 text-zinc-800 font-normal border-r border-slate-300">
+                      {product.id || product.productId || `P${String(idx + 1).padStart(3, "0")}`}
+                    </div>
+                    {/* Name */}
+                    <div className="p-2 text-zinc-800 font-medium border-r border-slate-300">
+                      {product.name || "N/A"}
+                    </div>
+                    {/* Category */}
+                    <div className="p-2 border-r border-slate-300">
+                      <div className="flex gap-1 flex-wrap">
+                        {product.category?.name ? (
+                          <span className="px-1.5 py-0.5 bg-emerald-100 rounded text-neutral-800 text-xs font-medium">
+                            {product.category.name}
+                          </span>
+                        ) : (
+                          <span className="px-1.5 py-0.5 bg-gray-100 rounded text-neutral-800 text-xs font-medium">
+                            N/A
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    {/* Option: Price & Stock */}
+                    <div className="p-2 font-semibold text-blue-700 border-r border-slate-300">
+                      {product.option && product.option.length > 0 ? (
+                        <div className="text-xs">
+                          <div className="font-medium">
+                            {new Intl.NumberFormat("vi-VN", {
+                              style: "currency",
+                              currency: "VND",
+                            }).format(product.option[0].price || 0)}
+                          </div>
+                          <div className="text-gray-500">
+                            Stock: {product.option[0].remainingQuantity ?? "N/A"}
+                          </div>
+                        </div>
                       ) : (
-                        <span className="px-1.5 py-0.5 bg-gray-100 rounded text-neutral-800 text-xs font-medium">
-                          No Category
-                        </span>
+                        "N/A"
                       )}
                     </div>
-                  </div>
-                  <div className="p-2 font-semibold text-blue-700 border-r border-slate-300">
-                    {product.option && product.option.length > 0 ? (
-                      <div className="text-xs">
-                        <div className="font-medium">
-                          From{" "}
-                          {new Intl.NumberFormat("vi-VN", {
-                            style: "currency",
-                            currency: "VND",
-                          }).format(
-                            Math.min(...product.option.map((opt) => opt.price))
-                          )}
-                        </div>
-                        <div className="text-gray-500">
-                          ({product.option.length} options)
-                        </div>
-                      </div>
-                    ) : (
-                      "N/A"
-                    )}
-                  </div>
-                  <div className="p-2 border-r border-slate-300">
-                    {product.option && product.option.length > 0 ? (
-                      <div className="text-xs">
-                        {(() => {
-                          const validOptions = product.option.filter(
-                            (opt) => opt.remainingQuantity > 0
-                          );
-                          const totalStock = validOptions.reduce(
-                            (sum, opt) => sum + opt.remainingQuantity,
-                            0
-                          );
-                          const stockColor =
-                            totalStock > 10
-                              ? "bg-green-100 text-green-800"
-                              : totalStock > 0
-                              ? "bg-yellow-100 text-yellow-800"
-                              : "bg-red-100 text-red-800";
-                          return (
-                            <div
-                              className={`px-1.5 py-0.5 rounded-full text-xs font-medium ${stockColor}`}
-                            >
-                              {totalStock}
-                            </div>
-                          );
-                        })()}
-                        <div className="text-gray-500 mt-0.5">
-                          (
-                          {(() => {
-                            const validOptions = product.option.filter(
-                              (opt) => opt.remainingQuantity > 0
-                            );
-                            const validOptionsCount = validOptions.length;
-                            const totalOptions = product.option.length;
-                            if (validOptionsCount === totalOptions) {
-                              return `${totalOptions} options`;
-                            } else {
-                              return `${validOptionsCount}/${totalOptions} options`;
-                            }
-                          })()}
-                          )
-                        </div>
-                      </div>
-                    ) : (
-                      <span className="px-1.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                        0
-                      </span>
-                    )}
-                  </div>
-                  <div className="p-2 border-r border-slate-300">
-                    <span
-                      className={`px-1.5 py-0.5 rounded-full text-xs font-medium ${
+                    {/* Screen Dimension */}
+                    <div className="p-2 border-r border-slate-300">
+                      {product.screenDimension || "N/A"}
+                    </div>
+                    {/* Status */}
+                    <div className="p-2 border-r border-slate-300">
+                      <span className={`px-1.5 py-0.5 rounded-full text-xs font-medium ${
                         product.productStatus === "ACTIVE"
                           ? "bg-green-100 text-green-800"
                           : product.productStatus === "INACTIVE"
@@ -521,115 +477,81 @@ const ProductTable = ({
                           : product.productStatus === "DRAFT"
                           ? "bg-yellow-100 text-yellow-800"
                           : "bg-red-100 text-red-800"
-                      }`}
-                    >
-                      {product.productStatus || "Unknown"}
-                    </span>
-                  </div>
-                  <div className="p-2 border-r border-slate-300">
-                    <div className="text-xs text-gray-600 font-medium">
-                      {product.brand || "N/A"}
+                      }`}>
+                        {product.productStatus || "N/A"}
+                      </span>
+                    </div>
+                    {/* Brand */}
+                    <div className="p-2 border-r border-slate-300">
+                      <div className="text-xs text-gray-600 font-medium">
+                        {product.brand || "N/A"}
+                      </div>
+                    </div>
+                    {/* Release Year */}
+                    <div className="p-2 border-r border-slate-300">
+                      <div className="text-xs text-gray-600 font-medium">
+                        {product.releaseYear || "N/A"}
+                      </div>
+                    </div>
+                    {/* Actions */}
+                    <div className="p-2">
+                      <div className="flex gap-1">
+                        <button
+                          onClick={() => handleModifyProduct(product)}
+                          className="px-2 py-0.5 rounded bg-blue-600 text-white hover:bg-blue-700 text-xs font-medium transition-colors"
+                        >
+                          Modify
+                        </button>
+                        <button
+                          onClick={() => handleAddOption(product)}
+                          className="px-2 py-0.5 rounded bg-purple-500 text-white hover:bg-purple-600 text-xs font-medium transition-colors"
+                        >
+                          Add Option
+                        </button>
+                        <button
+                          onClick={() => handleViewAllOptions(product)}
+                          className="px-2 py-0.5 rounded bg-green-500 text-white hover:bg-green-600 text-xs font-medium transition-colors"
+                        >
+                          View All Options
+                        </button>
+                      </div>
                     </div>
                   </div>
-                  <div className="p-2 border-r border-slate-300">
-                    <div className="text-xs text-gray-600 font-medium">
-                      {product.releaseYear || "N/A"}
-                    </div>
-                  </div>
-                  <div className="p-2">
-                    <div className="flex gap-1">
-                      <button
-                        onClick={() => handleModifyProduct(product)}
-                        className="px-2 py-0.5 rounded bg-blue-600 text-white hover:bg-blue-700 text-xs font-medium transition-colors"
-                      >
-                        Modify
-                      </button>
-                      <button
-                        onClick={() => handleAddOption(product)}
-                        className="px-2 py-0.5 rounded bg-purple-500 text-white hover:bg-purple-600 text-xs font-medium transition-colors"
-                      >
-                        Add Option
-                      </button>
-                      <button
-                        onClick={() => handleViewAllOptions(product)}
-                        className="px-2 py-0.5 rounded bg-green-500 text-white hover:bg-green-600 text-xs font-medium transition-colors"
-                      >
-                        View All Options
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
-
-          {/* Empty State */}
-          {products.length === 0 && !loading && (
-            <div className="text-center py-12">
-              <div className="text-gray-400 text-6xl mb-4">📦</div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                No products found
-              </h3>
-              <p className="text-gray-500 mb-4">
-                Get started by adding your first product.
-              </p>
-              <button
-                onClick={handleAddNewProduct}
-                className="px-4 py-2 bg-violet-500 text-white rounded-md hover:bg-violet-600 transition-colors"
-              >
-                Add Your First Product
-              </button>
-            </div>
-          )}
-
           {/* Pagination */}
-          {totalPages > 1 && (
+          {totalPages > 1 && !error && (
             <div className="flex items-center justify-between mt-6 px-4">
               <div className="text-sm text-gray-700">
-                Showing {currentPage * pageSize + 1} to{" "}
-                {Math.min((currentPage + 1) * pageSize, totalElements)} of{" "}
-                {totalElements} products
+                Showing {currentPage * pageSize + 1} to {Math.min((currentPage + 1) * pageSize, totalElements)} of {totalElements} products
               </div>
               <div className="flex items-center space-x-2">
                 <button
                   onClick={() => handlePageChange(currentPage - 1)}
                   disabled={currentPage === 0}
-                  className={`px-3 py-2 text-sm font-medium rounded-md ${
-                    currentPage === 0
-                      ? "text-gray-400 cursor-not-allowed"
-                      : "text-gray-700 hover:bg-gray-50"
-                  }`}
+                  className={`px-3 py-2 text-sm font-medium rounded-md ${currentPage === 0 ? "text-gray-400 cursor-not-allowed" : "text-gray-700 hover:bg-gray-50"}`}
                 >
                   Previous
                 </button>
-
                 {/* Page numbers */}
                 {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                  const pageNum =
-                    Math.max(0, Math.min(totalPages - 5, currentPage - 2)) + i;
+                  const pageNum = Math.max(0, Math.min(totalPages - 5, currentPage - 2)) + i;
                   return (
                     <button
                       key={pageNum}
                       onClick={() => handlePageChange(pageNum)}
-                      className={`px-3 py-2 text-sm font-medium rounded-md ${
-                        pageNum === currentPage
-                          ? "bg-violet-500 text-white"
-                          : "text-gray-700 hover:bg-gray-50"
-                      }`}
+                      className={`px-3 py-2 text-sm font-medium rounded-md ${pageNum === currentPage ? "bg-violet-500 text-white" : "text-gray-700 hover:bg-gray-50"}`}
                     >
                       {pageNum + 1}
                     </button>
                   );
                 })}
-
                 <button
                   onClick={() => handlePageChange(currentPage + 1)}
                   disabled={currentPage === totalPages - 1}
-                  className={`px-3 py-2 text-sm font-medium rounded-md ${
-                    currentPage === totalPages - 1
-                      ? "text-gray-400 cursor-not-allowed"
-                      : "text-gray-700 hover:bg-gray-50"
-                  }`}
+                  className={`px-3 py-2 text-sm font-medium rounded-md ${currentPage === totalPages - 1 ? "text-gray-400 cursor-not-allowed" : "text-gray-700 hover:bg-gray-50"}`}
                 >
                   Next
                 </button>
@@ -638,7 +560,6 @@ const ProductTable = ({
           )}
         </>
       )}
-
       {/* Modal: Delete Confirmation */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
@@ -689,7 +610,6 @@ const ProductTable = ({
           </div>
         </div>
       )}
-
       {/* Display Option form */}
       {showOptionForm && (
         <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/30">
@@ -703,7 +623,6 @@ const ProductTable = ({
           </div>
         </div>
       )}
-
       {/* Display all Options */}
       {showAllOptions && selectedProductForOptions && (
         <ViewAllOptions
@@ -754,7 +673,7 @@ const OptionCard = ({ option }) => {
               : "bg-red-100 text-red-800"
           }`}
         >
-          Tồn: {option.remainingQuantity}
+          Remaining: {option.remainingQuantity}
         </span>
       </div>
 

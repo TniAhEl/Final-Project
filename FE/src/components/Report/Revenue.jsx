@@ -21,7 +21,7 @@ ChartJS.register(
   Legend
 );
 
-// Plugin để vẽ chỉ số tăng/giảm
+// Plugin to draw growth/shrinkage indicators
 const growthPlugin = {
   id: "growthPlugin",
   afterDatasetsDraw(chart) {
@@ -32,8 +32,8 @@ const growthPlugin = {
     for (let i = 1; i < dataset.data.length; i++) {
       const prev = dataset.data[i - 1];
       const curr = dataset.data[i];
-      if (prev == null || curr == null) continue;
-      const percent = prev === 0 ? 0 : ((curr - prev) / prev) * 100;
+      if (prev == null || curr == null || prev === 0 || curr === 0) continue;
+      const percent = ((curr - prev) / prev) * 100;
       const color = percent >= 0 ? "#22c55e" : "#ef4444";
       const sign = percent > 0 ? "+" : "";
       const label = `${sign}${percent.toFixed(1)}%`;
@@ -50,29 +50,25 @@ const growthPlugin = {
   },
 };
 
-const RevenueChart = ({
-  labels = [
-    "Jan",
-    "Feb",
-    "Mar",
-    "Apr",
-    "May",
-    "Jun",
-    "Jul",
-    "Aug",
-    "Sep",
-    "Oct",
-    "Nov",
-    "Dec",
-  ],
-  data = [500, 700, 800, 600, 1200, 1100, 900, 950, 1300, 1250, 1000, 1400],
-}) => {
+const RevenueChart = ({ data = [], loading }) => {
+  
+  const fullData = Array.from({ length: 12 }, (_, i) => {
+    const month = i + 1;
+    const found = data.find((d) => d.month === month);
+    return {
+      month,
+      totalSpendMoney: found ? found.totalSpendMoney : 0,
+    };
+  });
+  const labels = fullData.map((d) => `Month ${d.month}`);
+  const chartDataArr = fullData.map((d) => d.totalSpendMoney || 0);
+
   const chartData = {
     labels,
     datasets: [
       {
-        label: "Revenue ($)",
-        data,
+        label: "Revenue (₫)",
+        data: chartDataArr,
         borderColor: "rgba(34,197,94,1)",
         backgroundColor: "rgba(34,197,94,0.2)",
         tension: 0.4,
@@ -98,6 +94,14 @@ const RevenueChart = ({
       x: { ticks: { color: "#64748b", font: { family: "Inter" } } },
     },
   };
+
+  if (loading) {
+    return <div className="p-8 text-center">Đang tải biểu đồ...</div>;
+  }
+  if (!data || data.length === 0) {
+    // Still show 12 months with 0 values
+    // (chartDataArr is already an array of 12 zeros)
+  }
 
   return (
     <div

@@ -38,12 +38,12 @@ const ReviewAdminTable = () => {
         setLoading(false);
       })
       .catch(() => {
-        setError("Không thể tải danh sách đánh giá.");
+        setError("Cannot load review list.");
         setLoading(false);
       });
   }, [page, size, selectedRatings, statusFilter]);
 
-  // Lọc theo rating và thời gian
+  // Filter by rating and time
   const filteredReviews = reviews.filter((r) => {
     const created = r.createAt ? new Date(r.createAt) : null;
     let ok = true;
@@ -73,7 +73,7 @@ const ReviewAdminTable = () => {
         setReplySuccess(false);
       }, 1200);
     } catch (err) {
-      alert("Gửi trả lời thất bại!");
+      alert("Reply failed!");
     } finally {
       setReplyLoading(false);
     }
@@ -85,17 +85,17 @@ const ReviewAdminTable = () => {
       <div className="w-64 bg-white rounded shadow p-4 flex flex-col gap-6 h-fit">
         <div>
           <div className="font-semibold mb-2 text-blue-900">
-            Lọc theo thời gian
+            Filter by Date
           </div>
           <div className="flex flex-col gap-2">
-            <label className="text-xs text-gray-600">Từ ngày</label>
+            <label className="text-xs text-gray-600">From Date</label>
             <input
               type="date"
               className="border rounded px-2 py-1"
               value={dateFrom}
               onChange={(e) => setDateFrom(e.target.value)}
             />
-            <label className="text-xs text-gray-600">Đến ngày</label>
+            <label className="text-xs text-gray-600">To Date</label>
             <input
               type="date"
               className="border rounded px-2 py-1"
@@ -106,7 +106,7 @@ const ReviewAdminTable = () => {
         </div>
         <div>
           <div className="font-semibold mb-2 text-blue-900">
-            Lọc theo số sao
+            Filter by Rating
           </div>
           <div className="flex flex-col gap-1">
             {ratingOptions.map((star) => (
@@ -137,27 +137,27 @@ const ReviewAdminTable = () => {
         </div>
         <div>
           <div className="font-semibold mb-2 text-blue-900">
-            Lọc theo trạng thái
+            Filter by Status
           </div>
           <select
             className="border rounded px-2 py-1 w-full"
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
           >
-            <option value="">Tất cả</option>
-            <option value="APPROVED">Đã duyệt</option>
-            <option value="PENDING">Chờ duyệt</option>
-            <option value="NEW">Mới</option>
+            <option value="">All</option>
+            <option value="APPROVED">Approved</option>
+            <option value="PENDING">Pending</option>
+            <option value="NEW">New</option>
           </select>
         </div>
       </div>
       {/* Table */}
       <div className="flex-1 bg-white rounded shadow p-4 overflow-x-auto">
         <div className="text-xl font-bold mb-4 text-blue-900">
-          Danh sách đánh giá sản phẩm
+          Product Review List
         </div>
         {loading ? (
-          <div className="text-center py-8 text-blue-600">Đang tải...</div>
+          <div className="text-center py-8 text-blue-600">Loading...</div>
         ) : error ? (
           <div className="text-center text-red-500 py-8">{error}</div>
         ) : (
@@ -166,22 +166,22 @@ const ReviewAdminTable = () => {
               <thead>
                 <tr className="bg-blue-50">
                   <th className="px-3 py-2 border-b text-left">
-                    Người đánh giá
+                    Reviewer
                   </th>
-                  <th className="px-3 py-2 border-b text-left">Số sao</th>
-                  <th className="px-3 py-2 border-b text-left">Nội dung</th>
+                  <th className="px-3 py-2 border-b text-left">Rating</th>
+                  <th className="px-3 py-2 border-b text-left">Content</th>
                   <th className="px-3 py-2 border-b text-left">
-                    Ngày đánh giá
+                    Review Date
                   </th>
-                  <th className="px-3 py-2 border-b text-left">Trạng thái</th>
-                  <th className="px-3 py-2 border-b text-left">Hành động</th>
+                  <th className="px-3 py-2 border-b text-left">Status</th>
+                  <th className="px-3 py-2 border-b text-left">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredReviews.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="text-center text-gray-400 py-8">
-                      Không có đánh giá nào
+                      No reviews found
                     </td>
                   </tr>
                 ) : (
@@ -212,11 +212,11 @@ const ReviewAdminTable = () => {
                       </td>
                       <td className="px-3 py-2 text-xs font-semibold">
                         {r.status === "APPROVED" ? (
-                          <span className="text-green-600">Đã duyệt</span>
+                          <span className="text-green-600">Approved</span>
                         ) : r.status === "PENDING" ? (
-                          <span className="text-yellow-600">Chờ duyệt</span>
+                          <span className="text-yellow-600">Pending</span>
                         ) : (
-                          <span className="text-red-600">Mới</span>
+                          <span className="text-red-600">New</span>
                         )}
                       </td>
                       <td className="px-3 py-2 text-xs">
@@ -224,7 +224,7 @@ const ReviewAdminTable = () => {
                           className="px-3 py-1 rounded bg-blue-100 text-blue-700 hover:bg-blue-200 font-semibold transition"
                           onClick={() => handleReply(r)}
                         >
-                          Trả lời
+                          Reply
                         </button>
                       </td>
                     </tr>
@@ -313,7 +313,7 @@ const ReviewAdminTable = () => {
           </>
         )}
       </div>
-      {/* Popup trả lời review */}
+      {/* Popup answer review */}
       {replyingReview && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div
@@ -324,12 +324,12 @@ const ReviewAdminTable = () => {
             <button
               className="absolute top-3 right-3 text-gray-400 hover:text-red-500 text-2xl font-bold transition-colors duration-200 focus:outline-none"
               onClick={() => setReplyingReview(null)}
-              title="Đóng"
+              title="Close"
             >
               &times;
             </button>
             <h2 className="text-xl font-bold mb-4 text-blue-700">
-              Trả lời đánh giá
+              Reply to Review
             </h2>
             <div className="mb-2">
               <div className="font-semibold text-blue-900">
@@ -366,13 +366,13 @@ const ReviewAdminTable = () => {
                 className="w-full border rounded px-3 py-2 min-h-[80px]"
                 value={replyContent}
                 onChange={(e) => setReplyContent(e.target.value)}
-                placeholder="Nhập nội dung trả lời..."
+                placeholder="Enter reply content..."
                 required
                 disabled={replyLoading || replySuccess}
               />
               {replySuccess && (
                 <div className="text-green-600 text-sm">
-                  Gửi trả lời thành công!
+                  Reply sent successfully!
                 </div>
               )}
               <div className="flex gap-2 justify-end">
@@ -382,14 +382,14 @@ const ReviewAdminTable = () => {
                   onClick={() => setReplyingReview(null)}
                   disabled={replyLoading}
                 >
-                  Đóng
+                  Cancel
                 </button>
                 <button
                   type="submit"
                   className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 font-semibold"
                   disabled={replyLoading || replySuccess}
                 >
-                  {replyLoading ? "Đang gửi..." : "Gửi trả lời"}
+                  {replyLoading ? "Sending..." : "Send Reply"}
                 </button>
               </div>
             </form>

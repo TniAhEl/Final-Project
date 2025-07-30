@@ -11,8 +11,8 @@ const statusColor = {
 const InsuranceTable = () => {
   const [insurances, setInsurances] = useState([]);
   const [showAddForm, setShowAddForm] = useState(false);
-  const [showDetail, setShowDetail] = useState(null); // object hoặc null
-  const [editingInsurance, setEditingInsurance] = useState(null); // object hoặc null
+  const [showDetail, setShowDetail] = useState(null); // object or null
+  const [editingInsurance, setEditingInsurance] = useState(null); // object or null
 
   const fetchInsurances = async () => {
     const res = await getAllInsurances();
@@ -24,7 +24,7 @@ const InsuranceTable = () => {
   }, []);
 
   const handleAddInsurance = (insuranceData) => {
-    // TODO: tích hợp API thêm mới nếu có
+    // TODO: integrate API for adding new insurance
     setShowAddForm(false);
     fetchInsurances();
   };
@@ -46,7 +46,7 @@ const InsuranceTable = () => {
   };
 
   const handleUpdateSubmit = (formData) => {
-    // TODO: tích hợp API update nếu có
+    // TODO: integrate API for updating insurance if available
     setEditingInsurance(null);
     fetchInsurances();
   };
@@ -56,7 +56,7 @@ const InsuranceTable = () => {
   };
 
   const handleDelete = (item) => {
-    // TODO: tích hợp API xóa nếu có
+    // TODO: integrate API for deleting insurance if available
     fetchInsurances();
   };
 

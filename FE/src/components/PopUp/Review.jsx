@@ -11,7 +11,7 @@ const ReviewPopup = ({ open, onClose, product, orderId, onSubmit }) => {
 
   if (!open) return null;
 
-  // Lấy tên người mua từ product hoặc truyền thêm prop nếu cần
+  // get buyer name from product or pass as prop if needed
   const buyerName =
     product?.buyerName || product?.customerName || product?.userName || "";
 
@@ -43,7 +43,6 @@ const ReviewPopup = ({ open, onClose, product, orderId, onSubmit }) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Overlay chỉ làm mờ, không màu đen */}
       <div
         className="absolute inset-0 backdrop-blur-sm"
         onClick={onClose}
@@ -53,21 +52,21 @@ const ReviewPopup = ({ open, onClose, product, orderId, onSubmit }) => {
         <button
           className="absolute top-3 right-3 text-gray-400 hover:text-red-500 text-2xl font-bold transition-colors duration-200 focus:outline-none"
           onClick={onClose}
-          title="Đóng"
+          title="Close"
         >
           &times;
         </button>
         <h2 className="text-xl font-bold mb-4 text-blue-700">
-          Đánh giá sản phẩm
+          Product Review
         </h2>
-        {/* Thông tin sản phẩm và người mua */}
+        {/* Product and buyer information */}
         <div className="mb-2 font-medium text-gray-700">
           <div className="mb-1">
-            Sản phẩm:{" "}
+            Product:{" "}
             <span className="font-semibold text-blue-700">{product?.name}</span>
             {product?.colorName && (
               <span className="ml-2 text-xs text-gray-500">
-                Màu: <span className="font-semibold">{product.colorName}</span>
+                Color: <span className="font-semibold">{product.colorName}</span>
               </span>
             )}
             {product?.ram && (
@@ -83,7 +82,7 @@ const ReviewPopup = ({ open, onClose, product, orderId, onSubmit }) => {
           </div>
           {buyerName && (
             <div>
-              Người mua:{" "}
+              Buyer:{" "}
               <span className="font-semibold text-gray-800">{buyerName}</span>
             </div>
           )}
@@ -115,26 +114,26 @@ const ReviewPopup = ({ open, onClose, product, orderId, onSubmit }) => {
                 </button>
               ))}
               <span className="ml-2 text-sm text-gray-600 font-medium">
-                {rating} sao
+                {rating} stars
               </span>
             </div>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Nội dung đánh giá
+              Review content
             </label>
             <textarea
               className="w-full border rounded px-3 py-2 min-h-[80px]"
               value={review}
               onChange={(e) => setReview(e.target.value)}
-              placeholder="Nhập nhận xét của bạn..."
+              placeholder="Enter your review..."
               required
             />
           </div>
           {error && <div className="text-red-600 text-sm">{error}</div>}
           {success && (
             <div className="text-green-600 text-sm">
-              Gửi đánh giá thành công!
+              Review submitted successfully!
             </div>
           )}
           <div className="flex gap-2 justify-end">
@@ -144,14 +143,14 @@ const ReviewPopup = ({ open, onClose, product, orderId, onSubmit }) => {
               onClick={onClose}
               disabled={loading}
             >
-              Đóng
+              Close
             </button>
             <button
               type="submit"
               className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 font-semibold"
               disabled={loading}
             >
-              {loading ? "Đang gửi..." : "Gửi đánh giá"}
+              {loading ? "Sending..." : "Submit Review"}
             </button>
           </div>
         </form>

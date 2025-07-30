@@ -12,16 +12,16 @@ const NotFound = () => {
       />
       <h1 className="text-7xl font-bold text-violet-600 mb-4">404</h1>
       <h2 className="text-2xl font-semibold text-gray-800 mb-2">
-        Không tìm thấy trang
+        Page Not Found
       </h2>
       <p className="text-gray-500 mb-6">
-        Trang bạn đang tìm kiếm không tồn tại hoặc đã bị di chuyển.
+        The page you are looking for does not exist or has been moved.
       </p>
       <Link
         to="/"
         className="px-6 py-2 bg-violet-600 text-white rounded hover:bg-violet-700 transition"
       >
-        Quay về trang chủ
+        Go back to homepage
       </Link>
     </div>
   );

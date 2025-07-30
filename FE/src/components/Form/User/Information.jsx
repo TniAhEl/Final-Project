@@ -23,12 +23,12 @@ const UserInformationForm = () => {
     <div className="w-[400px] max-w-full rounded-[5px] border border-violet-500 p-4 bg-white">
       <form className="flex flex-col gap-6" onSubmit={handleSubmit}>
         <div className="flex flex-col gap-1">
-          <label className="text-gray-500">Họ tên</label>
+          <label className="text-gray-500">First Name</label>
           <input
             type="text"
             value={data.name}
             onChange={(e) => handleChange("name", e.target.value)}
-            placeholder="Nhập họ tên"
+            placeholder="Enter your first name"
             className="p-3 bg-slate-50 rounded-sm outline-none"
           />
         </div>
@@ -38,22 +38,22 @@ const UserInformationForm = () => {
             type="email"
             value={data.email}
             onChange={(e) => handleChange("email", e.target.value)}
-            placeholder="Nhập email"
+            placeholder="Enter your email"
             className="p-3 bg-slate-50 rounded-sm outline-none"
           />
         </div>
         <div className="flex flex-col gap-1">
-          <label className="text-gray-500">Số điện thoại</label>
+          <label className="text-gray-500">Phone Number</label>
           <input
             type="tel"
             value={data.phone}
             onChange={(e) => handleChange("phone", e.target.value)}
-            placeholder="Nhập số điện thoại"
+            placeholder="Enter your phone number"
             className="p-3 bg-slate-50 rounded-sm outline-none"
           />
         </div>
         <div className="flex flex-col gap-1">
-          <label className="text-gray-500">Ngày sinh</label>
+          <label className="text-gray-500">Birthday</label>
           <input
             type="date"
             value={data.birthday}
@@ -62,25 +62,25 @@ const UserInformationForm = () => {
           />
         </div>
         <div className="flex flex-col gap-1">
-          <label className="text-gray-500">Giới tính</label>
+          <label className="text-gray-500">Gender</label>
           <select
             value={data.gender}
             onChange={(e) => handleChange("gender", e.target.value)}
             className="p-3 bg-slate-50 rounded-sm outline-none"
           >
-            <option value="">Chọn giới tính</option>
-            <option value="male">Nam</option>
-            <option value="female">Nữ</option>
-            <option value="other">Khác</option>
+            <option value="">Select Gender</option>
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+            <option value="other">Other</option>
           </select>
         </div>
         <div className="flex flex-col gap-1">
-          <label className="text-gray-500">Địa chỉ</label>
+          <label className="text-gray-500">Address</label>
           <input
             type="text"
             value={data.address}
             onChange={(e) => handleChange("address", e.target.value)}
-            placeholder="Nhập địa chỉ"
+            placeholder="Enter your address"
             className="p-3 bg-slate-50 rounded-sm outline-none"
           />
         </div>
@@ -88,7 +88,7 @@ const UserInformationForm = () => {
           type="submit"
           className="w-full bg-violet-500 text-white py-3 px-6 rounded-sm font-medium hover:bg-violet-600 transition-colors mt-2"
         >
-          Lưu thông tin
+          Save Information
         </button>
       </form>
     </div>

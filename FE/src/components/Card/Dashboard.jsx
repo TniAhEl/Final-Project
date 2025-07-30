@@ -1,8 +1,7 @@
-import React from 'react';
-import { FaWallet } from 'react-icons/fa';
+import React from "react";
+import { FaWallet } from "react-icons/fa";
 
-const Dashboard = ({
-}) => {
+const Dashboard = ({}) => {
   return (
     <div className="bg-blue-50 border border-blue-200 rounded-xl shadow p-6 flex flex-col items-start gap-3 max-w-xs">
       <div className="flex items-center gap-3 mb-2">
@@ -15,4 +14,4 @@ const Dashboard = ({
   );
 };
 
-export default Dashboard ;
+export default Dashboard;

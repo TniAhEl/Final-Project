@@ -1,6 +1,7 @@
 package com.example.demo.model.auth;
 
 import com.example.demo.enums.CustomerStatus;
+import com.example.demo.model.UserMonthlyReports;
 import com.example.demo.model.order.Order;
 import com.example.demo.model.product.Cart;
 import com.example.demo.model.product.ProductReview;
@@ -29,6 +30,8 @@ public class User {
 
     @OneToMany(mappedBy = "user")
     private List<ProductReview> productReviews = new ArrayList<>();
+    @OneToMany(mappedBy = "user")
+    private List<ReceiverInfo> receiverInfos = new ArrayList<>();
 
     @Column(name = "username", unique = true, nullable = false)
     private String username;
@@ -62,4 +65,8 @@ public class User {
 
     @OneToMany(mappedBy = "user")
     private List<Order> orders = new ArrayList<>();
+
+    @OneToMany(mappedBy = "user")
+    private List<UserMonthlyReports> reports = new ArrayList<>();
+
 }

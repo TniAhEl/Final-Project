@@ -2,6 +2,7 @@ import SidebarCustomer from "../components/Sidebar/Customer";
 import Footer from "../components/Footer/Footer";
 import { Outlet } from "react-router-dom";
 import HeaderAuth from "../components/Header/HeaderAuth";
+import CompareSidebar from "../components/Sidebar/Compare";
 
 const CustomerLayout = () => {
   return (
@@ -10,12 +11,12 @@ const CustomerLayout = () => {
       <HeaderAuth />
 
       <div className="flex flex-1">
-        {/* Sidebar với width cố định */}
+        {/* Sidebar with fixed width */}
         <div className="w-[220px] flex-shrink-0">
           <SidebarCustomer />
         </div>
 
-        {/* Main Content chiếm phần còn lại */}
+        {/* Main Content takes the remaining space */}
         <main className="flex-1 p-6 bg-white overflow-x-auto">
           <Outlet />
         </main>
@@ -23,6 +24,9 @@ const CustomerLayout = () => {
 
       {/* Footer */}
       <Footer />
+      
+      {/* Compare Sidebar */}
+      <CompareSidebar />
     </div>
   );
 };

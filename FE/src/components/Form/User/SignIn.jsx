@@ -6,6 +6,7 @@ import { login } from "../../../api/authService";
 const SignInForm = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false); // Thêm state này
   const navigate = useNavigate();
 
   const handleChange = (field, value) => {
@@ -21,7 +22,7 @@ const SignInForm = () => {
       localStorage.setItem("role", res.role);
       localStorage.setItem("userId", res.id);
       alert("Sign in successfully");
-      navigate("/"); // Chuyển hướng sang trang chủ sau khi đăng nhập thành công
+      navigate("/"); 
     } catch (error) {
       alert("Sign in failed!");
       console.error(error);
@@ -54,14 +55,22 @@ const SignInForm = () => {
           <label className="text-base font-semibold text-gray-700">
             Password
           </label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => handleChange("password", e.target.value)}
-            placeholder="Enter your password..."
-            className="p-3 bg-white border border-gray-300 rounded focus:outline-none focus:border-blue-500 text-base"
-            required
-          />
+          <div className="relative">
+            <input
+              type={showPassword ? "text" : "password"}
+              value={password}
+              onChange={(e) => handleChange("password", e.target.value)}
+              placeholder="Enter your password..."
+              className="p-3 bg-white border border-gray-300 rounded focus:outline-none focus:border-blue-500 text-base w-full"
+              required
+            />
+            <span
+              className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-gray-500 text-sm select-none"
+              onClick={() => setShowPassword((prev) => !prev)}
+            >
+              {showPassword ? "Ẩn" : "Hiện"}
+            </span>
+          </div>
         </div>
         <div className="text-sm text-gray-400 hover:underline cursor-pointer mb-2 w-fit">
           Forget Password ?

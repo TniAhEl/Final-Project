@@ -7,6 +7,7 @@ import com.example.demo.dto.request.utilities.UpdateInsuranceRequest;
 import com.example.demo.dto.response.UserResponse;
 import com.example.demo.dto.response.utility.InsuranceContractResponse;
 import com.example.demo.dto.response.utility.InsuranceResponse;
+import com.example.demo.enums.CustomerStatus;
 import com.example.demo.enums.InsuranceStatus;
 import com.example.demo.enums.PendingStatus;
 import com.example.demo.exception.AlreadyExistsException;
@@ -226,7 +227,6 @@ public class InsuranceService implements IInsuranceService {
         user.setAddress((String) row[21]);
         user.setEmail((String) row[22]);
         user.setPhone((String) row[23]);
-
         res.setUserResponse(user);
 
         return res;

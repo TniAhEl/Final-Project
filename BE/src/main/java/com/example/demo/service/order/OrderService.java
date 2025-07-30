@@ -1,15 +1,13 @@
 package com.example.demo.service.order;
 
 import com.example.demo.dto.request.FilterOrderWarranty;
+import com.example.demo.dto.request.ListProductOrderRequest;
 import com.example.demo.dto.request.orders.OrderFilterRequest;
 import com.example.demo.dto.request.utilities.InsurancePendingRequest;
 import com.example.demo.dto.request.utilities.OrderInforRequest;
 import com.example.demo.dto.response.UserResponse;
 import com.example.demo.dto.response.WarrantyProductInfo;
-import com.example.demo.dto.response.order.OrderProductResponse;
-import com.example.demo.dto.response.order.OrderPromotionResponse;
-import com.example.demo.dto.response.order.OrderResponse;
-import com.example.demo.dto.response.order.OrderTransportResponse;
+import com.example.demo.dto.response.order.*;
 import com.example.demo.dto.response.utility.PromotionResponse;
 import com.example.demo.dto.response.utility.WarrantyResponse;
 import com.example.demo.enums.*;
@@ -36,7 +34,6 @@ import com.example.demo.repository.product.ProductSerialRepository;
 import com.example.demo.repository.utilities.*;
 import com.example.demo.service.impl.order.IOrderService;
 import com.example.demo.service.product.CartService;
-import com.example.demo.service.product.ProductService;
 import com.example.demo.service.utility.InsuranceService;
 import com.example.demo.service.utility.WarrantyService;
 import com.example.demo.util.InsuranceIDGenerator;
@@ -96,7 +93,10 @@ public class OrderService implements IOrderService {
         order.setStatus(OrderStatus.PENDING);
         order.setCreateAt(LocalDateTime.now());
         order.setUpdateAt(LocalDateTime.now());
+        order.setName(request.getName());
         order.setShippingAddress(request.getAddress());
+        order.setPhone(request.getPhone());
+        order.setEmail(request.getEmail());
         order.setType(request.getType());
         order.setNote(request.getNote());
         order.setMethod(request.getMethod());
@@ -161,6 +161,94 @@ public class OrderService implements IOrderService {
         return finalOrder;
     }
 
+    @Transactional
+    @Override
+    public Order unknownPlaceOrder(ListProductOrderRequest list, OrderInforRequest request, String promotionCode, List<InsurancePendingRequest> requests) {
+        // 1. Tạo order
+        Order order = new Order();
+        order.setStatus(OrderStatus.PENDING);
+        order.setCreateAt(LocalDateTime.now());
+        order.setUpdateAt(LocalDateTime.now());
+        order.setName(request.getName());
+        order.setShippingAddress(request.getAddress());
+        order.setPhone(request.getPhone());
+        order.setEmail(request.getEmail());
+        order.setType(request.getType());
+        order.setNote(request.getNote());
+        order.setMethod(request.getMethod());
+
+        Order savedOrder = orderRepository.save(order);
+
+        // 2. Tạo danh sách orderProduct từ request list
+        List<OrderProduct> orderProducts = list.getProducts().stream().map(product -> {
+            ProductOption option = productOptionRepository.findById(product.getProductOptionId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Product option not found"));
+
+            if (option.getRemainingQuantity() - option.getReversedQuantity() < product.getQuantity()) {
+                throw new IllegalStateException("Product option " + option.getId() + " does not have enough quantity");
+            }
+
+            OrderProduct op = new OrderProduct();
+            op.setProductOption(option);
+            op.setOrder(savedOrder);
+            op.setQuantity(product.getQuantity());
+            op.setUnitPrice(option.getPrice());
+            op.setUpdateAt(LocalDateTime.now());
+
+            // tăng reversed quantity (nếu bạn dùng reversed để hold tạm)
+            option.setReversedQuantity(option.getReversedQuantity() + product.getQuantity());
+            productOptionRepository.save(option);
+
+            return op;
+        }).toList();
+
+        orderProductRepository.saveAll(orderProducts);
+        savedOrder.setOrderProducts(orderProducts);
+
+        // 3. Tính tổng tiền
+        BigDecimal totalMoney = calculateTotalMoney(orderProducts);
+        savedOrder.setTotalMoney(totalMoney);
+
+        // 4. Áp dụng promotion nếu có
+        if (promotionCode != null && !promotionCode.isBlank()) {
+            Promotion promotion = promotionRepository.findPromotionByCode(promotionCode);
+
+            if (promotion.getRemainingQuantity() <= 0) {
+                throw new IllegalStateException("Promotion code is out of stock");
+            }
+
+            OrderPromotion map = new OrderPromotion();
+            map.setOrder(savedOrder);
+            map.setPromotion(promotion);
+            map.setUpdateAt(LocalDateTime.now());
+            map.setTotalDiscount(totalMoney.subtract(calculateDiscount(totalMoney, promotion)));
+            orderPromotionRepository.save(map);
+
+            totalMoney = calculateDiscount(totalMoney, promotion);
+            promotion.setRemainingQuantity(promotion.getRemainingQuantity() - 1);
+            promotionRepository.save(promotion);
+        }
+
+        savedOrder.setTotalMoney(totalMoney);
+
+        // 5. Tạo insurance nếu có
+        if (requests != null && !requests.isEmpty()) {
+            List<InsurancePending> insurancePendings = insuranceService.createInsurancePendings(requests, savedOrder.getId());
+
+            BigDecimal totalInsuranceMoney = insurancePendings.stream()
+                    .map(InsurancePending::getTotalfee)
+                    .filter(Objects::nonNull)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            insurancePendingsRepository.saveAll(insurancePendings);
+            savedOrder.setTotalMoney(savedOrder.getTotalMoney().add(totalInsuranceMoney));
+        }
+
+        // 6. Lưu lại order
+        return orderRepository.save(savedOrder);
+    }
+
+
     private BigDecimal calculateDiscount(BigDecimal totalMoney, Promotion promotion) {
         if (promotion.getType() == DiscountType.AMOUNT) {
             return totalMoney.subtract(promotion.getValue());
@@ -172,7 +260,7 @@ public class OrderService implements IOrderService {
     private List<OrderProduct> createOrderProducts(Order order, Cart cart) {
         return cart.getCartProducts().stream().map(cartProduct -> {
             ProductOption productOption = cartProduct.getProductOption();
-            if(productOption.getRemainingQuantity()> 0|| productOption.getRemainingQuantity() > productOption.getReversedQuantity()+cartProduct.getQuantity()) {
+            if(productOption.getRemainingQuantity()> 0 && productOption.getRemainingQuantity() >= productOption.getReversedQuantity()+cartProduct.getQuantity()) {
                 productOption.setReversedQuantity(cartProduct.getQuantity()+productOption.getReversedQuantity());
             } else {
                 throw new OutOfRemainingResourceException("The remaining quantity of the product is not enough to place order");
@@ -204,9 +292,10 @@ public class OrderService implements IOrderService {
 
 
     @Override
-    public Order getOrder(Long orderId) {
-        return orderRepository.findById(orderId)
+    public OrderResponseDetail getOrder(Long orderId) {
+        Order order =  orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found!"));
+        return convertToDetail(order);
     }
 
     @Override
@@ -217,13 +306,15 @@ public class OrderService implements IOrderService {
     @Override
     public Order updateOrder(Long orderId, OrderStatus status) {
         Order order = orderRepository.findById(orderId).orElseThrow(()-> new ResourceNotFoundException("Order not found!"));
-        if(status == OrderStatus.CANCELLED){
+        if(status == OrderStatus.CANCELLED && order.getStatus()==OrderStatus.PENDING){
             List<OrderProduct> orderProducts = orderProductRepository.findAllByOrder_Id(orderId);
 
                 for (OrderProduct orderProduct : orderProducts) {
                     ProductOption option = productOptionRepository.findById(orderProduct.getProductOption().getId()).orElseThrow(()->new ResourceNotFoundException("Option not found!"));
-                    option.setRemainingQuantity(option.getRemainingQuantity()+orderProduct.getQuantity());
+                    option.setReversedQuantity(option.getReversedQuantity()-orderProduct.getQuantity());
                     orderProduct.setReviewed(false);
+                    orderProductRepository.save(orderProduct);
+                    productOptionRepository.save(option);
                 }
         }
         order.setStatus(status);
@@ -234,6 +325,34 @@ public class OrderService implements IOrderService {
     @Override
     public OrderResponse convertToResponse(Order order) {
         OrderResponse orderResponse = modelMapper.map(order, OrderResponse.class);
+//
+//        List<OrderProduct> orderProducts = orderProductRepository.findByOrderId(order.getId());
+//        List<OrderProductResponse> orderProductResponses = orderProducts.stream().map(op -> {
+//            OrderProductResponse dto = new OrderProductResponse();
+//            dto.setId(op.getId());
+//            dto.setPrice(op.getUnitPrice());
+//            dto.setColorName(op.getProductOption().getColorName());
+//            dto.setRam(op.getProductOption().getRam());
+//            dto.setRom(op.getProductOption().getRom());
+//            dto.setName(op.getProductOption().getProduct().getName());
+//            dto.setProductId(op.getProductOption().getProduct().getId());
+//            return dto;
+//        }).toList();
+
+
+
+        return orderResponse;
+    }
+
+
+    @Override
+    public List<OrderResponse> convertToResponses(List<Order> orders) {
+        return orders.stream().map(this::convertToResponse).toList();
+    }
+
+    @Override
+    public OrderResponseDetail convertToDetail(Order order) {
+        OrderResponseDetail orderResponse = modelMapper.map(order, OrderResponseDetail.class);
 
         List<OrderProduct> orderProducts = orderProductRepository.findByOrderId(order.getId());
         List<OrderProductResponse> orderProductResponses = orderProducts.stream().map(op -> {
@@ -276,12 +395,6 @@ public class OrderService implements IOrderService {
         }
 
         return orderResponse;
-    }
-
-
-    @Override
-    public List<OrderResponse> convertToResponses(List<Order> orders) {
-        return orders.stream().map(this::convertToResponse).toList();
     }
 
     @Override
@@ -483,6 +596,43 @@ public class OrderService implements IOrderService {
         return order;
     }
 
+    @Override
+    @Transactional
+    public Order updateOrder(Long adminId, Long orderId, OrderStatus status){
+        Admin admin = adminRepository.findById(adminId).orElseThrow(()-> new ResourceNotFoundException("Admin not found with id:"+adminId));
+
+        if(admin.getAdminRole()!=AdminRole.ADMIN){
+            throw new PermissionException("Admin has no permission!");
+        }
+
+        Order order = orderRepository.findById(orderId).orElseThrow(()-> new ResourceNotFoundException("Order not found with id: "+ orderId));
+
+        // Check order status and update status
+
+        if(order.getStatus() == OrderStatus.CONFIRM && status == OrderStatus.RECEIVED ){
+            List<OrderProduct> orderProducts = orderProductRepository.findAllByOrder_Id(orderId);
+            for(OrderProduct product : orderProducts){
+                ProductOption option = productOptionRepository.findById(product.getProductOption().getId()).orElseThrow(()->new ResourceNotFoundException("Option not found!"));
+                option.setReversedQuantity(option.getReversedQuantity()-product.getQuantity());
+                product.setReviewed(false);
+                productOptionRepository.save(option);
+                orderProductRepository.save(product);
+            }
+            order.setStatus(status);
+        }
+        else if(order.getStatus()== OrderStatus.PENDING && status == OrderStatus.CANCELLED){
+            order.setStatus(status);
+            List<InsurancePending> insurancePending = insurancePendingsRepository.findAllByOrderId(orderId);
+
+            for (InsurancePending pending : insurancePending){
+                pending.setStatus(PendingStatus.CANCELLED);
+                insurancePendingsRepository.save(pending);
+            }
+
+        }
+        orderRepository.save(order);
+        return order;
+    }
 
     @Override
     public Map<String, Object> filterOrdersForUser(OrderFilterRequest filter, Long userId, int page, int size) {
@@ -512,10 +662,10 @@ public class OrderService implements IOrderService {
             params.put("statuses", statusNames);
         }
 
-        if (filter.getPromotionCodes() != null && !filter.getPromotionCodes().isEmpty()) {
-            where.append(" AND promotion_code IN :promotionCodes");
-            params.put("promotionCodes", filter.getPromotionCodes());
-        }
+//        if (filter.getPromotionCodes() != null && !filter.getPromotionCodes().isEmpty()) {
+//            where.append(" AND promotion_code IN :promotionCodes");
+//            params.put("promotionCodes", filter.getPromotionCodes());
+//        }
 
         if (filter.getStartDate() != null) {
             where.append(" AND created_at >= :startDate");
@@ -568,6 +718,8 @@ public class OrderService implements IOrderService {
 
         return result;
     }
+
+
 
     @Override
     public Map<String, Object> filterOrderProductWarranty(FilterOrderWarranty filter, Long userId, int page, int size) {

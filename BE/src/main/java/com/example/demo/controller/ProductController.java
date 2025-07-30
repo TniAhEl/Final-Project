@@ -1,9 +1,12 @@
 package com.example.demo.controller;
 
+import com.example.demo.dto.request.CompareRequest;
+import com.example.demo.dto.request.GetListProductRequest;
 import com.example.demo.dto.request.ProductFilterRequest;
 import com.example.demo.dto.request.orders.ReviewFilterRequest;
 import com.example.demo.dto.request.products.*;
 import com.example.demo.dto.response.ApiResponse;
+import com.example.demo.dto.response.ListProductResponse;
 import com.example.demo.dto.response.order.ReviewResponse;
 import com.example.demo.dto.response.product.ProductOptionResponse;
 import com.example.demo.dto.response.product.ProductResponse;
@@ -182,6 +185,19 @@ public class ProductController {
         Map<String, Object> response = orderReviewService.filterReviews(request, page, size);
         return ResponseEntity.ok(new ApiResponse("success", response));
 
+    }
+
+
+    @PostMapping("/guest/product")
+    public ResponseEntity<List<ListProductResponse>> getProductList(
+            @RequestBody GetListProductRequest request
+            ){
+        return ResponseEntity.ok(productOptionService.getListProduct(request));
+    }
+
+    @PostMapping("/compare")
+    public ResponseEntity<Map<String, Object>> compareProducts(@RequestBody CompareRequest request) {
+        return ResponseEntity.ok(productService.filterCompareProducts(request));
     }
 
 }

@@ -14,7 +14,7 @@ const InsuranceTable = () => {
   const [page, setPage] = useState(0);
   const [size, setSize] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
-  const [openDetail, setOpenDetail] = useState(null); // id của insurance đang mở detail
+  const [openDetail, setOpenDetail] = useState(null); 
 
   useEffect(() => {
     const fetchData = async () => {
@@ -22,12 +22,12 @@ const InsuranceTable = () => {
       setError(null);
       try {
         const userId = localStorage.getItem("userId");
-        if (!userId) throw new Error("Không tìm thấy userId");
+        if (!userId) throw new Error("Missing userId");
         const data = await fetchCustomerInsurances(userId, page, size);
         setInsurances(data.content || []);
         setTotalPages(data.totalPages || 1);
       } catch (err) {
-        setError("Không thể tải danh sách hợp đồng bảo hiểm.");
+        setError("Cannot load insurance contracts.");
         setInsurances([]);
       }
       setLoading(false);
@@ -41,17 +41,17 @@ const InsuranceTable = () => {
         <div className="divide-y divide-slate-300">
           {/* Header */}
           <div className="flex bg-neutral-50">
-            <div className="w-40 p-4 text-slate-800/90 text-sm font-medium">Mã hợp đồng</div>
-            <div className="w-40 p-4 text-slate-800/90 text-sm font-medium">Sản phẩm</div>
-            <div className="w-32 p-4 text-slate-800/90 text-sm font-medium">Khách hàng</div>
-            <div className="w-32 p-4 text-slate-800/90 text-sm font-medium">Ngày bắt đầu</div>
-            <div className="w-32 p-4 text-slate-800/90 text-sm font-medium">Ngày kết thúc</div>
-            <div className="w-24 p-4 text-slate-800/90 text-sm font-medium">Trạng thái</div>
-            <div className="w-32 p-4 text-slate-800/90 text-sm font-medium">Thao tác</div>
+            <div className="w-40 p-4 text-slate-800/90 text-sm font-medium">Contract ID</div>
+            <div className="w-40 p-4 text-slate-800/90 text-sm font-medium">Product</div>
+            <div className="w-32 p-4 text-slate-800/90 text-sm font-medium">Customer</div>
+            <div className="w-32 p-4 text-slate-800/90 text-sm font-medium">Start Date</div>
+            <div className="w-32 p-4 text-slate-800/90 text-sm font-medium">End Date</div>
+            <div className="w-24 p-4 text-slate-800/90 text-sm font-medium">Status</div>
+            <div className="w-32 p-4 text-slate-800/90 text-sm font-medium">Actions</div>
           </div>
           {/* Rows */}
           {loading ? (
-            <div className="p-6 text-center text-gray-400 w-full">Đang tải...</div>
+            <div className="p-6 text-center text-gray-400 w-full">Loading...</div>
           ) : error ? (
             <div className="p-6 text-center text-red-500 w-full">{error}</div>
           ) : insurances.length === 0 ? (
@@ -71,20 +71,20 @@ const InsuranceTable = () => {
                       onClick={() => setOpenDetail(openDetail === item.contractId ? null : item.contractId)}
                       className="px-3 py-1 rounded bg-blue-600 text-white hover:bg-blue-700 text-xs font-medium"
                     >
-                      {openDetail === item.contractId ? "Ẩn" : "Xem"}
+                      {openDetail === item.contractId ? "Hide" : "View"}
                     </button>
                   </div>
                 </div>
-                {/* Chi tiết insuranceResponse dạng dropdown */}
+                {/* insuranceResponse details */}
                 {openDetail === item.contractId && (
                   <div className="bg-blue-50 border-l-4 border-blue-400 p-4 text-sm animate-fade-in">
-                    <div><b>Tên gói:</b> {item.insuranceResponse?.name}</div>
-                    <div><b>Nhà cung cấp:</b> {item.insuranceResponse?.provider}</div>
-                    <div><b>Giá trị bảo hiểm:</b> {item.insuranceResponse?.coverageMoney?.toLocaleString("en-US")} VND</div>
-                    <div><b>Phí:</b> {item.insuranceResponse?.fee?.toLocaleString("en-US")} VND</div>
-                    <div><b>Ngày phát hành:</b> {item.insuranceResponse?.releaseAt}</div>
-                    <div><b>Điều khoản:</b> {item.insuranceResponse?.terms}</div>
-                    <div><b>Trạng thái:</b> {item.insuranceResponse?.status}</div>
+                    <div><b>Package Name:</b> {item.insuranceResponse?.name}</div>
+                    <div><b>Provider:</b> {item.insuranceResponse?.provider}</div>
+                    <div><b>Coverage Amount:</b> {item.insuranceResponse?.coverageMoney?.toLocaleString("en-US")} VND</div>
+                    <div><b>Fee:</b> {item.insuranceResponse?.fee?.toLocaleString("en-US")} VND</div>
+                    <div><b>Release Date:</b> {item.insuranceResponse?.releaseAt}</div>
+                    <div><b>Terms:</b> {item.insuranceResponse?.terms}</div>
+                    <div><b>Status:</b> {item.insuranceResponse?.status}</div>
                   </div>
                 )}
               </React.Fragment>

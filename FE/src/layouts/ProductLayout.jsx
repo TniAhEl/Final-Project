@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { MdPhoneIphone, MdBatteryFull } from "react-icons/md";
 import {
   FaMicrochip,
@@ -10,7 +10,7 @@ import {
   FaShieldAlt,
 } from "react-icons/fa";
 import { getProductById } from "../api/productService";
-import { addProductToCart } from "../api/cartService";
+import CompareButton from "../components/Button/Compare";
 
 // Function to decode JWT to get userId from token
 function getUserIdFromToken() {
@@ -29,7 +29,14 @@ function getUserIdFromToken() {
   }
 }
 
-const ProductLayout = ({ productData, onOptionChange }) => {
+const ProductLayout = ({ 
+  productData, 
+  onOptionChange, 
+  onAddToCart, 
+  addToCartLoading, 
+  addToCartMessage, 
+  cartItemCount 
+}) => {
   const { id } = useParams();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -39,7 +46,7 @@ const ProductLayout = ({ productData, onOptionChange }) => {
   const [selectedRam, setSelectedRam] = useState(null);
   const [selectedRom, setSelectedRom] = useState(null);
   const [selectedStore, setSelectedStore] = useState(null);
-  const [addCartLoading, setAddCartLoading] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (productData) {
@@ -169,7 +176,7 @@ const ProductLayout = ({ productData, onOptionChange }) => {
       if (onOptionChange) onOptionChange(found);
       return;
     }
-    // Nếu không hợp lệ, ưu tiên giữ giá trị vừa chọn
+    // If no valid option found, prioritize keeping the selected value
     if (selectedColor != null) {
       const validOpt = product.option.find(
         (opt) =>
@@ -207,7 +214,7 @@ const ProductLayout = ({ productData, onOptionChange }) => {
         return;
       }
     }
-    // Nếu không có gì hợp lệ, chọn option đầu tiên có remaining quantity > 0
+    // If no valid option found, select first available option
     const firstAvailableOption = product.option.find(
       (opt) => opt && opt.remainingQuantity > 0
     );
@@ -343,27 +350,22 @@ const ProductLayout = ({ productData, onOptionChange }) => {
   };
 
   // Function to handle add to cart
-  const handleAddToCart = async () => {
-    if (!selectedOption || !selectedOption.id) {
-      alert("Please select a product version!");
-      return;
+  const handleAddToCart = () => {
+    if (onAddToCart) {
+      onAddToCart(1);
     }
-    const userId = getUserIdFromToken();
-    if (!userId) {
-      alert("You need to login to add to cart!");
-      return;
-    }
-    setAddCartLoading(true);
-    try {
-      await addProductToCart(userId, {
-        productOptionId: selectedOption.id,
-        quantity: 1,
-      });
-      alert("Product added to cart!");
-    } catch (err) {
-      alert("Failed to add to cart!");
-    } finally {
-      setAddCartLoading(false);
+  };
+
+  // Buy Now handler
+  const handleBuyNow = async () => {
+    if (!selectedOption || !selectedOption.id || selectedOption.remainingQuantity <= 0) return;
+    
+    if (onAddToCart) {
+      await onAddToCart(1);
+      // Navigate to checkout after adding to cart
+      setTimeout(() => {
+        navigate("/order/checkout");
+      }, 1000);
     }
   };
 
@@ -819,11 +821,40 @@ const ProductLayout = ({ productData, onOptionChange }) => {
                 <button
                   className="text-center justify-start text-white text-base font-medium font-['Inter'] leading-normal w-full bg-black  transition rounded-md disabled:opacity-60"
                   onClick={handleAddToCart}
-                  disabled={addCartLoading}
+                  disabled={addToCartLoading}
                 >
-                  {addCartLoading ? "Đang thêm..." : "Add to Cart"}
+                  {addToCartLoading ? "Adding..." : "Add to Cart"}
                 </button>
               </div>
+              <CompareButton 
+                product={selectedOption || product} 
+                className="flex-1 min-w-[136px] px-14 py-4"
+              />
+            </div>
+            {/* Cart message */}
+            {addToCartMessage && (
+              <div className={`self-stretch mt-3 p-3 rounded-md text-sm ${
+                addToCartMessage.includes('lỗi') 
+                  ? 'bg-red-50 text-red-700 border border-red-200' 
+                  : 'bg-green-50 text-green-700 border border-green-200'
+              }`}>
+                {addToCartMessage}
+              </div>
+            )}
+            
+            {/* Buy Now button - new row */}
+            <div className="self-stretch mt-3">
+              <button
+                className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white text-lg font-semibold rounded-md shadow transition disabled:opacity-60 disabled:cursor-not-allowed"
+                onClick={handleBuyNow}
+                disabled={
+                  !selectedOption ||
+                  !selectedOption.remainingQuantity ||
+                  addToCartLoading
+                }
+              >
+                Buy Now
+              </button>
             </div>
             {/* Shipping and warranty info */}
             <div className="self-stretch inline-flex justify-start items-center gap-8">

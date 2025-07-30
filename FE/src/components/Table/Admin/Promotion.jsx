@@ -53,7 +53,7 @@ const PromotionTable = () => {
       setShowForm(false);
       fetchPromotions();
     } catch (err) {
-      setSuccessMessage("❌ Error! Please try again.");
+      setSuccessMessage(" Error! Please try again.");
     }
     setTimeout(() => {
       setSuccessMessage("");
@@ -75,17 +75,17 @@ const PromotionTable = () => {
     initialValuesRef.current = promo;
   };
 
-  // Theo dõi thay đổi form để enable/disable nút Update
+  // Form change handler to track changes
   const handleFormChange = (values) => {
     if (editingPromotion) {
       setFormChanged(isPromotionChanged(initialValuesRef.current, values));
     } else {
-      setFormChanged(true); // Khi tạo mới luôn cho phép submit nếu có thay đổi
+      setFormChanged(true); // When creating a new promotion, always allow submit if there are changes
     }
   };
 
   const handleDeletePromotion = async (promo) => {
-    setSuccessMessage("Xóa promotion chưa được tích hợp API!");
+    setSuccessMessage("Deleting promotion is not integrated yet!");
     setTimeout(() => setSuccessMessage(""), 2000);
   };
 

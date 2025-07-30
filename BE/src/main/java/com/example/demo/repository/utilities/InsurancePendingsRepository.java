@@ -20,5 +20,5 @@ public interface InsurancePendingsRepository extends JpaRepository<InsurancePend
             @Param("orderProductId") Long orderProductId
     );
 
-
+    List<InsurancePending> findAllByOrderId(Long order);
 }

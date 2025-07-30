@@ -6,6 +6,7 @@ import com.example.demo.dto.request.utilities.InsurancePendingRequest;
 import com.example.demo.dto.request.utilities.OrderInforRequest;
 import com.example.demo.dto.response.ApiResponse;
 import com.example.demo.dto.response.order.OrderResponse;
+import com.example.demo.dto.response.order.OrderResponseDetail;
 import com.example.demo.dto.response.order.ReviewReplyResponse;
 import com.example.demo.dto.response.order.ReviewResponse;
 import com.example.demo.enums.OrderStatus;
@@ -55,6 +56,30 @@ public class OrderController {
                     .body(new ApiResponse("Error occurred while placing order", e.toString()));
         }
     }
+
+    @PostMapping("/guest/order")
+    public ResponseEntity<ApiResponse> createGuestOrder(
+            @RequestParam(required = false) String promotionCode,
+            @RequestBody PlaceOrderRequest requestWrapper
+    ) {
+        try {
+            // Xử lý đặt hàng cho khách không đăng nhập
+            Order order = orderService.unknownPlaceOrder(
+                    requestWrapper.getProductList(),
+                    requestWrapper.getOrderInfo(),
+                    promotionCode,
+                    requestWrapper.getInsuranceContracts()
+            );
+
+            OrderResponse orderResponse = orderService.convertToResponse(order);
+            return ResponseEntity.ok(new ApiResponse("Order placed successfully!", orderResponse));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ApiResponse("Error occurred while placing order", e.getMessage()));
+        }
+    }
+
 
 
 
@@ -150,6 +175,29 @@ public class OrderController {
         OrderResponse response = orderService.convertToResponse(order);
         return ResponseEntity.ok(new ApiResponse("Confirm order  success", response));
     }
+    @PutMapping("/admin/update")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse> updateOrder(
+            @RequestParam Long adminId,
+            @RequestParam Long orderId,
+            @RequestParam OrderStatus status
+    ){
+        Order order = orderService.updateOrder(adminId, orderId, status);
+        OrderResponse response = orderService.convertToResponse(order);
+        return ResponseEntity.ok(new ApiResponse("Update order  success", response));
+    }
+
+    @PutMapping("/customer/update")
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<ApiResponse> updateOrder(
+            @RequestParam Long orderId,
+            @RequestParam OrderStatus status
+    ){
+        Order order = orderService.updateOrder( orderId, status);
+        OrderResponse response = orderService.convertToResponse(order);
+        return ResponseEntity.ok(new ApiResponse("Update order  success", response));
+    }
+
 
     @PostMapping("/customer")
     @PreAuthorize("hasRole('USER')")
@@ -171,6 +219,15 @@ public class OrderController {
             @RequestParam int size
     ){
         return ResponseEntity.ok(orderService.filterOrderProductWarranty(filter, userId, page, size));
+    }
+
+    @GetMapping("customer/{orderId}")
+    public ResponseEntity<OrderResponseDetail> getOrder(
+        @PathVariable Long orderId
+    )
+    {
+        return ResponseEntity.ok(orderService.getOrder(orderId));
+
     }
 
 

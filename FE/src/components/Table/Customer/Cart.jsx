@@ -21,7 +21,7 @@ const CartTable = () => {
     setError(null);
     try {
       const userId = localStorage.getItem("userId");
-      if (!userId) throw new Error("Không tìm thấy userId");
+      if (!userId) throw new Error("Missing userId");
       const res = await getCartByUserId(userId);
       const data = res.data;
       const items = (data.cartProducts || []).map((p) => ({
@@ -29,15 +29,15 @@ const CartTable = () => {
         name: p.productOption.productName,
         price: p.productOption.price,
         quantity: p.quantity,
-        image: p.productOption.image, // nếu có
+        image: p.productOption.image, // 
         productOption: p.productOption,
         productOptionId: p.productOption.id,
       }));
       setCartItems(items);
       setCartId(data.id);
-      console.log(items); // kiểm tra dữ liệu
+      console.log(items); //
     } catch (err) {
-      setError("Không thể tải giỏ hàng.");
+      setError("Cannot load cart.");
       setCartItems([]);
     }
     setLoading(false);
@@ -59,7 +59,7 @@ const CartTable = () => {
       setUpdatingId(null);
     } catch (err) {
       setUpdatingId(null);
-      alert("Không thể tăng số lượng.");
+      alert("Cannot increase quantity.");
     }
   };
 
@@ -76,7 +76,7 @@ const CartTable = () => {
       setUpdatingId(null);
     } catch (err) {
       setUpdatingId(null);
-      alert("Không thể giảm số lượng.");
+      alert("Cannot decrease quantity.");
     }
   };
 
@@ -86,18 +86,18 @@ const CartTable = () => {
       await deleteCartProduct(userId, item.productOptionId);
       fetchCart();
     } catch (err) {
-      alert("Không thể xóa sản phẩm.");
+      alert("Cannot remove product.");
     }
   };
 
   const handleClearCart = async () => {
     if (!cartId) return;
-    if (!window.confirm("Bạn có chắc muốn xóa toàn bộ giỏ hàng?")) return;
+    if (!window.confirm("Are you sure you want to clear the entire cart?")) return;
     try {
       await clearCart(cartId);
       fetchCart();
     } catch (err) {
-      alert("Không thể xóa toàn bộ giỏ hàng.");
+      alert("Cannot clear cart.");
     }
   };
 
@@ -112,28 +112,28 @@ const CartTable = () => {
         {/* Header */}
         <div className="flex bg-neutral-50">
           <div className="flex-1 p-4 text-slate-800/90 text-sm font-medium">
-            Sản phẩm
+            Product
           </div>
           <div className="w-32 p-4 text-slate-800/90 text-sm font-medium">
-            Giá
+            Price
           </div>
           <div className="w-32 p-4 text-slate-800/90 text-sm font-medium">
-            Số lượng
+            Quantity
           </div>
           <div className="w-32 p-4 text-slate-800/90 text-sm font-medium">
-            Thành tiền
+            Total
           </div>
           <div className="w-24 p-4 text-slate-800/90 text-sm font-medium">
-            Thao tác
+            Actions
           </div>
         </div>
         {/* Rows */}
         {loading ? (
-          <div className="p-6 text-center text-gray-400 w-full">Đang tải...</div>
+          <div className="p-6 text-center text-gray-400 w-full">Loading...</div>
         ) : error ? (
           <div className="p-6 text-center text-red-500 w-full">{error}</div>
         ) : cartItems.length === 0 ? (
-          <div className="p-6 text-center text-gray-400 w-full">Giỏ hàng trống.</div>
+          <div className="p-6 text-center text-gray-400 w-full">Cart is empty.</div>
         ) : (
           cartItems.map((item, idx) => (
             <div
@@ -190,10 +190,10 @@ const CartTable = () => {
             </div>
           ))
         )}
-        {/* Tổng tiền */}
+        {/* Total */}
         {cartItems.length > 0 && !loading && (
           <div className="flex bg-neutral-100 font-bold text-lg items-center">
-            <div className="flex-1 p-4 text-right">Tổng cộng:</div>
+            <div className="flex-1 p-4 text-right">Total:</div>
             <div className="w-32 p-4 text-violet-600">
               {total.toLocaleString()}₫
             </div>
@@ -208,7 +208,7 @@ const CartTable = () => {
                 onClick={handleClearCart}
                 className="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700 text-xs font-semibold"
               >
-                Xóa toàn bộ
+                Clear Cart
               </button>
             </div>
           </div>

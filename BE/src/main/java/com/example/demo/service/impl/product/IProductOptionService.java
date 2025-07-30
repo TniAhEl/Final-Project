@@ -1,6 +1,8 @@
 package com.example.demo.service.impl.product;
 
+import com.example.demo.dto.request.GetListProductRequest;
 import com.example.demo.dto.request.products.CreateProductOptionRequest;
+import com.example.demo.dto.response.ListProductResponse;
 import com.example.demo.dto.response.product.ProductOptionResponse;
 import com.example.demo.model.product.ProductOption;
 
@@ -8,6 +10,9 @@ import java.util.List;
 
 public interface IProductOptionService {
     ProductOption getOptionById(Long id);
+
+    List<ListProductResponse> getListProduct(GetListProductRequest request);
+
     ProductOption createProductOption(CreateProductOptionRequest request);
 
     ProductOptionResponse convertToResponse(ProductOption productOption);

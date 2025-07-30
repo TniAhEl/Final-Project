@@ -25,12 +25,12 @@ const CategoryLayout = () => {
   const footerRef = useRef(null);
   const [initialized, setInitialized] = useState(false);
   const [isDebouncing, setIsDebouncing] = useState(false);
-  const [brandFilterApplied, setBrandFilterApplied] = useState(false); // Thêm state này
-  const [isFiltering, setIsFiltering] = useState(false); // Thêm state cho filter loading
+  const [brandFilterApplied, setBrandFilterApplied] = useState(false); 
+  const [isFiltering, setIsFiltering] = useState(false); 
 
-  // Fetch products với filter (hoặc filter rỗng)
+  // Fetch products with filters
   const fetchFilteredProducts = async (filterObject, pageToFetch = 0) => {
-    // Nếu pageToFetch = 0 (filter mới), set isFiltering = true
+    // If pageToFetch = 0 (), set isFiltering = true
     if (pageToFetch === 0) {
       setIsFiltering(true);
     }
@@ -58,11 +58,11 @@ const CategoryLayout = () => {
       setHasMore(false);
     } finally {
       setLoading(false);
-      setIsFiltering(false); // Reset isFiltering khi fetch xong
+      setIsFiltering(false); // Reset isFiltering after fetching
     }
   };
 
-  // Lần đầu mount: nếu có filter từ Brand.jsx thì ưu tiên, chỉ áp dụng 1 lần
+  // First mount: if there are filters from Brand.jsx, prioritize them, only apply once
   useEffect(() => {
     if (!initialized) {
       if (location.state && location.state.filter && !brandFilterApplied) {
@@ -75,7 +75,7 @@ const CategoryLayout = () => {
         setPage(0);
         setHasMore(true);
         fetchFilteredProducts(filter, 0);
-        setBrandFilterApplied(true); // Đánh dấu đã áp dụng filter từ Brand.jsx
+        setBrandFilterApplied(true); // Set brand filter applied
         setInitialized(true);
         return;
       }
@@ -89,14 +89,14 @@ const CategoryLayout = () => {
     // eslint-disable-next-line
   }, [initialized, location.state, brandFilterApplied]);
 
-  // Khi page thay đổi (lazy load)
+  // When page changes (lazy load)
   useEffect(() => {
     if (page === 0) return;
     fetchFilteredProducts(currentFilters, page);
     // eslint-disable-next-line
   }, [page]);
 
-  // Khi filter thay đổi (do người dùng thao tác), fetch lại sản phẩm nhưng chỉ khi debounce xong
+  // When filters change (due to user actions), fetch products again but only after debounce is done
   useEffect(() => {
     if (initialized && !isDebouncing) {
       setPage(0);
@@ -105,7 +105,7 @@ const CategoryLayout = () => {
     // eslint-disable-next-line
   }, [currentFilters, isDebouncing]);
 
-  // Lazy load: khi scroll đến cuối trang thì tăng page
+  // Lazy load: when scrolling to the bottom of the page, increase page
   useEffect(() => {
     const handleScroll = () => {
       if (loading || !hasMore) return;
@@ -121,30 +121,40 @@ const CategoryLayout = () => {
     // eslint-disable-next-line
   }, [loading, hasMore]);
 
-  // Thêm useEffect log products
+  // Add useEffect log products
   useEffect(() => {
     if (products.length > 0) {
       console.log("All products after fetch:", products);
     }
   }, [products]);
 
-  // Nhận filter object từ FilterBar
+  // Receive filter object từ FilterBar
   const handleFilterChange = (filterObject) => {
-    // Chuyển đổi filterObject: loại bỏ undefined/null, ép kiểu về string hoặc mảng string
     const cleanFilter = {};
     Object.entries(filterObject).forEach(([key, value]) => {
       if (value !== undefined && value !== null && value !== "") {
         if (Array.isArray(value)) {
-          cleanFilter[key] = value.map((v) => v.toString());
+          if (key === 'ram' || key === 'rom') {
+            cleanFilter[key] = value.map((v) => {
+              const num = parseInt(v.toString().replace(/\D/g, ''));
+              return isNaN(num) ? v.toString() : num;
+            });
+          } else {
+            cleanFilter[key] = value.map((v) => v.toString());
+          }
         } else {
-          cleanFilter[key] = value.toString();
+          if (key === 'ram' || key === 'rom') {
+            const num = parseInt(value.toString().replace(/\D/g, ''));
+            cleanFilter[key] = isNaN(num) ? value.toString() : num;
+          } else {
+            cleanFilter[key] = value.toString();
+          }
         }
       }
     });
     setCurrentFilters(cleanFilter);
   };
 
-  // Tính số sản phẩm available
   const availableProducts = products.filter((product) => {
     if (!Array.isArray(product.option)) return false;
     const totalRemain = product.option
@@ -155,11 +165,8 @@ const CategoryLayout = () => {
 
   return (
     <div className="flex flex-col w-full min-h-screen bg-gray-50">
-      {/* Filter Bar ở phía trên */}
 
-      {/* Nội dung chính */}
       <div className="flex-1 p-8">
-        {/* Container với chiều rộng tối đa */}
         <div className="max-w-[1320px] mx-auto">
           <FilterBar
             categories={categories}
@@ -183,9 +190,9 @@ const CategoryLayout = () => {
             <div className="mb-4 text-blue-500 text-sm">Filtering...</div>
           )}
           {/* Result information */}
-          {availableProducts.length > 0 && (
+          {products.length > 0 && (
             <div className="mb-6 text-sm text-gray-600">
-              Showing {availableProducts.length} available products
+              Showing {products.length} products
               {totalElements > 0 && ` (total ${totalElements} products)`}
             </div>
           )}
@@ -203,26 +210,20 @@ const CategoryLayout = () => {
               <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
               Filtering products...
             </div>
-          ) : availableProducts.length === 0 ? (
+          ) : products.length === 0 ? (
             <div className="text-center text-gray-400 py-12">
               <div className="text-6xl mb-4">📦</div>
-              No available products found
+              No products found
             </div>
           ) : (
             <>
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2">
-                {availableProducts.map((product, idx) => (
+                {products.map((product, idx) => (
                   <ProductCard
                     key={product.id || idx}
                     {...product}
                     status={product.status}
-                    option={
-                      Array.isArray(product.option)
-                        ? product.option.filter(
-                            (opt) => opt.remainingQuantity > 0
-                          )
-                        : []
-                    }
+                    option={Array.isArray(product.option) ? product.option : []}
                   />
                 ))}
               </div>

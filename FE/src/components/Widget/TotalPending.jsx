@@ -20,7 +20,7 @@ const TotalPending = ({
       style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}
     >
       <FaHourglassHalf size={24} color="#ff9800" />
-      <span style={{ fontSize: 18, color: "#888" }}>Đơn chờ xử lý</span>
+      <span style={{ fontSize: 18, color: "#888" }}>Pending Orders</span>
     </div>
     <div style={{ fontSize: 32, fontWeight: "bold", color: "#ff9800" }}>
       {value}
@@ -32,8 +32,7 @@ const TotalPending = ({
         color: compareType === "up" ? "#43a047" : "#e53935",
       }}
     >
-      {compareType === "up" ? "▲" : "▼"} {Math.abs(compareValue)}% so với tuần
-      trước
+      {compareType === "up" ? "▲" : "▼"} {Math.abs(compareValue)}% compared to last week
     </div>
   </div>
 );

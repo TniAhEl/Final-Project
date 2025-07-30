@@ -16,7 +16,7 @@ const TotalRevenue = ({ value = 0, compareValue = 0, compareType = "up" }) => (
       style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}
     >
       <FaMoneyBillWave size={24} color="#43a047" />
-      <span style={{ fontSize: 18, color: "#888" }}>Tổng doanh thu</span>
+      <span style={{ fontSize: 18, color: "#888" }}>Total Revenue</span>
     </div>
     <div style={{ fontSize: 32, fontWeight: "bold", color: "#43a047" }}>
       {value.toLocaleString()}₫
@@ -28,8 +28,7 @@ const TotalRevenue = ({ value = 0, compareValue = 0, compareType = "up" }) => (
         color: compareType === "up" ? "#43a047" : "#e53935",
       }}
     >
-      {compareType === "up" ? "▲" : "▼"} {Math.abs(compareValue)}% so với tháng
-      trước
+      {compareType === "up" ? "▲" : "▼"} {Math.abs(compareValue)}% compared to last month
     </div>
   </div>
 );

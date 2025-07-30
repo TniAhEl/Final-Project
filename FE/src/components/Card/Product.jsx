@@ -1,6 +1,7 @@
 import { FaStar } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
+import CompareButton from "../Button/Compare";
 
 const ProductCard = (product) => {
   if (
@@ -25,7 +26,7 @@ const ProductCard = (product) => {
     screenTech,
     screenResolution,
     productImageResponse,
-    productStatus, 
+    productStatus,
   } = product;
 
   const navigate = useNavigate();
@@ -35,6 +36,53 @@ const ProductCard = (product) => {
   const [selectedColor, setSelectedColor] = useState(null);
   const [selectedRam, setSelectedRam] = useState(null);
   const [selectedRom, setSelectedRom] = useState(null);
+
+  // Helper function to add product to compare list
+  const addToCompareList = (product) => {
+    try {
+      // Check localStorage
+      const savedProducts = localStorage.getItem("compareProducts");
+      const compareProducts = savedProducts ? JSON.parse(savedProducts) : [];
+
+      // make sure product id and product name
+      const productId = product.id || id;
+      const productName = product.name || name;
+
+      // Check if product already exists in compare list
+      const exists = compareProducts.find((p) => p.id === productId);
+      if (exists) {
+        alert("Product already exists in compare list");
+        return false;
+      }
+
+      // Check max quantity
+      if (compareProducts.length >= 8) {
+        alert("You can only compare up to 8 products");
+        return false;
+      }
+
+      // Save product ID and name
+      compareProducts.push({
+        id: productId,
+        name: productName,
+      });
+      localStorage.setItem("compareProducts", JSON.stringify(compareProducts));
+
+      // Notify CompareSidebar
+      window.dispatchEvent(
+        new CustomEvent("compareProductsUpdated", {
+          detail: { products: compareProducts },
+        })
+      );
+
+      alert("Product added to compare list!");
+      return true;
+    } catch (error) {
+      console.error("Error adding product to compare:", error);
+      alert("Error adding product to compare list");
+      return false;
+    }
+  };
 
   // Get full list of values
   const colorList = Array.from(
@@ -227,7 +275,13 @@ const ProductCard = (product) => {
       {productStatus && (
         <div
           className={`absolute top-3 left-3 px-3 py-1 rounded-full text-xs font-bold shadow-md z-10
-            ${productStatus === "ONSELL" ? "bg-green-500 text-white" : productStatus === "PREORDER" ? "bg-yellow-400 text-gray-800" : "bg-gray-300 text-gray-700"}
+            ${
+              productStatus === "ONSELL"
+                ? "bg-green-500 text-white"
+                : productStatus === "PREORDER"
+                ? "bg-yellow-400 text-gray-800"
+                : "bg-gray-300 text-gray-700"
+            }
           `}
         >
           {productStatus === "ONSELL"
@@ -435,6 +489,21 @@ const ProductCard = (product) => {
             {option.length} versions
           </div>
         )}
+
+        {/* Compare button */}
+        <div className="mt-2">
+          <CompareButton
+            product={{ id, name, price, brand, ...product }}
+            className="w-full py-2 text-xs"
+            onClick={(e) => {
+              e.stopPropagation(); // Prevent navigation to product detail
+
+              // Always use main product Id and name
+              const currentProduct = { id, name, price, brand, ...product };
+              addToCompareList(currentProduct);
+            }}
+          />
+        </div>
       </div>
     </div>
   );

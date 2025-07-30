@@ -56,9 +56,9 @@ const Profile = () => {
       });
       setUser({ ...user, ...formData });
       setEditing(false);
-      setSuccessMsg("Cập nhật thông tin thành công!");
+      setSuccessMsg("Update successful!");
     } catch (e) {
-      setError("Cập nhật thông tin thất bại!");
+      setError("Update failed!");
     } finally {
       setSaving(false);
       setTimeout(() => setSuccessMsg(""), 2500);

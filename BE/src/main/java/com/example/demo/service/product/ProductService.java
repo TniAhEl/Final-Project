@@ -1,9 +1,11 @@
 package com.example.demo.service.product;
 
+import com.example.demo.dto.request.CompareRequest;
 import com.example.demo.dto.request.ProductFilterRequest;
 import com.example.demo.dto.request.products.CreateProductRequest;
 import com.example.demo.dto.request.products.UpdateProductRequest;
 import com.example.demo.dto.response.product.*;
+import com.example.demo.enums.ColorName;
 import com.example.demo.enums.ProductStatus;
 import com.example.demo.exception.ResourceNotFoundException;
 import com.example.demo.model.product.*;
@@ -17,9 +19,11 @@ import jakarta.persistence.Query;
 import jakarta.persistence.TypedQuery;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -33,6 +37,8 @@ public class ProductService implements IProductService {
     private final WarrantyRepository warrantyRepository;
     private final ModelMapper modelMapper;
     private final ProductOptionRepository productOptionRepository;
+
+    private final JdbcTemplate jdbcTemplate;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -236,15 +242,77 @@ public class ProductService implements IProductService {
         return products.stream().map(this::convertToResponse).toList();
     }
 
+    @Override
+    public ProductFilterResponse convertFilterResponse(Map<String, Object> row) {
+        ProductFilterResponse response = new ProductFilterResponse();
+
+        response.setId(((Number) row.get("id")).longValue());
+        response.setName((String) row.get("name"));
+        response.setScreenResolution((String) row.get("screen_resolution"));
+        response.setScreenDimension((String) row.get("screen_dimension"));
+        response.setScreenTech((String) row.get("screen_tech"));
+
+        // Map category
+        CategoryResponse category = new CategoryResponse();
+        category.setId((Long) row.get("category_id"));
+        category.setName((String) row.get("category_name"));
+        response.setCategory(category);
+
+        // Map list of options
+        List<Map<String, Object>> optionRows = (List<Map<String, Object>>) row.get("options");
+        if (optionRows != null) {
+            List<ProductOptionResponse> options = optionRows.stream().map(opt -> {
+                ProductOptionResponse option = new ProductOptionResponse();
+                option.setId((Long) opt.get("option_id"));
+                option.setRam(opt.get("ram") != null ? ((Number) opt.get("ram")).intValue() : null);
+                option.setRom(opt.get("rom") != null ? ((Number) opt.get("rom")).intValue() : null);
+                option.setPrice((BigDecimal) opt.get("price"));
+                option.setColorName(
+                        Optional.ofNullable((String) opt.get("color_name"))
+                                .map(ColorName::valueOf)
+                                .orElse(null)
+                );
+                return option;
+            }).toList();
+
+            response.setOption(options);
+        } else {
+            response.setOption(Collections.emptyList());
+        }
+
+        return response;
+    }
+
+
+
+
+    @Override
+    public List<ProductFilterResponse> convertToFilterResponses(List<Map<String, Object>> rows) {
+        return rows.stream().map(this::convertFilterResponse).toList();
+    }
+
+
+
 
     @Override
     public Map<String, Object> filterProducts(ProductFilterRequest filter, int page, int size) {
         String productSql = """
-        SELECT DISTINCT p.*
+        SELECT 
+            p.id,
+            p.name,
+            p.screen_resolution,
+            p.screen_dimension,
+            p.screen_tech,
+            c.name AS category_name,
+            o.ram,
+            o.rom,
+            o.color_name,
+            o.price,
+            o.id AS option_id
         FROM product p
-        JOIN product_category c ON p.category_id = c.id
-        JOIN product_option o ON o.product_id = p.id
-        WHERE p.product_status != 'DRAFT' AND p.product_status != 'OUT_STOCK'
+        LEFT JOIN product_category c ON p.category_id = c.id
+        LEFT JOIN product_option o ON o.product_id = p.id
+        WHERE 1=1
     """;
 
         StringBuilder where = new StringBuilder();
@@ -283,13 +351,9 @@ public class ProductService implements IProductService {
             productParams.put("maxPrice", filter.getMaxPrice());
         }
 
-        String orderBy;
-        if (Boolean.TRUE.equals(filter.getSortByNewest())) {
-            orderBy = " ORDER BY p.update_at DESC";
-        } else {
-            orderBy = " ORDER BY p.id ASC";
-        }
-
+        String orderBy = Boolean.TRUE.equals(filter.getSortByNewest())
+                ? " ORDER BY p.update_at DESC"
+                : " ORDER BY p.id ASC";
 
         String fullProductSql = productSql + where + orderBy + " LIMIT :limit OFFSET :offset";
 
@@ -297,11 +361,11 @@ public class ProductService implements IProductService {
         SELECT COUNT(DISTINCT p.id)
         FROM product p
         JOIN product_category c ON p.category_id = c.id
-        JOIN product_option o ON o.product_id = p.id
+        LEFT JOIN product_option o ON o.product_id = p.id
         WHERE 1=1
     """ + where;
 
-        Query productQuery = entityManager.createNativeQuery(fullProductSql, Product.class);
+        Query productQuery = entityManager.createNativeQuery(fullProductSql);
         Query countQuery = entityManager.createNativeQuery(countSql);
 
         productParams.forEach((k, v) -> {
@@ -313,58 +377,42 @@ public class ProductService implements IProductService {
         productQuery.setParameter("offset", page * size);
 
         @SuppressWarnings("unchecked")
-        List<Product> products = productQuery.getResultList();
+        List<Object[]> rows = productQuery.getResultList();
 
-        // Lọc options nếu có sản phẩm
-        if (!products.isEmpty()) {
-            List<Long> productIds = products.stream().map(Product::getId).collect(Collectors.toList());
+        // Gom theo productId
+        Map<Long, Map<String, Object>> grouped = new LinkedHashMap<>();
 
-            String optionSql = "SELECT o FROM ProductOption o WHERE o.product.id IN :productIds";
-            StringBuilder optionWhere = new StringBuilder();
+        for (Object[] row : rows) {
+            Long productId = ((Number) row[0]).longValue();
 
-            if (filter.getRam() != null && !filter.getRam().isEmpty()) {
-                optionWhere.append(" AND o.ram IN :rams");
-            }
-            if (filter.getRom() != null && !filter.getRom().isEmpty()) {
-                optionWhere.append(" AND o.rom IN :roms");
-            }
-            if (filter.getMinPrice() != null) {
-                optionWhere.append(" AND o.price >= :minPrice");
-            }
-            if (filter.getMaxPrice() != null) {
-                optionWhere.append(" AND o.price <= :maxPrice");
-            }
+            Map<String, Object> productMap = grouped.computeIfAbsent(productId, id -> {
+                Map<String, Object> map = new HashMap<>();
+                map.put("id", row[0]);
+                map.put("name", row[1]);
+                map.put("screen_resolution", row[2]);
+                map.put("screen_dimension", row[3]);
+                map.put("screen_tech", row[4]);
+                map.put("category_name", row[5]);
+                map.put("options", new ArrayList<Map<String, Object>>());
+                return map;
+            });
 
-            TypedQuery<ProductOption> optionQuery = entityManager.createQuery(optionSql + optionWhere, ProductOption.class);
-            optionQuery.setParameter("productIds", productIds);
-
-            if (filter.getRam() != null && !filter.getRam().isEmpty()) {
-                optionQuery.setParameter("rams", filter.getRam());
-            }
-            if (filter.getRom() != null && !filter.getRom().isEmpty()) {
-                optionQuery.setParameter("roms", filter.getRom());
-            }
-            if (filter.getMinPrice() != null) {
-                optionQuery.setParameter("minPrice", filter.getMinPrice());
-            }
-            if (filter.getMaxPrice() != null) {
-                optionQuery.setParameter("maxPrice", filter.getMaxPrice());
-            }
-
-            List<ProductOption> filteredOptions = optionQuery.getResultList();
-
-            Map<Long, List<ProductOption>> optionsByProduct = filteredOptions.stream()
-                    .collect(Collectors.groupingBy(option -> option.getProduct().getId()));
-
-            for (Product product : products) {
-                product.setProductOptions(optionsByProduct.getOrDefault(product.getId(), Collections.emptyList()));
+            List<Map<String, Object>> options = (List<Map<String, Object>>) productMap.get("options");
+            if (row[10] != null) { // nếu option_id có
+                Map<String, Object> option = new HashMap<>();
+                option.put("option_id", row[10]);
+                option.put("ram", row[6]);
+                option.put("rom", row[7]);
+                option.put("color_name", row[8]);
+                option.put("price", row[9]);
+                options.add(option);
             }
         }
 
         Long total = ((Number) countQuery.getSingleResult()).longValue();
 
         Map<String, Object> response = new HashMap<>();
-        response.put("content", convertToResponses(products));
+        response.put("content", convertToFilterResponses(new ArrayList<>(grouped.values())));
         response.put("page", page);
         response.put("size", size);
         response.put("totalElements", total);
@@ -378,7 +426,18 @@ public class ProductService implements IProductService {
     @Override
     public Map<String, Object> filterAdminProducts(ProductFilterRequest filter, int page, int size) {
         String productSql = """
-        SELECT DISTINCT p.*
+        SELECT p.id,
+               p.name,
+               p.screen_dimension,
+               p.screen_tech,
+               p.screen_resolution,
+               c.id AS category_id,
+               c.name AS category_name,
+               o.color_name,
+               o.ram,
+               o.rom,
+               o.price,
+               o.id AS option_id
         FROM product p
         JOIN product_category c ON p.category_id = c.id
         LEFT JOIN product_option o ON o.product_id = p.id
@@ -421,12 +480,9 @@ public class ProductService implements IProductService {
             productParams.put("maxPrice", filter.getMaxPrice());
         }
 
-        String orderBy;
-        if (Boolean.TRUE.equals(filter.getSortByNewest())) {
-            orderBy = " ORDER BY p.update_at DESC";
-        } else {
-            orderBy = " ORDER BY p.id ASC";
-        }
+        String orderBy = Boolean.TRUE.equals(filter.getSortByNewest())
+                ? " ORDER BY p.update_at DESC"
+                : " ORDER BY p.id ASC";
 
         String fullProductSql = productSql + where + orderBy + " LIMIT :limit OFFSET :offset";
 
@@ -438,7 +494,7 @@ public class ProductService implements IProductService {
         WHERE 1=1
     """ + where;
 
-        Query productQuery = entityManager.createNativeQuery(fullProductSql, Product.class);
+        Query productQuery = entityManager.createNativeQuery(fullProductSql);
         Query countQuery = entityManager.createNativeQuery(countSql);
 
         productParams.forEach((k, v) -> {
@@ -450,58 +506,45 @@ public class ProductService implements IProductService {
         productQuery.setParameter("offset", page * size);
 
         @SuppressWarnings("unchecked")
-        List<Product> products = productQuery.getResultList();
+        List<Object[]> rows = productQuery.getResultList();
 
-        // Lọc options nếu có sản phẩm
-        if (!products.isEmpty()) {
-            List<Long> productIds = products.stream().map(Product::getId).collect(Collectors.toList());
+        // Grouping by productId
+        Map<Long, Map<String, Object>> grouped = new LinkedHashMap<>();
 
-            String optionSql = "SELECT o FROM ProductOption o WHERE o.product.id IN :productIds";
-            StringBuilder optionWhere = new StringBuilder();
+        for (Object[] row : rows) {
+            Long productId = ((Number) row[0]).longValue();
 
-            if (filter.getRam() != null && !filter.getRam().isEmpty()) {
-                optionWhere.append(" AND o.ram IN :rams");
-            }
-            if (filter.getRom() != null && !filter.getRom().isEmpty()) {
-                optionWhere.append(" AND o.rom IN :roms");
-            }
-            if (filter.getMinPrice() != null) {
-                optionWhere.append(" AND o.price >= :minPrice");
-            }
-            if (filter.getMaxPrice() != null) {
-                optionWhere.append(" AND o.price <= :maxPrice");
-            }
+            // Nếu chưa tồn tại, tạo mới product map
+            Map<String, Object> productMap = grouped.computeIfAbsent(productId, id -> {
+                Map<String, Object> map = new HashMap<>();
+                map.put("id", row[0]);
+                map.put("name", row[1]);
+                map.put("screen_dimension", row[2]);
+                map.put("screen_tech", row[3]);
+                map.put("screen_resolution", row[4]);
+                map.put("category_id", row[5]);
+                map.put("category_name", row[6]);
+                map.put("options", new ArrayList<Map<String, Object>>());
+                return map;
+            });
 
-            TypedQuery<ProductOption> optionQuery = entityManager.createQuery(optionSql + optionWhere, ProductOption.class);
-            optionQuery.setParameter("productIds", productIds);
-
-            if (filter.getRam() != null && !filter.getRam().isEmpty()) {
-                optionQuery.setParameter("rams", filter.getRam());
-            }
-            if (filter.getRom() != null && !filter.getRom().isEmpty()) {
-                optionQuery.setParameter("roms", filter.getRom());
-            }
-            if (filter.getMinPrice() != null) {
-                optionQuery.setParameter("minPrice", filter.getMinPrice());
-            }
-            if (filter.getMaxPrice() != null) {
-                optionQuery.setParameter("maxPrice", filter.getMaxPrice());
-            }
-
-            List<ProductOption> filteredOptions = optionQuery.getResultList();
-
-            Map<Long, List<ProductOption>> optionsByProduct = filteredOptions.stream()
-                    .collect(Collectors.groupingBy(option -> option.getProduct().getId()));
-
-            for (Product product : products) {
-                product.setProductOptions(optionsByProduct.getOrDefault(product.getId(), Collections.emptyList()));
+            // Gộp option
+            List<Map<String, Object>> options = (List<Map<String, Object>>) productMap.get("options");
+            if (row[11] != null) { // nếu có option_id thì mới add
+                Map<String, Object> option = new HashMap<>();
+                option.put("option_id", row[11]);
+                option.put("color_name", row[7]);
+                option.put("ram", row[8]);
+                option.put("rom", row[9]);
+                option.put("price", row[10]);
+                options.add(option);
             }
         }
 
         Long total = ((Number) countQuery.getSingleResult()).longValue();
 
         Map<String, Object> response = new HashMap<>();
-        response.put("content", convertToResponses(products));
+        response.put("content", convertToFilterResponses(new ArrayList<>(grouped.values())));
         response.put("page", page);
         response.put("size", size);
         response.put("totalElements", total);
@@ -510,6 +553,42 @@ public class ProductService implements IProductService {
         return response;
     }
 
+
+
+    @Override
+    public Map<String, Object> filterCompareProducts(CompareRequest request) {
+        Map<String, Object> result = new HashMap<>();
+
+        if (request.getProductId() == null || request.getProductId().isEmpty()) {
+            result.put("data", Collections.emptyList());
+            result.put("message", "No product IDs provided");
+            return result;
+        }
+
+        // Tạo placeholders: (?, ?, ?, ...)
+        String placeholders = request.getProductId().stream()
+                .map(id -> "?")
+                .collect(Collectors.joining(", "));
+
+        String compareSql = """
+        SELECT 
+            p.*,
+            op.id AS option_id,
+            op.ram,
+            op.rom,
+            op.price,
+            op.color_name
+        FROM product p
+        JOIN product_option op ON op.product_id = p.id
+        WHERE p.id IN (%s)
+    """.formatted(placeholders);
+
+        List<Map<String, Object>> products = jdbcTemplate.queryForList(compareSql, request.getProductId().toArray());
+
+        result.put("data", products);
+        result.put("total", products.size());
+        return result;
+    }
 
 
     @Override

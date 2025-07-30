@@ -47,7 +47,7 @@ const FilterBar = ({
   minPrice = 0,
   maxPrice = 5000,
   onFilterChange = () => {},
-  onDebounceChange = () => {}, // thêm prop mới
+  onDebounceChange = () => {}, 
   initialFilters = {},
 }) => {
   const optionsMap = {
@@ -57,11 +57,11 @@ const FilterBar = ({
     rom: roms,
   };
 
-  // State cho các mục đang mở (dropdown)
+  // State for open dropdown
   const [openDropdown, setOpenDropdown] = useState(null);
-  // State cho giá
+  // State for price
   const [price, setPrice] = useState([minPrice, maxPrice]);
-  // State cho các filter đã chọn (multi-select)
+  // State for active filters (multi-select)
   const [activeFilters, setActiveFilters] = useState({
     category: [],
     brand: [],
@@ -74,7 +74,7 @@ const FilterBar = ({
   // Ref cho debounce
   const debounceRef = useRef();
 
-  // Thêm các khoảng giá nhanh
+  // Add quick price ranges
   const quickPriceRanges = [
     { label: "Under 2 million", value: [0, 2000000] },
     { label: "From 2 - 4 million", value: [2000000, 4000000] },
@@ -84,16 +84,16 @@ const FilterBar = ({
     { label: "Over 20 million", value: [20000000, maxPrice] },
   ];
 
-  // Accordion cho chọn giá tuỳ chỉnh
+  // Accordion for custom price selection
   const [showCustomPrice, setShowCustomPrice] = useState(false);
 
-  // Thay đổi: Thêm state lưu giá trị raw input cho từng ô nhập giá
+  // Change: Add state to store raw input values for each price input field
   const [priceInput, setPriceInput] = useState([
     minPrice.toString(),
     maxPrice.toString(),
   ]);
 
-  // Thêm state lưu index option giá nhanh đang chọn, null nếu không chọn
+  // Add state to store selected quick price index, null if not selected
   const [selectedQuickPriceIdx, setSelectedQuickPriceIdx] = useState(null);
 
   // Function to create filter object to send to API

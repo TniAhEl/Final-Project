@@ -3,7 +3,7 @@ import { updateProduct, createProduct } from "../../../api/productService";
 
 function isFormChanged(formData, initialData) {
   if (!initialData) return false;
-  // So sánh từng trường, chỉ cần 1 trường khác là true
+  // Compare each field 
   for (const key in formData) {
     if (formData[key] !== (initialData[key] ?? "")) {
       return true;
@@ -143,7 +143,7 @@ const ProductForm = ({
       resistanceUtil: data.resistanceUtil,
       specialUtil: data.specialUtil,
       advancedUtil: data.advancedUtil,
-      status: data.status, // Sửa từ 'status' thành 'productStatus'
+      status: data.status, 
     };
   };
 
@@ -220,7 +220,7 @@ const ProductForm = ({
     }
   };
 
-  // Hàm update nhanh khi bấm nút nổi
+  // Quick update function when pressing the update button
   const handleQuickUpdate = async () => {
     if (!isEditing || !isChanged || isLoading) return;
     setIsLoading(true);
@@ -272,7 +272,7 @@ const ProductForm = ({
               </label>
               <input
                 type="text"
-                value={formData.productName}
+                value={formData.productName || ""}
                 onChange={(e) =>
                   handleInputChange("productName", e.target.value)
                 }
@@ -295,7 +295,7 @@ const ProductForm = ({
               </label>
               <input
                 type="text"
-                value={formData.brand}
+                value={formData.brand || ""}
                 onChange={(e) => handleInputChange("brand", e.target.value)}
                 placeholder="Enter brand name"
                 className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-violet-500 focus:border-transparent"
@@ -309,7 +309,7 @@ const ProductForm = ({
               </label>
               <input
                 type="text"
-                value={formData.categoryId}
+                value={formData.categoryId || ""}
                 onChange={(e) =>
                   handleInputChange("categoryId", e.target.value)
                 }
@@ -329,7 +329,7 @@ const ProductForm = ({
                 Status
               </label>
               <select
-                value={formData.status}
+                value={formData.status || ""}
                 onChange={(e) => handleInputChange("status", e.target.value)}
                 className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-violet-500 focus:border-transparent"
               >
@@ -348,7 +348,7 @@ const ProductForm = ({
               Product Description <span className="text-red-500">*</span>
             </label>
             <textarea
-              value={formData.description}
+              value={formData.description || ""}
               onChange={(e) => handleInputChange("description", e.target.value)}
               placeholder="Enter product description"
               rows={3}
@@ -376,7 +376,7 @@ const ProductForm = ({
               </label>
               <input
                 type="text"
-                value={formData.os}
+                value={formData.os || ""}
                 onChange={(e) => handleInputChange("os", e.target.value)}
                 placeholder="e.g., Android 13, iOS 16"
                 className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-violet-500 focus:border-transparent"
@@ -390,7 +390,7 @@ const ProductForm = ({
               </label>
               <input
                 type="text"
-                value={formData.cpu}
+                value={formData.cpu || ""}
                 onChange={(e) => handleInputChange("cpu", e.target.value)}
                 placeholder="e.g., Snapdragon 8 Gen 2"
                 className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-violet-500 focus:border-transparent"
@@ -404,7 +404,7 @@ const ProductForm = ({
               </label>
               <input
                 type="text"
-                value={formData.cpuSpeed}
+                value={formData.cpuSpeed || ""}
                 onChange={(e) => handleInputChange("cpuSpeed", e.target.value)}
                 placeholder="e.g., 3.2 GHz"
                 className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-violet-500 focus:border-transparent"
@@ -418,7 +418,7 @@ const ProductForm = ({
               </label>
               <input
                 type="text"
-                value={formData.gpu}
+                value={formData.gpu || ""}
                 onChange={(e) => handleInputChange("gpu", e.target.value)}
                 placeholder="e.g., Adreno 740"
                 className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-violet-500 focus:border-transparent"
@@ -441,7 +441,7 @@ const ProductForm = ({
               </label>
               <input
                 type="text"
-                value={formData.batteryCapacity}
+                value={formData.batteryCapacity || ""}
                 onChange={(e) =>
                   handleInputChange("batteryCapacity", e.target.value)
                 }
@@ -457,7 +457,7 @@ const ProductForm = ({
               </label>
               <input
                 type="text"
-                value={formData.batteryType}
+                value={formData.batteryType || ""}
                 onChange={(e) =>
                   handleInputChange("batteryType", e.target.value)
                 }
@@ -473,7 +473,7 @@ const ProductForm = ({
               </label>
               <input
                 type="text"
-                value={formData.chargeSupport}
+                value={formData.chargeSupport || ""}
                 onChange={(e) =>
                   handleInputChange("chargeSupport", e.target.value)
                 }
@@ -489,7 +489,7 @@ const ProductForm = ({
               </label>
               <input
                 type="text"
-                value={formData.batteryTech}
+                value={formData.batteryTech || ""}
                 onChange={(e) =>
                   handleInputChange("batteryTech", e.target.value)
                 }
@@ -512,7 +512,7 @@ const ProductForm = ({
               </label>
               <input
                 type="text"
-                value={formData.frontCamera}
+                value={formData.frontCamera || ""}
                 onChange={(e) =>
                   handleInputChange("frontCamera", e.target.value)
                 }
@@ -528,7 +528,7 @@ const ProductForm = ({
               </label>
               <input
                 type="text"
-                value={formData.backCamera}
+                value={formData.backCamera || ""}
                 onChange={(e) =>
                   handleInputChange("backCamera", e.target.value)
                 }
@@ -583,7 +583,7 @@ const ProductForm = ({
               </label>
               <input
                 type="text"
-                value={formData.backCameraTech}
+                value={formData.backCameraTech || ""}
                 onChange={(e) =>
                   handleInputChange("backCameraTech", e.target.value)
                 }
@@ -606,7 +606,7 @@ const ProductForm = ({
               </label>
               <input
                 type="text"
-                value={formData.screenDimension}
+                value={formData.screenDimension || ""}
                 onChange={(e) =>
                   handleInputChange("screenDimension", e.target.value)
                 }
@@ -622,7 +622,7 @@ const ProductForm = ({
               </label>
               <input
                 type="text"
-                value={formData.screenResolution}
+                value={formData.screenResolution || ""}
                 onChange={(e) =>
                   handleInputChange("screenResolution", e.target.value)
                 }
@@ -638,7 +638,7 @@ const ProductForm = ({
               </label>
               <input
                 type="text"
-                value={formData.screenTech}
+                value={formData.screenTech || ""}
                 onChange={(e) =>
                   handleInputChange("screenTech", e.target.value)
                 }
@@ -654,7 +654,7 @@ const ProductForm = ({
               </label>
               <input
                 type="text"
-                value={formData.maxBrightness}
+                value={formData.maxBrightness || ""}
                 onChange={(e) =>
                   handleInputChange("maxBrightness", e.target.value)
                 }
@@ -670,7 +670,7 @@ const ProductForm = ({
               </label>
               <input
                 type="text"
-                value={formData.screenTouch}
+                value={formData.screenTouch || ""}
                 onChange={(e) =>
                   handleInputChange("screenTouch", e.target.value)
                 }
@@ -695,7 +695,7 @@ const ProductForm = ({
               </label>
               <input
                 type="text"
-                value={formData.mobileNetwork}
+                value={formData.mobileNetwork || ""}
                 onChange={(e) =>
                   handleInputChange("mobileNetwork", e.target.value)
                 }
@@ -711,7 +711,7 @@ const ProductForm = ({
               </label>
               <input
                 type="text"
-                value={formData.bluetooth}
+                value={formData.bluetooth || ""}
                 onChange={(e) => handleInputChange("bluetooth", e.target.value)}
                 placeholder="e.g., 5.2"
                 className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-violet-500 focus:border-transparent"
@@ -725,7 +725,7 @@ const ProductForm = ({
               </label>
               <input
                 type="text"
-                value={formData.wifi}
+                value={formData.wifi || ""}
                 onChange={(e) => handleInputChange("wifi", e.target.value)}
                 placeholder="e.g., 802.11 a/b/g/n/ac/ax"
                 className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-violet-500 focus:border-transparent"
@@ -739,7 +739,7 @@ const ProductForm = ({
               </label>
               <input
                 type="text"
-                value={formData.gps}
+                value={formData.gps || ""}
                 onChange={(e) => handleInputChange("gps", e.target.value)}
                 placeholder="e.g., GPS, GLONASS"
                 className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-violet-500 focus:border-transparent"
@@ -753,7 +753,7 @@ const ProductForm = ({
               </label>
               <input
                 type="text"
-                value={formData.sim}
+                value={formData.sim || "Dual SIM"}
                 onChange={(e) => handleInputChange("sim", e.target.value)}
                 placeholder="e.g., Dual SIM"
                 className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-violet-500 focus:border-transparent"
@@ -774,7 +774,7 @@ const ProductForm = ({
               </label>
               <input
                 type="text"
-                value={formData.chargePort}
+                value={formData.chargePort || ""}
                 onChange={(e) =>
                   handleInputChange("chargePort", e.target.value)
                 }
@@ -790,7 +790,7 @@ const ProductForm = ({
               </label>
               <input
                 type="text"
-                value={formData.earphonePort}
+                value={formData.earphonePort || ""}
                 onChange={(e) =>
                   handleInputChange("earphonePort", e.target.value)
                 }
@@ -806,7 +806,7 @@ const ProductForm = ({
               </label>
               <input
                 type="text"
-                value={formData.anotherPort}
+                value={formData.anotherPort || ""}
                 onChange={(e) =>
                   handleInputChange("anotherPort", e.target.value)
                 }
@@ -829,7 +829,7 @@ const ProductForm = ({
               </label>
               <input
                 type="text"
-                value={formData.design}
+                value={formData.design || ""}
                 onChange={(e) => handleInputChange("design", e.target.value)}
                 placeholder="e.g., Touch"
                 className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-violet-500 focus:border-transparent"
@@ -843,7 +843,7 @@ const ProductForm = ({
               </label>
               <input
                 type="text"
-                value={formData.material}
+                value={formData.material || ""}
                 onChange={(e) => handleInputChange("material", e.target.value)}
                 placeholder="e.g., Glass, Aluminum"
                 className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-violet-500 focus:border-transparent"
@@ -857,7 +857,7 @@ const ProductForm = ({
               </label>
               <input
                 type="text"
-                value={formData.dimension}
+                value={formData.dimension || ""}
                 onChange={(e) => handleInputChange("dimension", e.target.value)}
                 placeholder="e.g., 163.1 x 75.9 x 8.1 mm"
                 className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-violet-500 focus:border-transparent"
@@ -871,7 +871,7 @@ const ProductForm = ({
               </label>
               <input
                 type="number"
-                value={formData.releaseYear}
+                value={formData.releaseYear || ""}
                 onChange={(e) =>
                   handleInputChange("releaseYear", e.target.value)
                 }
@@ -896,7 +896,7 @@ const ProductForm = ({
               </label>
               <input
                 type="text"
-                value={formData.musicUtil}
+                value={formData.musicUtil || ""}
                 onChange={(e) => handleInputChange("musicUtil", e.target.value)}
                 placeholder="e.g., MP3, WAV"
                 className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-violet-500 focus:border-transparent"
@@ -910,7 +910,7 @@ const ProductForm = ({
               </label>
               <input
                 type="text"
-                value={formData.movieUtil}
+                value={formData.movieUtil || ""}
                 onChange={(e) => handleInputChange("movieUtil", e.target.value)}
                 placeholder="e.g., MP4, MKV"
                 className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-violet-500 focus:border-transparent"
@@ -924,7 +924,7 @@ const ProductForm = ({
               </label>
               <input
                 type="text"
-                value={formData.recordUtil}
+                value={formData.recordUtil || ""}
                 onChange={(e) =>
                   handleInputChange("recordUtil", e.target.value)
                 }
@@ -940,7 +940,7 @@ const ProductForm = ({
               </label>
               <input
                 type="text"
-                value={formData.resistanceUtil}
+                value={formData.resistanceUtil || ""}
                 onChange={(e) =>
                   handleInputChange("resistanceUtil", e.target.value)
                 }
@@ -956,7 +956,7 @@ const ProductForm = ({
               </label>
               <input
                 type="text"
-                value={formData.specialUtil}
+                value={formData.specialUtil || ""}
                 onChange={(e) =>
                   handleInputChange("specialUtil", e.target.value)
                 }
@@ -972,7 +972,7 @@ const ProductForm = ({
               </label>
               <input
                 type="text"
-                value={formData.advancedUtil}
+                value={formData.advancedUtil || ""}
                 onChange={(e) =>
                   handleInputChange("advancedUtil", e.target.value)
                 }

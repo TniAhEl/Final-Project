@@ -16,7 +16,7 @@ const TotalCustomer = ({ value = 0, compareValue = 0, compareType = "up" }) => (
       style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}
     >
       <FaUserFriends size={24} color="#fbc02d" />
-      <span style={{ fontSize: 18, color: "#888" }}>Tổng khách hàng</span>
+      <span style={{ fontSize: 18, color: "#888" }}>Total Customer</span>
     </div>
     <div style={{ fontSize: 32, fontWeight: "bold", color: "#fbc02d" }}>
       {value}
@@ -28,8 +28,7 @@ const TotalCustomer = ({ value = 0, compareValue = 0, compareType = "up" }) => (
         color: compareType === "up" ? "#43a047" : "#e53935",
       }}
     >
-      {compareType === "up" ? "▲" : "▼"} {Math.abs(compareValue)}% so với tuần
-      trước
+      {compareType === "up" ? "▲" : "▼"} {Math.abs(compareValue)}% compared to last week
     </div>
   </div>
 );

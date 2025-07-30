@@ -27,16 +27,15 @@ const AboutUs = () => {
               marginBottom: 16,
             }}
           >
-            Về Chúng Tôi
+            About Us
           </h1>
           <p style={{ fontSize: 18, color: "#374151", marginBottom: 32 }}>
-            Chào mừng bạn đến với <b>Ecommerce</b>! Chúng tôi là đội ngũ trẻ
-            trung, năng động, đam mê công nghệ và thương mại điện tử. Sứ mệnh
-            của chúng tôi là mang đến trải nghiệm mua sắm trực tuyến dễ dàng, an
-            toàn và tiện lợi nhất cho khách hàng.
+            Welcome to <b>Ecommerce</b>!
+We are a team of young, dynamic professionals passionate about technology and e-commerce.
+Our mission is to deliver the most seamless, secure, and convenient online shopping experience for our customers.
           </p>
 
-          {/* Lịch sử phát triển */}
+          {/* History */}
           <section style={{ marginBottom: 32 }}>
             <h2
               style={{
@@ -46,18 +45,17 @@ const AboutUs = () => {
                 marginBottom: 8,
               }}
             >
-              Lịch sử phát triển
+              History
             </h2>
             <p style={{ color: "#64748b" }}>
-              Được thành lập từ năm 2024, Ecommerce đã không ngừng phát triển và
-              đổi mới để đáp ứng nhu cầu ngày càng cao của khách hàng. Từ một
-              nhóm nhỏ đam mê công nghệ, chúng tôi đã xây dựng nên một nền tảng
-              thương mại điện tử hiện đại, phục vụ hàng ngàn khách hàng trên
-              toàn quốc.
+              Established in 2024, Ecommerce has continuously developed and
+              innovated to meet the ever-increasing demands of customers. From a
+              small group of technology enthusiasts, we have built a modern e-commerce
+              platform serving thousands of customers nationwide.
             </p>
           </section>
 
-          {/* Đội ngũ sáng lập */}
+          {/* Founding Team */}
           <section style={{ marginBottom: 32 }}>
             <h2
               style={{
@@ -67,7 +65,7 @@ const AboutUs = () => {
                 marginBottom: 8,
               }}
             >
-              Đội ngũ sáng lập
+              Founding Team
             </h2>
             <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
               <div style={{ flex: 1, minWidth: 180, textAlign: "center" }}>
@@ -115,7 +113,7 @@ const AboutUs = () => {
             </div>
           </section>
 
-          {/* Tầm nhìn, Giá trị cốt lõi, Liên hệ */}
+          {/* Vision, Core Values, Contact */}
           <div
             style={{
               display: "flex",
@@ -126,28 +124,27 @@ const AboutUs = () => {
           >
             <div style={{ flex: 1, minWidth: 250 }}>
               <h2 style={{ color: "#2563eb", fontWeight: 700, fontSize: 22 }}>
-                Tầm nhìn
+                Vision 
               </h2>
               <p style={{ color: "#64748b" }}>
-                Trở thành nền tảng thương mại điện tử hàng đầu, nơi mọi người
-                đều có thể mua sắm và bán hàng một cách dễ dàng, minh bạch và
-                hiệu quả.
+                To become the leading e-commerce platform where everyone can
+                easily, transparently, and efficiently buy and sell goods.
               </p>
             </div>
             <div style={{ flex: 1, minWidth: 250 }}>
               <h2 style={{ color: "#2563eb", fontWeight: 700, fontSize: 22 }}>
-                Giá trị cốt lõi
+                Core Values
               </h2>
               <ul style={{ color: "#64748b", paddingLeft: 20 }}>
-                <li>Khách hàng là trung tâm</li>
-                <li>Đổi mới sáng tạo</li>
-                <li>Chính trực & Minh bạch</li>
-                <li>Hợp tác & Phát triển</li>
+                <li>Customer-Centric</li>
+                <li>Innovation</li>
+                <li>Integrity & Transparency</li>
+                <li>Collaboration & Development</li>
               </ul>
             </div>
             <div style={{ flex: 1, minWidth: 250 }}>
               <h2 style={{ color: "#2563eb", fontWeight: 700, fontSize: 22 }}>
-                Liên hệ
+                Contact
               </h2>
               <p style={{ color: "#64748b" }}>
                 Email:{" "}
@@ -163,7 +160,7 @@ const AboutUs = () => {
             </div>
           </div>
 
-          {/* Cam kết với khách hàng */}
+          {/* Commitment to Customers */}
           <section style={{ marginBottom: 32 }}>
             <h2
               style={{
@@ -173,13 +170,13 @@ const AboutUs = () => {
                 marginBottom: 8,
               }}
             >
-              Cam kết với khách hàng
+              Commitment to Customers
             </h2>
             <ul style={{ color: "#64748b", paddingLeft: 20 }}>
-              <li>Giao hàng nhanh chóng, đúng hẹn</li>
-              <li>Hỗ trợ khách hàng 24/7</li>
-              <li>Bảo mật thông tin tuyệt đối</li>
-              <li>Chính sách đổi trả linh hoạt</li>
+              <li>Fast and on-time delivery</li>
+              <li>24/7 customer support</li>
+              <li>Absolute information security</li>
+              <li>Flexible return policy</li>
             </ul>
           </section>
 

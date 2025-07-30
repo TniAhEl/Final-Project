@@ -13,6 +13,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -29,7 +30,7 @@ public class Order {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     @ManyToOne
-    @JoinColumn(name = "user_id")
+    @JoinColumn(name = "user_id", nullable = true)
     private User user;
 
     @OneToMany(mappedBy = "order")
@@ -43,13 +44,23 @@ public class Order {
     @OneToOne(mappedBy = "order")
     private OrderTransport orderTransport;
 
+    @Column(name = "name")
+    private String name;
+    @Column(name = "email")
+    private String email;
+    @Column(name = "shipping_address")
+    private String shippingAddress;
+    @Column(name = "phone")
+    private String phone;
+
+
+
     @Column(name = "type")
     private String type;
     @Enumerated(EnumType.STRING)
     @Column(name = "order_status", nullable = false)
     private OrderStatus status = OrderStatus.PENDING;
-    @Column(name = "shipping_address")
-    private String shippingAddress;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "transport_method")
     private ShippingMethod method;

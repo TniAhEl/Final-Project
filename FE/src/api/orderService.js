@@ -1,6 +1,6 @@
 import { api } from "./axios.js";
 
-// Lấy danh sách đơn hàng với filter, page, size
+// Filter the orders for admin
 export const fetchOrders = async (filter = {}, page = 0, size = 20) => {
   const token = localStorage.getItem("token");
   const response = await api.post(
@@ -15,7 +15,7 @@ export const fetchOrders = async (filter = {}, page = 0, size = 20) => {
   return response.data;
 };
 
-// Lấy danh sách đơn hàng của customer
+// Filter the order for user
 export const fetchCustomerOrders = async (userId, page = 0, size = 20) => {
   const token = localStorage.getItem("token");
   const response = await api.post(
@@ -29,12 +29,24 @@ export const fetchCustomerOrders = async (userId, page = 0, size = 20) => {
   return response.data;
 };
 
+// Get user order by id
+export const getOrderById = async (orderId) => {
+  const token = localStorage.getItem("token");
+  const response = await api.get(`/orders/customer/${orderId}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  return response.data;
+};
+
 // Get all promotions
 export const getAllPromotion = async (data) => {
   const res = await api.get("/promotions/all", data);
   return res.data;
 };
 
+// user place order
 export const placeOrder = async ({ userId, promotionCode, orderInfo, insuranceContracts }) => {
   const params = [];
   if (userId) params.push(`userId=${encodeURIComponent(userId)}`);
@@ -47,8 +59,21 @@ export const placeOrder = async ({ userId, promotionCode, orderInfo, insuranceCo
   return res;
 };
 
-// export const addReview = async({})
+// Place order for guest users
+export const placeGuestOrder = async ({ promotionCode, orderInfo, insuranceContracts, productList }) => {
+  const params = [];
+  if (promotionCode) params.push(`promotionCode=${encodeURIComponent(promotionCode)}`);
+  const query = params.length > 0 ? `?${params.join("&")}` : "";
+  const res = await api.post(`/orders/guest/order${query}`, {
+    orderInfo,
+    insuranceContracts,
+    productList
+  });
+  return res;
+};
 
+// export const addReview = async({})
+// user create review for product
 export const submitProductReview = async ({
   orderProductId,
   userId,
@@ -65,7 +90,7 @@ export const submitProductReview = async ({
     review,
   });
 };
-
+// admin reply user review
 export const replyProductReview = async ({ reviewId, adminId, reply }) => {
   const params = [];
   if (reviewId) params.push(`reviewId=${encodeURIComponent(reviewId)}`);
@@ -75,12 +100,13 @@ export const replyProductReview = async ({ reviewId, adminId, reply }) => {
     reply,
   });
 };
-
+// get all product review include admin reply
 export const getProductReviews = async (productId) => {
   const res = await api.get(`/products/${productId}/review/all`);
   return res.data;
 };
 
+// admin get all product reviews
 export const getAllProductReviews = async ({
   page = 0,
   size = 10,
@@ -98,6 +124,8 @@ export const getAllProductReviews = async ({
   return res.data;
 };
 
+
+// admin confirm the orders
 export const confirmOrder = async ({ orderId, status }) => {
   const token = localStorage.getItem("token");
   const adminId = localStorage.getItem("userId");
@@ -117,7 +145,38 @@ export const confirmOrder = async ({ orderId, status }) => {
   return res.data;
 };
 
-// Lấy danh sách bảo hành của customer
+// User update user order status
+export const updateCustomerOrderStatus = async (orderId, status) => {
+  const token = localStorage.getItem("token");
+  const response = await api.put(
+    `/orders/customer/update?orderId=${orderId}&status=${status}`,
+    {},
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+  return response.data;
+};
+
+// admin update user orders
+export const updateAdminOrderStatus = async (orderId, status) => {
+  const token = localStorage.getItem("token");
+  const adminId = localStorage.getItem("userId");
+  const response = await api.put(
+    `/orders/admin/update?adminId=${adminId}&orderId=${orderId}&status=${status}`,
+    {},
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+  return response.data;
+};
+
+// user get all warranties 
 export const fetchCustomerWarranties = async (
   userId,
   page = 0,

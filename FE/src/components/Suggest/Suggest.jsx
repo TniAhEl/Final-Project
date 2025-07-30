@@ -48,7 +48,7 @@ function Suggest() {
   return (
     <div className="bg-white rounded-xl shadow p-6">
       <h2 className="text-xl font-semibold mb-4 text-gray-800">
-        Mọi người cũng tìm kiếm
+        Everybody is searching for
       </h2>
       <div className="flex flex-wrap gap-2">
         {suggestions.map((item, idx) => (

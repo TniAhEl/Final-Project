@@ -3,11 +3,11 @@ import { FaStar } from "react-icons/fa";
 /**
  * ReviewCard component
  * @param {Object} props
- * @param {number} props.rating - Số lượng sao (1-5)
- * @param {string} props.content - Nội dung đánh giá
- * @param {string} props.reviewer - Tên người đánh giá
- * @param {string} props.time - Thời gian đánh giá (định dạng chuỗi)
- * @param {string} props.status - Trạng thái đánh giá (duyệt/chờ duyệt/từ chối)
+ * @param {number} props.rating - Star quantity(1-5)
+ * @param {string} props.content - Review content
+ * @param {string} props.reviewer - Reviewer name
+ * @param {string} props.time - Review time (string format)
+ * @param {string} props.status - Review status (approved/pending/rejected)
  */
 const ReviewCard = ({
   rating = 5,
@@ -16,7 +16,7 @@ const ReviewCard = ({
   time = "",
   status = "",
 }) => {
-  // Định nghĩa màu trạng thái
+  // Define status color
   const statusColor =
     status === "APPROVED"
       ? "text-green-600"
@@ -25,20 +25,20 @@ const ReviewCard = ({
       : "text-red-600";
   const statusLabel =
     status === "APPROVED"
-      ? "Đã duyệt"
+      ? "Approved"
       : status === "PENDING"
-      ? "Chờ duyệt"
-      : "NEW";
+      ? "Pending"
+      : "New";
 
   return (
     <div className="bg-white rounded-lg shadow p-5 flex flex-col gap-2 border border-gray-100 w-full">
-      {/* Reviewer in đậm trên cùng nếu có */}
+      {/* Reviewer in bold on top if exists */}
       {reviewer && (
         <div className="font-semibold text-blue-900 text-base mb-1">
           {reviewer}
         </div>
       )}
-      {/* Rating (sao) và giới thiệu */}
+      {/* Rating (star) and introduction */}
       {typeof rating === "number" && rating > 0 && (
         <div className="flex items-center gap-2 mb-1 flex-wrap">
           {[...Array(5)].map((_, i) => (
@@ -57,22 +57,22 @@ const ReviewCard = ({
             >
               <path d="M9.674 17.726c.217.16.435.274.65.274.215 0 .433-.114.65-.274C15.6 15.2 18 12.98 18 10.25c0-2.07-1.68-3.75-3.75-3.75-1.13 0-2.13.52-2.75 1.34C10.88 7.02 9.88 6.5 8.75 6.5 6.68 6.5 5 8.18 5 10.25c0 2.73 2.4 4.95 4.674 7.476z" />
             </svg>
-            Sẽ giới thiệu cho bạn bè, người thân
+            Will recommend to friends and family
           </span>
         </div>
       )}
-      {/* Nội dung đánh giá */}
+      {/* Review content */}
       {content && (
         <div className="text-gray-800 text-base font-medium whitespace-pre-line">
           {content}
         </div>
       )}
-      {/* Thời gian đánh giá */}
+      {/* Review time */}
       {time && <div className="text-xs text-gray-500 mt-1">{time}</div>}
-      {/* Trạng thái đánh giá */}
+      {/* Review status */}
       {status && (
         <div className={`text-xs font-semibold ${statusColor}`}>
-          Trạng thái: {statusLabel}
+          Status: {statusLabel}
         </div>
       )}
     </div>

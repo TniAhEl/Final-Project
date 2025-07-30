@@ -53,10 +53,10 @@ const Checkout = () => {
 
   return (
     <div className="max-w-4xl mx-auto bg-white rounded-lg shadow p-8 mt-8">
-      <h2 className="text-2xl font-bold mb-6 text-violet-700">Thanh toán</h2>
-      {/* Thông tin người dùng */}
+      <h2 className="text-2xl font-bold mb-6 text-violet-700">Checkout</h2>
+      {/* User Information */}
       <div className="mb-6">
-        <h3 className="font-semibold text-lg mb-2">Thông tin khách hàng</h3>
+        <h3 className="font-semibold text-lg mb-2">User Information</h3>
         <div className="grid grid-cols-3 gap-4">
           <input
             value={mockUser.name}
@@ -75,9 +75,9 @@ const Checkout = () => {
           />
         </div>
       </div>
-      {/* Sản phẩm trong giỏ hàng */}
+      {/* Products in cart */}
       <div className="mb-6">
-        <h3 className="font-semibold text-lg mb-2">Sản phẩm</h3>
+        <h3 className="font-semibold text-lg mb-2">Products</h3>
         <div className="divide-y">
           {mockCart.map((item) => (
             <div key={item.id} className="flex items-center gap-4 py-3">
@@ -97,25 +97,25 @@ const Checkout = () => {
           ))}
         </div>
       </div>
-      {/* Địa chỉ giao hàng */}
+      {/* Delivery address */}
       <div className="mb-6">
-        <h3 className="font-semibold text-lg mb-2">Địa chỉ giao hàng</h3>
+        <h3 className="font-semibold text-lg mb-2">Delivery Address</h3>
         <input
           type="text"
           className="w-full bg-gray-100 rounded px-4 py-2"
-          placeholder="Nhập địa chỉ giao hàng"
+          placeholder="Enter delivery address"
           value={address}
           onChange={(e) => setAddress(e.target.value)}
         />
       </div>
-      {/* Mã giảm giá */}
+      {/* Discount Code */}
       <div className="mb-6">
-        <h3 className="font-semibold text-lg mb-2">Mã giảm giá</h3>
+        <h3 className="font-semibold text-lg mb-2">Discount Code</h3>
         <div className="flex gap-2 mb-2">
           <input
             type="text"
             className="flex-1 bg-gray-100 rounded px-4 py-2"
-            placeholder="Nhập mã giảm giá"
+            placeholder="Enter discount code"
             value={discountCode}
             onChange={(e) => setDiscountCode(e.target.value)}
           />
@@ -126,7 +126,7 @@ const Checkout = () => {
               setSelectedDiscount(found || null);
             }}
           >
-            Áp dụng
+            Apply
           </button>
         </div>
         <div className="flex gap-2">
@@ -146,14 +146,14 @@ const Checkout = () => {
         </div>
         {selectedDiscount && (
           <div className="mt-2 text-green-600">
-            Đã áp dụng mã: <b>{selectedDiscount.code}</b> (
+            Applied code: <b>{selectedDiscount.code}</b> (
             {selectedDiscount.value})
           </div>
         )}
       </div>
-      {/* Gói bảo hiểm */}
+      {/* Insurance Package */}
       <div className="mb-6">
-        <h3 className="font-semibold text-lg mb-2">Chọn gói bảo hiểm</h3>
+        <h3 className="font-semibold text-lg mb-2">Select Insurance Package</h3>
         <div className="flex gap-2">
           {mockInsurances.map((ins) => (
             <button
@@ -176,16 +176,16 @@ const Checkout = () => {
           </div>
         )}
       </div>
-      {/* Tổng cộng */}
+      {/* Total */}
       <div className="flex justify-end items-center gap-4 mt-8">
-        <div className="text-xl font-bold">Tổng cộng:</div>
+        <div className="text-xl font-bold">Total:</div>
         <div className="text-2xl font-extrabold text-violet-700">
           {finalTotal.toLocaleString()}₫
         </div>
       </div>
       <div className="flex justify-end mt-4">
         <button className="px-8 py-3 bg-violet-600 text-white rounded font-semibold hover:bg-violet-700 transition">
-          Đặt hàng
+          Place Order
         </button>
       </div>
     </div>

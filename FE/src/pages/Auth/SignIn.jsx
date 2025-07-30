@@ -17,10 +17,10 @@ const SignInPage = () => {
           if (currentScrollY < 10) {
             setShowHeader(true);
           } else if (currentScrollY > lastScrollY.current) {
-            // Cuộn xuống
+            // Scroll down
             setShowHeader(false);
           } else {
-            // Cuộn lên
+            // Scroll up
             setShowHeader(true);
           }
           lastScrollY.current = currentScrollY;
@@ -55,7 +55,7 @@ const SignInPage = () => {
       </div>
       <div className="pt-[64px]">
         {" "}
-        {/* Để tránh che mất phần trên */}
+        {/* To avoid hiding the top part */}
         <SignInLayout>
           <SignInForm />
         </SignInLayout>

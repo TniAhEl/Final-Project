@@ -7,5 +7,6 @@ import lombok.Data;
 public class CartProductResponse {
     private Long id;
     private int quantity;
+    private int availableQuantity;
     private ProductOptionCartResponse productOption;
 }

@@ -14,6 +14,9 @@ import java.util.List;
 @Data
 public class OrderResponse {
     private Long id;
+    private String name;
+    private String phone;
+    private String email;
     private String type;
     private OrderStatus status = OrderStatus.PENDING;
     private String shippingAddress;
@@ -21,10 +24,7 @@ public class OrderResponse {
     private LocalDateTime updateAt;
     private LocalDateTime createAt;
     private BigDecimal totalMoney;
-    private List<OrderProductResponse> orderProducts ;
-    private UserResponse user;
-    private OrderPromotionResponse promotionResponse;
     private ShippingMethod method;
-    private OrderTransportResponse transport;
+
 
 }
