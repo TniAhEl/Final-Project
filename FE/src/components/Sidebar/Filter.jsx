@@ -15,7 +15,7 @@ const filterMenu = [
   {
     label: "Category",
     icon: <MdCategory className="text-lg text-gray-700" />,
-    key: "category",
+    key: "categoryName",
   },
   {
     label: "Brand",
@@ -51,7 +51,7 @@ const FilterBar = ({
   initialFilters = {},
 }) => {
   const optionsMap = {
-    category: categories,
+    categoryName: categories,
     brand: brands,
     ram: rams,
     rom: roms,
@@ -63,7 +63,7 @@ const FilterBar = ({
   const [price, setPrice] = useState([minPrice, maxPrice]);
   // State for active filters (multi-select)
   const [activeFilters, setActiveFilters] = useState({
-    category: [],
+    categoryName: [],
     brand: [],
     ram: [],
     rom: [],
@@ -99,8 +99,8 @@ const FilterBar = ({
   // Function to create filter object to send to API
   const createFilterObject = () => {
     const filter = {};
-    if (activeFilters.category.length > 0)
-      filter.category = activeFilters.category;
+    if (activeFilters.categoryName.length > 0)
+      filter.categoryName = activeFilters.categoryName;
     if (activeFilters.brand.length > 0) filter.brand = activeFilters.brand;
     if (activeFilters.ram.length > 0) filter.ram = activeFilters.ram;
     if (activeFilters.rom.length > 0) filter.rom = activeFilters.rom;
@@ -155,7 +155,7 @@ const FilterBar = ({
   useEffect(() => {
     if (initialFilters && Object.keys(initialFilters).length > 0) {
       const newActiveFilters = {
-        category: [],
+        categoryName: [],
         brand: [],
         ram: [],
         rom: [],
@@ -163,7 +163,7 @@ const FilterBar = ({
       };
 
       // Process regular filters
-      ["category", "brand", "ram", "rom"].forEach((key) => {
+      ["categoryName", "brand", "ram", "rom"].forEach((key) => {
         if (initialFilters[key]) {
           newActiveFilters[key] = Array.isArray(initialFilters[key])
             ? initialFilters[key]
@@ -267,7 +267,7 @@ const FilterBar = ({
 
   const clearAllFilters = () => {
     setActiveFilters({
-      category: [],
+      categoryName: [],
       brand: [],
       ram: [],
       rom: [],

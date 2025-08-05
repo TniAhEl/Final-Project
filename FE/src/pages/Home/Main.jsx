@@ -12,9 +12,9 @@ const HomeMain = () => {
       {/* Content goes here */}
       <MainLanding />
       <BrandLanding />
-      <BestSeller />
+      {/* <BestSeller /> */}
       <NewArrivals />
-      <Suggest />
+      {/* <Suggest /> */}
     </MainLayout>
   );
 };

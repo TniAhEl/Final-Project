@@ -1,101 +1,90 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
-const mockUser = {
-  name: "Nguyễn Văn A",
-  phone: "0901234567",
-  email: "nguyenvana@gmail.com",
-};
-
-const mockCart = [
-  {
-    id: 1,
-    name: "iPhone 15 Pro Max",
-    image:
-      "https://cdn.tgdd.vn/Products/Images/42/303890/iphone-15-pro-max-blue-thumbnew-600x600.jpg",
-    price: 32990000,
-    quantity: 1,
-  },
-  {
-    id: 2,
-    name: "Samsung Galaxy S24 Ultra",
-    image:
-      "https://cdn.tgdd.vn/Products/Images/42/303890/samsung-galaxy-s24-ultra-thumb-600x600.jpg",
-    price: 28990000,
-    quantity: 2,
-  },
-];
-
-const mockDiscounts = [
-  { code: "SUMMER2024", value: "-2.000.000₫" },
-  { code: "VIPMEMBER", value: "-1.000.000₫" },
-];
-
-const mockInsurances = [
-  { id: 1, name: "Bảo hiểm rơi vỡ 1 năm", price: 500000 },
-  { id: 2, name: "Bảo hiểm mất cắp 1 năm", price: 800000 },
-];
-
-const Checkout = () => {
+const Checkout = ({ 
+  user = null, 
+  cart = [], 
+  discounts = [], 
+  insurances = [],
+  onPlaceOrder = () => {},
+  loading = false 
+}) => {
+  const navigate = useNavigate();
   const [address, setAddress] = useState("");
   const [discountCode, setDiscountCode] = useState("");
   const [selectedDiscount, setSelectedDiscount] = useState(null);
   const [selectedInsurance, setSelectedInsurance] = useState(null);
 
-  const total = mockCart.reduce(
-    (sum, item) => sum + item.price * item.quantity,
+  // Calculate totals
+  const total = cart.reduce(
+    (sum, item) => sum + (item.price || 0) * (item.quantity || 1),
     0
   );
   const discountValue = selectedDiscount
-    ? Number(selectedDiscount.value.replace(/[^\d-]/g, ""))
+    ? Number(selectedDiscount.value?.replace(/[^\d-]/g, "") || 0)
     : 0;
-  const insuranceValue = selectedInsurance ? selectedInsurance.price : 0;
+  const insuranceValue = selectedInsurance ? (selectedInsurance.price || 0) : 0;
   const finalTotal = total + insuranceValue + discountValue;
 
   return (
     <div className="max-w-4xl mx-auto bg-white rounded-lg shadow p-8 mt-8">
       <h2 className="text-2xl font-bold mb-6 text-violet-700">Checkout</h2>
       {/* User Information */}
-      <div className="mb-6">
-        <h3 className="font-semibold text-lg mb-2">User Information</h3>
-        <div className="grid grid-cols-3 gap-4">
-          <input
-            value={mockUser.name}
-            disabled
-            className="bg-gray-100 rounded px-4 py-2"
-          />
-          <input
-            value={mockUser.phone}
-            disabled
-            className="bg-gray-100 rounded px-4 py-2"
-          />
-          <input
-            value={mockUser.email}
-            disabled
-            className="bg-gray-100 rounded px-4 py-2"
-          />
+      {user && (
+        <div className="mb-6">
+          <h3 className="font-semibold text-lg mb-2">User Information</h3>
+          <div className="grid grid-cols-3 gap-4">
+            <input
+              value={user.name || ""}
+              disabled
+              className="bg-gray-100 rounded px-4 py-2"
+              placeholder="Full Name"
+            />
+            <input
+              value={user.phone || ""}
+              disabled
+              className="bg-gray-100 rounded px-4 py-2"
+              placeholder="Phone Number"
+            />
+            <input
+              value={user.email || ""}
+              disabled
+              className="bg-gray-100 rounded px-4 py-2"
+              placeholder="Email"
+            />
+          </div>
         </div>
-      </div>
+      )}
       {/* Products in cart */}
       <div className="mb-6">
         <h3 className="font-semibold text-lg mb-2">Products</h3>
-        <div className="divide-y">
-          {mockCart.map((item) => (
-            <div key={item.id} className="flex items-center gap-4 py-3">
-              <img
-                src={item.image}
-                alt={item.name}
-                className="w-16 h-16 object-contain rounded"
-              />
-              <div className="flex-1">
-                <div className="font-medium">{item.name}</div>
-                <div className="text-gray-500 text-sm">x{item.quantity}</div>
+        {cart.length === 0 ? (
+          <div className="text-center py-8 text-gray-500">
+            <p>No products in cart</p>
+          </div>
+        ) : (
+          <div className="divide-y">
+            {cart.map((item) => (
+              <div key={item.id} className="flex items-center gap-4 py-3">
+                <img
+                  src={item.image || "https://placehold.co/64x64?text=No+Image"}
+                  alt={item.name || "Product"}
+                  className="w-16 h-16 object-contain rounded"
+                  onError={(e) => {
+                    e.target.src = "https://placehold.co/64x64?text=Error";
+                  }}
+                />
+                <div className="flex-1">
+                  <div className="font-medium">{item.name || "Unknown Product"}</div>
+                  <div className="text-gray-500 text-sm">x{item.quantity || 1}</div>
+                </div>
+                <div className="font-semibold text-violet-700">
+                  {((item.price || 0) * (item.quantity || 1)).toLocaleString()}₫
+                </div>
               </div>
-              <div className="font-semibold text-violet-700">
-                {(item.price * item.quantity).toLocaleString()}₫
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
       {/* Delivery address */}
       <div className="mb-6">
@@ -130,7 +119,7 @@ const Checkout = () => {
           </button>
         </div>
         <div className="flex gap-2">
-          {mockDiscounts.map((d) => (
+          {discounts.map((d) => (
             <button
               key={d.code}
               className={`px-3 py-1 rounded border ${
@@ -155,7 +144,7 @@ const Checkout = () => {
       <div className="mb-6">
         <h3 className="font-semibold text-lg mb-2">Select Insurance Package</h3>
         <div className="flex gap-2">
-          {mockInsurances.map((ins) => (
+          {insurances.map((ins) => (
             <button
               key={ins.id}
               className={`px-3 py-1 rounded border ${
@@ -165,7 +154,7 @@ const Checkout = () => {
               }`}
               onClick={() => setSelectedInsurance(ins)}
             >
-              {ins.name} (+{ins.price.toLocaleString()}₫)
+              {ins.name} (+{(ins.price || 0).toLocaleString()}₫)
             </button>
           ))}
         </div>
@@ -183,11 +172,45 @@ const Checkout = () => {
           {finalTotal.toLocaleString()}₫
         </div>
       </div>
-      <div className="flex justify-end mt-4">
-        <button className="px-8 py-3 bg-violet-600 text-white rounded font-semibold hover:bg-violet-700 transition">
-          Place Order
-        </button>
-      </div>
+                           <div className="flex justify-center mt-8">
+                <button 
+                  className="relative w-full max-w-md px-8 py-6 bg-gradient-to-r from-violet-600 to-purple-700 text-white rounded-2xl font-bold text-xl hover:from-violet-700 hover:to-purple-800 transition-all duration-300 shadow-2xl hover:shadow-3xl transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none overflow-hidden group border-4 border-violet-500 hover:border-violet-600"
+                  disabled={!address.trim() || loading || cart.length === 0}
+                  onClick={() => {
+                    if (address.trim() && cart.length > 0) {
+                      onPlaceOrder({
+                        address,
+                        discountCode: selectedDiscount?.code || discountCode,
+                        selectedInsurance,
+                        total: finalTotal
+                      });
+                    }
+                  }}
+                >
+                  {/* Animated background effect */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-pink-400 to-rose-500 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
+                  
+                  {/* Content */}
+                  <div className="relative flex items-center justify-center gap-4">
+                    <div className="relative p-2 border-2 border-violet-400 rounded-full group-hover:border-violet-300 transition-all duration-300">
+                      <svg className="w-8 h-8 transform group-hover:rotate-12 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                      </svg>
+                      {/* Animated dots */}
+                      <div className="absolute -top-1 -right-1 w-3 h-3 bg-pink-400 rounded-full animate-pulse border border-violet-400"></div>
+                    </div>
+                    <span className="text-2xl font-extrabold tracking-wide px-4 py-2 border-2 border-violet-300 rounded-lg group-hover:border-violet-200 transition-all duration-300">
+                      {loading ? "PLACING ORDER..." : "PLACE ORDER"}
+                    </span>
+                    <svg className="w-6 h-6 transform group-hover:translate-x-1 transition-transform duration-300 p-1 border border-violet-300 rounded-full group-hover:border-violet-200 transition-all duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                    </svg>
+                  </div>
+                  
+                  {/* Shine effect */}
+                  <div className="absolute inset-0 -skew-x-12 bg-gradient-to-r from-transparent via-white to-transparent opacity-0 group-hover:opacity-20 group-hover:animate-pulse transition-all duration-700"></div>
+                </button>
+              </div>
     </div>
   );
 };

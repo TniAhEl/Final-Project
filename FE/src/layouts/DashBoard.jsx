@@ -52,7 +52,6 @@ const DashBoard = () => {
   return (
     <div style={{ padding: 24, background: "#f4f6f8", minHeight: "100vh" }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h1>Dashboard Báo Cáo</h1>
         <div style={{ display: 'flex', justifyContent: 'flex-end', flex: 1 }}>
           <button
             style={{ padding: '8px 20px', background: '#1976d2', color: 'white', border: 'none', borderRadius: 6, fontWeight: 600, cursor: 'pointer' }}

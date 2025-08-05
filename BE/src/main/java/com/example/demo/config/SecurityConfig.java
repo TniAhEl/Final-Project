@@ -53,16 +53,15 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .cors(Customizer.withDefaults())
                 .authorizeHttpRequests(authz -> authz
-                        .requestMatchers("/api/v1/auth/login", "/api/v1/auth/register/user").permitAll()
+                        .requestMatchers(
+                                "/api/v1/auth/login",
+                                "/api/v1/auth/register/user",
+                                "/oauth2/**",
+                                "/login/oauth2/**",
+                                "/oauth2/authorization/**"
+                        ).permitAll()
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/v1/user/**").hasRole("USER")
-                        .requestMatchers("/api/v1/categories/add/**").hasRole("ADMIN")
-                        .requestMatchers("/api/v1/categories/update/**").hasRole("ADMIN")
-                        .requestMatchers("/api/v1/categories/delete/**").hasRole("ADMIN")
-                        .requestMatchers("/api/v1/warranties/add/**").hasRole("ADMIN")
-                        .requestMatchers("/api/v1/warranties/update/**").hasRole("ADMIN")
-                        .requestMatchers("/api/v1/warranties/delete/**").hasRole("ADMIN")
-//                        .requestMatchers("/oauth2/**", "/login/oauth2/**").permitAll()
                         .anyRequest().permitAll()
                 )
                 .sessionManagement(session -> session
@@ -77,6 +76,7 @@ public class SecurityConfig {
 
         return http.build();
     }
+
 
 
 }

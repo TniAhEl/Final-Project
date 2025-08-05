@@ -191,7 +191,6 @@ const AdminOrdersPage = () => {
 
   // Handle delete order
   const handleDeleteOrder = (order) => {
-    console.log("Delete order:", order);
     // Implement delete order functionality
   };
 
@@ -219,24 +218,11 @@ const AdminOrdersPage = () => {
               />
               Refresh
             </button>
-            <button className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
-              <MdAdd className="text-lg" />
-              New Order
-            </button>
+            
           </div>
         </div>
       </div>
 
-      {/* Filter Component */}
-      <OrderFilter
-        types={orderTypes}
-        statuses={orderStatuses}
-        promotionCodes={promotionCodes}
-        minTotalMoney={0}
-        maxTotalMoney={100000000}
-        onFilterChange={handleFilterChange}
-        onDebounceChange={handleDebounceChange}
-      />
 
       {/* Orders Table */}
       <div className="p-6">

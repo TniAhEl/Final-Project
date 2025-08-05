@@ -6,5 +6,5 @@ import java.util.List;
 
 @Data
 public class CompareRequest {
-    private List<Long> productId;
+    private List<Long> productOptionId;
 }

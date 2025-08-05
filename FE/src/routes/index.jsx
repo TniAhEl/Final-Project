@@ -32,32 +32,53 @@ import TermsOfService from "../pages/Home/TermsOfService";
 import PrivacyPolicy from "../pages/Home/PrivacyPolicy";
 import CustomerDashboard from "../layouts/CustomerDashboard";
 
-
+// Import ProtectedRoute components
+import ProtectedRoute from "../components/ProtectedRoute";
+import AdminProtectedRoute from "../components/AdminProtectedRoute";
+import CustomerProtectedRoute from "../components/CustomerProtectedRoute";
 
 const AppRoutes = () => (
   <Routes>
     <Route path="/" element={<PageHomeMain />} />
     <Route path="/products" element={<ProductPage />} />
     <Route path="/product/:id" element={<ProductDetailPage />} />
-    <Route path="/signup" element={<PageSignUp />} />
-    <Route path="/signin" element={<PageSignIn />} />
+    
+    {/* Protected auth routes - redirect if already authenticated */}
+    <Route path="/signup" element={
+      <ProtectedRoute redirectTo="/customer/dashboard">
+        <PageSignUp />
+      </ProtectedRoute>
+    } />
+    <Route path="/signin" element={
+      <ProtectedRoute redirectTo="/customer/dashboard">
+        <PageSignIn />
+      </ProtectedRoute>
+    } />
+    
     <Route path="/order/checkout" element={<OrderCheckout />} />
     <Route path="/compare" element={<ComparePage />} />
 
-    {/* Route nested for customer */}
-    <Route path="/customer" element={<CustomerLayout />}>
-      <Route index element={<Orders />} />
+    {/* Route nested for customer - only accessible by customers */}
+    <Route path="/customer" element={
+      <CustomerProtectedRoute>
+        <CustomerLayout />
+      </CustomerProtectedRoute>
+    }>
+      <Route index element={<CustomerDashboard />} />
       <Route path="orders" element={<Orders />} />
       <Route path="cart" element={<CartTable />} />
       <Route path="profile" element={<Profile />} />
       <Route path="warranty" element={<WarrantyTable />} />
       <Route path="insurance" element={<InsuranceTable />} />
       <Route path="checkout" element={<CheckOut />} />
-      <Route path="dashboard" element={<CustomerDashboard />} />
     </Route>
 
-    {/* Route nested for admin */}
-    <Route path="/admin" element={<AdminLayout />}>
+    {/* Route nested for admin - only accessible by admins */}
+    <Route path="/admin" element={
+      <AdminProtectedRoute>
+        <AdminLayout />
+      </AdminProtectedRoute>
+    }>
       <Route index element={<Dashboard />} />
       <Route path="dashboard" element={<Dashboard />} />
       <Route path="users" element={<UserManagement />} />

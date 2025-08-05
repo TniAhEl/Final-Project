@@ -139,7 +139,7 @@ const HeaderAuth = () => {
                       navigate("/customer");
                     }
                   }}
-                  className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100"
+                  className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100 cursor-pointer transition-colors duration-200"
                 >
                   Profile
                 </button>
@@ -148,7 +148,7 @@ const HeaderAuth = () => {
                     setOpenUser(false);
                     handleLogout();
                   }}
-                  className="block w-full text-left px-4 py-2 text-red-600 hover:bg-gray-100"
+                  className="block w-full text-left px-4 py-2 text-red-600 hover:bg-gray-100 cursor-pointer transition-colors duration-200"
                 >
                   Logout
                 </button>

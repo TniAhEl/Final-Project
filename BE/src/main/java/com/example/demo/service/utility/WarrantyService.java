@@ -26,6 +26,7 @@ import java.math.BigDecimal;
 import java.sql.Date;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -199,20 +200,23 @@ public class WarrantyService implements IWarrantyService {
 
         // Warranty Policy (11–18)
         WarrantyResponse policy = new WarrantyResponse();
-        policy.setDuration(((Number) row[10]).intValue());
-
-        policy.setCreateAt(row[11] != null ? ((Timestamp) row[11]).toLocalDateTime() : null);
-        policy.setId(((Number) row[12]).longValue());
-        policy.setUpdateAt(row[13] != null ? ((Timestamp) row[13]).toLocalDateTime() : null);
-        policy.setCondition((String) row[14]);
-        policy.setException((String) row[15]);
-        policy.setName((String) row[16]);
-        policy.setNote((String) row[17]);
-
+        policy.setId(((Long) row[10]));
+        policy.setCondition((String) row[11]);
+        policy.setCreateAt(row[12] != null ?
+                (row[12] instanceof Timestamp ? ((Timestamp) row[12]).toLocalDateTime() : null)
+                : null);
+        policy.setDuration((Integer) row[13]);
+        policy.setException((String) row[14]);
+        policy.setName((String) row[15]);
+        policy.setNote((String) row[16]);
+        policy.setUpdateAt(row[17] != null ?
+                (row[17] instanceof Timestamp ? ((Timestamp) row[17]).toLocalDateTime() : null)
+                : null);
 
         response.setWarrantyPolicy(policy);
 
         return response;
     }
+
 
 }

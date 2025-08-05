@@ -20,13 +20,13 @@ const Main = () => {
           </div>
           <div className="inline-flex justify-start items-center gap-4 mt-4">
             <button
-              className="px-6 py-3 bg-blue-600 rounded-lg text-white text-lg font-bold font-['Roboto'] leading-normal tracking-wide shadow hover:bg-blue-700 transition"
+              className="px-6 py-3 bg-blue-600 rounded-lg text-white text-lg font-bold font-['Roboto'] leading-normal tracking-wide shadow hover:bg-blue-700 transition cursor-pointer"
               onClick={() => navigate("/products")}
             >
               Buy now!
             </button>
             <button
-              className="flex items-center px-4 py-3 rounded-lg text-blue-600 text-base font-medium font-['Roboto'] leading-normal tracking-wide hover:bg-blue-50 transition"
+              className="flex items-center px-4 py-3 rounded-lg text-blue-600 text-base font-medium font-['Roboto'] leading-normal tracking-wide hover:bg-blue-50 transition cursor-pointer"
               onClick={() => navigate("/about-us")}
             >
               <svg

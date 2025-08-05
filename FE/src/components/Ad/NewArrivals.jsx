@@ -15,6 +15,7 @@ function NewArrivalsAd(props) {
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [moreClickCount, setMoreClickCount] = useState(0);
   const navigate = useNavigate();
   const PAGE_SIZE = 5;
 
@@ -42,7 +43,13 @@ function NewArrivalsAd(props) {
   }, []);
 
   const handleMore = () => {
-    if (hasMore) {
+    const newClickCount = moreClickCount + 1;
+    setMoreClickCount(newClickCount);
+    
+    if (newClickCount >= 2) {
+      // Sau lần click thứ 2, chuyển sang trang category
+      navigate("/products");
+    } else if (hasMore) {
       const nextPage = page + 1;
       fetchProducts(nextPage, true);
       setPage(nextPage);
@@ -77,14 +84,24 @@ function NewArrivalsAd(props) {
       </div>
       <div className="flex flex-col items-center mt-4">
         <span
-          className="text-blue-700 font-medium flex items-center gap-1 cursor-pointer hover:underline"
-          onClick={handleMore}
+          className={`font-medium flex items-center gap-1 cursor-pointer transition-all duration-300 ${
+            loading 
+              ? "text-gray-400 cursor-not-allowed" 
+              : "text-blue-700 hover:underline hover:text-blue-800"
+          }`}
+          onClick={!loading ? handleMore : undefined}
         >
-          More <FiChevronDown className="ml-1 text-xl" />
+          {loading ? (
+            <>
+              <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-400 border-t-transparent"></div>
+              Loading...
+            </>
+          ) : (
+            <>
+              More <FiChevronDown className="ml-1 text-xl" />
+            </>
+          )}
         </span>
-        {loading && (
-          <span className="mt-2 text-xs text-gray-500">Loading...</span>
-        )}
       </div>
     </div>
   );

@@ -37,7 +37,7 @@ const ProductReviewSummary = ({
             ))}
           </div>
           <div className="text-xs text-gray-500 mt-1">
-            Trung bình trên {total} đánh giá
+            Average {total} reviews
           </div>
         </div>
         {/* Chart of review counts by star rating */}
@@ -73,9 +73,7 @@ const ProductReviewSummary = ({
         ) : (
           reviews.map((r, idx) => (
             <div key={idx} className="">
-              <div className="font-semibold text-blue-900 mb-1">
-                {r.reviewer}
-              </div>
+              
               <ReviewCard {...r} />
               {/* Show reply if exists */}
               {r.reply && r.reply.reply && (

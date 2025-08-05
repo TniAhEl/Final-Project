@@ -102,8 +102,8 @@ const Checkout = () => {
     // Get list of promotions for all users
     getAllPromotion()
       .then((res) => {
-        console.log("Promotions loaded:", res.data);
         setAvailableDiscounts(res.data || []);
+        console.log(res);
       })
       .catch((error) => {
         console.error("Error fetching promotions:", error);
@@ -206,11 +206,15 @@ const Checkout = () => {
   }, []);
 
   // Handle removing product from order
-  const handleRemoveProduct = (id) => {
+  const handleRemoveProduct = (productOptionId) => {
     if (isAuthenticated()) {
       // User is logged in - remove from server cart
       const userId = localStorage.getItem("userId");
-      deleteCartProduct(userId, id)
+      // For authenticated users, productOptionId is the cart item ID, we need to find the actual productOption.id
+      const product = products.find((p) => p.id === productOptionId);
+      const actualProductOptionId = product?.productOption?.id || productOptionId;
+      
+      deleteCartProduct(userId, actualProductOptionId)
         .then(() => getCartByUserId(userId))
         .then((res) => {
           const cart = res.data;
@@ -219,8 +223,8 @@ const Checkout = () => {
         .catch(() => setError("Cannot remove product from cart."));
     } else {
       // User is not logged in - remove from local cart
-      removeFromLocalCart(id);
-      const updatedProducts = products.filter(p => p.id !== id);
+      removeFromLocalCart(productOptionId);
+      const updatedProducts = products.filter(p => p.id !== productOptionId);
       setProducts(updatedProducts);
     }
   };
@@ -228,9 +232,9 @@ const Checkout = () => {
   // Debounce map for each product
   const debounceTimers = useRef({});
   // Handle changing product quantity
-  const handleChangeQuantity = (id, delta) => {
-    setUpdatingId(id);
-    const product = products.find((p) => p.id === id);
+  const handleChangeQuantity = (productOptionId, delta) => {
+    setUpdatingId(productOptionId);
+    const product = products.find((p) => p.id === productOptionId);
     if (!product) return;
     
     const prevQuantity = product.quantity;
@@ -248,18 +252,22 @@ const Checkout = () => {
 
     // Update UI immediately
     setProducts((products) =>
-      products.map((p) => (p.id === id ? { ...p, quantity: newQuantity } : p))
+      products.map((p) => (p.id === productOptionId ? { ...p, quantity: newQuantity } : p))
     );
+    console.log(products);
     
     if (isAuthenticated()) {
       // User is logged in - update server cart
       const userId = localStorage.getItem("userId");
+      // For authenticated users, productOptionId is the cart item ID, we need to find the actual productOption.id
+      const actualProductOptionId = product?.productOption?.id || productOptionId;
+      
       // Clear old timer if exists
-      if (debounceTimers.current[id]) clearTimeout(debounceTimers.current[id]);
+      if (debounceTimers.current[productOptionId]) clearTimeout(debounceTimers.current[productOptionId]);
       // Set new timer
-      debounceTimers.current[id] = setTimeout(() => {
+      debounceTimers.current[productOptionId] = setTimeout(() => {
         updateProductQuantity(userId, {
-          productOptionId: id,
+          productOptionId: actualProductOptionId,
           quantity: newQuantity,
         })
           .then(() => getCartByUserId(userId))
@@ -267,14 +275,15 @@ const Checkout = () => {
             const cart = res.data;
             setProducts(cart.cartProducts || []);
             setUpdateMessage("Update quantity successfully!");
-            setTimeout(() => setUpdateMessage(""), 2000);
+            setTimeout(() => setUpdateMessage(""), 5000);
             setUpdatingId(null);
           })
           .catch((e) => {
+            console.log(e);
             setUpdateError("Insufficient product quantity in stock.");
             setProducts((products) =>
               products.map((p) =>
-                p.id === id ? { ...p, quantity: prevQuantity } : p
+                p.id === productOptionId ? { ...p, quantity: prevQuantity } : p
               )
             );
             setTimeout(() => setUpdateError(""), 2000);
@@ -283,7 +292,7 @@ const Checkout = () => {
       }, 200);
     } else {
       // User is not logged in - update local cart
-      updateLocalCartQuantity(id, newQuantity);
+      updateLocalCartQuantity(productOptionId, newQuantity);
       setUpdateMessage("Update quantity successfully!");
       setTimeout(() => setUpdateMessage(""), 2000);
       setUpdatingId(null);
@@ -292,25 +301,21 @@ const Checkout = () => {
 
 
   const handleInputDiscount = (e) => {
-    console.log("Input discount:", e.target.value);
     setDiscountCode(e.target.value);
     setSelectedDiscount(null);
     setIsChoosing(false);
   };
   const handleSelectDiscount = (d) => {
-    console.log("Selected discount:", d);
     setSelectedDiscount(d.code);
     setDiscountCode("");
     setIsChoosing(false); // Close dropdown after selection
   };
   // When clicking on the input to enter the code
   const handleFocusInput = () => {
-    console.log("Focus input");
     setIsChoosing(false);
   };
   // When clicking on the button to open the list
   const handleOpenList = () => {
-    console.log("Open list, available discounts:", availableDiscounts);
     setIsChoosing(!isChoosing); // Toggle dropdown
     if (!isChoosing) {
       setDiscountCode(""); // Clear input when opening dropdown
@@ -489,13 +494,16 @@ const Checkout = () => {
           return;
         }
         
-        // Chuẩn bị orderInfo và insuranceContracts
-        const orderInfo = {
-          type: orderType,
-          address: receiverInfo.address,
-          note,
-          method: shippingMethod,
-        };
+                 // Chuẩn bị orderInfo và insuranceContracts
+         const orderInfo = {
+           name: receiverInfo.name,
+           address: receiverInfo.address,
+           phone: receiverInfo.phone,
+           email: receiverInfo.email,
+           note,
+           type: orderType,
+           method: shippingMethod,
+         };
         // Build insuranceContracts từ selectedInsurances
         const insuranceContracts = Object.entries(selectedInsurances).map(
           ([productOptionId, v]) => ({
@@ -511,7 +519,7 @@ const Checkout = () => {
           orderInfo,
           insuranceContracts,
         };
-        console.log("Order body gửi đi:", JSON.stringify(logBody, null, 2));
+        
         const res = await placeOrder({
           userId,
           promotionCode,
@@ -546,7 +554,7 @@ const Checkout = () => {
         
         // Build productList từ local cart
         const productList = {
-          items: products.map(product => ({
+          products: products.map(product => ({
             productOptionId: product.id,
             quantity: product.quantity
           }))
@@ -559,7 +567,14 @@ const Checkout = () => {
           insuranceContracts,
           productList,
         };
-        console.log("Guest order body gửi đi:", JSON.stringify(logBody, null, 2));
+        console.log("=== GUEST USER ORDER PARAMETERS ===");
+        console.log("Full request body:", logBody);
+        console.log("promotionCode:", promotionCode);
+        console.log("orderInfo:", orderInfo);
+        console.log("insuranceContracts:", insuranceContracts);
+        console.log("productList:", productList);
+        console.log("=====================================");
+        
         const res = await placeGuestOrder({
           promotionCode,
           orderInfo,
@@ -616,8 +631,9 @@ const Checkout = () => {
     (d) => d.code === (selectedDiscount || discountCode)
   );
   if (discountObj && discountObj.value) {
-    const valueStr = String(discountObj.value); // Convert to string safely
-    if (valueStr.endsWith("%")) {
+    const type = String(discountObj.type); // Convert to string safely
+    const valueStr = String(discountObj.value); 
+    if (type === "PERCENTAGE") {
       // Phần trăm
       const percent = parseFloat(valueStr);
       discountValue = Math.round(((totalProduct + totalInsuranceFee) * percent) / 100);
@@ -812,11 +828,11 @@ const Checkout = () => {
                             </span>
                             <span>
                               Expiry:{" "}
-                              <span className="font-semibold">{d.expiry}</span>
+                              <span className="font-semibold">{d.endDate}</span>
                             </span>
                             <span>
                               Remaining:{" "}
-                              <span className="font-semibold">{d.remain}</span>
+                              <span className="font-semibold">{d.quantity}</span>
                             </span>
                           </div>
                         </div>
@@ -955,21 +971,21 @@ const Checkout = () => {
                 </div>
               </div>
               
-              {/* Nút đặt hàng */}
+              {/* Order button */}
               <div className="flex justify-center">
-                <SubmitButton
+                <button
                   type="submit"
                   disabled={loading || products.length === 0}
-                  className="w-full max-w-md"
+                  className="w-full max-w-sm px-6 py-4 bg-blue-600 text-white rounded-lg font-semibold text-lg hover:bg-blue-700 transition-colors duration-200 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
                 >
-                  <span className="flex items-center gap-2">
-                    <FaShoppingCart className="text-lg" />
+                  <FaShoppingCart className="w-5 h-5" />
+                  <span>
                     {loading ? "Placing order..." : "Place Order"}
                   </span>
-                </SubmitButton>
+                </button>
               </div>
               
-              {/* Thông báo */}
+              {/* Notification */}
               {success && (
                 <div className="text-green-600 font-semibold text-center">
                   Order placed successfully!

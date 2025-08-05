@@ -8,6 +8,7 @@ import {
   FaTruck,
   FaCheckCircle,
   FaShieldAlt,
+  FaTimesCircle,
 } from "react-icons/fa";
 import { getProductById } from "../api/productService";
 import CompareButton from "../components/Button/Compare";
@@ -22,7 +23,6 @@ function getUserIdFromToken() {
       atob(payload.replace(/-/g, "+").replace(/_/g, "/"))
     );
     // userId can be id, sub, userId depending on backend
-    console.log(decoded);
     return decoded.userId || decoded.id || decoded.sub || null;
   } catch {
     return null;
@@ -46,12 +46,14 @@ const ProductLayout = ({
   const [selectedRam, setSelectedRam] = useState(null);
   const [selectedRom, setSelectedRom] = useState(null);
   const [selectedStore, setSelectedStore] = useState(null);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0); // Add state for selected image
   const navigate = useNavigate();
 
   useEffect(() => {
     if (productData) {
       // Use productData from props
       setProduct(productData);
+      setSelectedImageIndex(0); // Reset selected image when product changes
       if (
         productData &&
         Array.isArray(productData.option) &&
@@ -96,7 +98,7 @@ const ProductLayout = ({
           prod = data.data;
         }
         setProduct(prod);
-        console.log(prod);
+        setSelectedImageIndex(0); // Reset selected image when product changes
         setLoading(false);
         if (prod && Array.isArray(prod.option) && prod.option.length > 0) {
           setSelectedOption(prod.option[0]);
@@ -369,6 +371,19 @@ const ProductLayout = ({
     }
   };
 
+  // Pre Order handler
+  const handlePreOrder = () => {
+    // Show notification using the global notification system
+    localStorage.setItem("showNotification", "true");
+    localStorage.setItem("notificationMessage", "Feature under development");
+    window.dispatchEvent(new CustomEvent("showNotification", { 
+      detail: { 
+        message: "Feature under development", 
+        type: "warning" 
+      } 
+    }));
+  };
+
   if (loading) return <div className="p-8 text-center">Loading...</div>;
   if (error) return <div className="p-8 text-center text-red-500">{error}</div>;
   if (!product)
@@ -561,46 +576,60 @@ const ProductLayout = ({
       {/* Product image and thumbnails */}
       <div className="w-[536px] flex justify-start items-center gap-12">
         <div className="inline-flex flex-col justify-start items-center gap-6">
-          <img
-            className="w-[74.88px] h-[93px]"
-            src={
-              product.productImageResponse?.[0]?.url ||
-              "https://placehold.co/75x93"
-            }
-            alt="thumb1"
-          />
-          <img
-            className="w-[46.31px] h-[93px] opacity-40"
-            src={
-              product.productImageResponse?.[1]?.url ||
-              "https://placehold.co/46x93"
-            }
-            alt="thumb2"
-          />
-          <img
-            className="w-[45.32px] h-[93px] opacity-40"
-            src={
-              product.productImageResponse?.[2]?.url ||
-              "https://placehold.co/45x93"
-            }
-            alt="thumb3"
-          />
-          <img
-            className="w-[34.49px] h-[93px] opacity-40"
-            src={
-              product.productImageResponse?.[3]?.url ||
-              "https://placehold.co/34x93"
-            }
-            alt="thumb4"
-          />
+          {product.image && Array.isArray(product.image) && product.image.length > 0 ? (
+            product.image.slice(0, 4).map((img, index) => (
+              <img
+                key={img.id || index}
+                className={`w-[80px] h-[80px] cursor-pointer transition-opacity object-contain bg-gray-100 rounded-lg border-2 ${
+                  selectedImageIndex === index ? 'opacity-100 border-blue-500' : 'opacity-60 border-gray-200'
+                }`}
+                src={img.url || "https://placehold.co/80x80"}
+                alt={`thumb${index + 1}`}
+                onClick={() => setSelectedImageIndex(index)}
+                onError={(e) => {
+                  e.target.src = "https://placehold.co/80x80";
+                }}
+              />
+            ))
+          ) : product.images && product.images.length > 0 ? (
+            product.images.slice(0, 4).map((img, index) => (
+              <img
+                key={img.id || index}
+                className={`w-[80px] h-[80px] cursor-pointer transition-opacity object-contain bg-gray-100 rounded-lg border-2 ${
+                  selectedImageIndex === index ? 'opacity-100 border-blue-500' : 'opacity-60 border-gray-200'
+                }`}
+                src={img.url || "https://placehold.co/80x80"}
+                alt={`thumb${index + 1}`}
+                onClick={() => setSelectedImageIndex(index)}
+                onError={(e) => {
+                  e.target.src = "https://placehold.co/80x80";
+                }}
+              />
+            ))
+          ) : (
+            // Fallback thumbnails if no images
+            Array.from({ length: 4 }, (_, index) => (
+              <img
+                key={index}
+                className="w-[80px] h-[80px] opacity-40 object-contain bg-gray-100 rounded-lg border-2 border-gray-200"
+                src="https://placehold.co/80x80"
+                alt={`thumb${index + 1}`}
+              />
+            ))
+          )}
         </div>
         <img
-          className="w-[413.12px] h-[516px]"
+          className="w-[413.12px] h-[516px] object-contain bg-gray-50 rounded-lg"
           src={
-            product.productImageResponse?.[0]?.url ||
-            "https://placehold.co/413x516"
+            product.image?.url || 
+            product.image?.[selectedImageIndex]?.url ||
+            product.productImageResponse?.[selectedImageIndex]?.url ||
+            "https://placehold.co/600x800"
           }
           alt="main"
+          onError={(e) => {
+            e.target.src = "https://placehold.co/600x800";
+          }}
         />
       </div>
 
@@ -641,9 +670,9 @@ const ProductLayout = ({
                         key={color}
                         className={`flex items-center gap-2 px-3 py-1 text-sm rounded-full border transition-all ${
                           isSelected
-                            ? "border-blue-500 bg-blue-50 text-blue-700"
+                            ? "border-blue-500 bg-blue-50 text-blue-700 cursor-pointer"
                             : isAvailable
-                            ? "border-gray-300 bg-white hover:border-blue-300 hover:bg-blue-50"
+                            ? "border-gray-300 bg-white hover:border-blue-300 hover:bg-blue-50 cursor-pointer"
                             : "border-gray-200 bg-gray-100 text-gray-400 opacity-50 cursor-not-allowed"
                         }`}
                         onClick={() => handleColorSelect(color)}
@@ -692,9 +721,9 @@ const ProductLayout = ({
                         key={ram}
                         className={`px-4 py-2 text-base rounded-lg border transition-all ${
                           isSelected
-                            ? "border-blue-500 bg-blue-50 text-blue-600 font-bold"
+                            ? "border-blue-500 bg-blue-50 text-blue-600 font-bold cursor-pointer"
                             : isAvailable
-                            ? "border-gray-300 bg-white text-gray-700 hover:border-blue-300 hover:bg-blue-50"
+                            ? "border-gray-300 bg-white text-gray-700 hover:border-blue-300 hover:bg-blue-50 cursor-pointer"
                             : "border-gray-200 bg-gray-100 text-gray-400 opacity-50 cursor-not-allowed"
                         } flex justify-center items-center gap-2 text-xs`}
                         onClick={() => handleRamSelect(ram)}
@@ -723,9 +752,9 @@ const ProductLayout = ({
                         key={rom}
                         className={`px-4 py-2 text-base rounded-lg border transition-all ${
                           isSelected
-                            ? "border-blue-500 bg-blue-50 text-blue-600 font-bold"
+                            ? "border-blue-500 bg-blue-50 text-blue-600 font-bold cursor-pointer"
                             : isAvailable
-                            ? "border-gray-300 bg-white text-gray-700 hover:border-blue-300 hover:bg-blue-50"
+                            ? "border-gray-300 bg-white text-gray-700 hover:border-blue-300 hover:bg-blue-50 cursor-pointer"
                             : "border-gray-200 bg-gray-100 text-gray-400 opacity-50 cursor-not-allowed"
                         } flex justify-center items-center gap-2 text-xs`}
                         onClick={() => handleRomSelect(rom)}
@@ -812,14 +841,17 @@ const ProductLayout = ({
             )}
             {/* Wishlist and add to cart buttons */}
             <div className="self-stretch inline-flex justify-start items-start gap-4 flex-wrap content-start">
-              <div className="flex-1 min-w-[136px] px-14 py-4 bg-white rounded-md outline outline-1 outline-offset-[-1px] outline-black flex justify-center items-center gap-2">
+              <button
+                className="flex-1 min-w-[136px] px-14 py-4 bg-white rounded-md outline outline-1 outline-offset-[-1px] outline-black flex justify-center items-center gap-2 cursor-pointer hover:bg-gray-50 transition-colors"
+                onClick={handlePreOrder}
+              >
                 <div className="text-center justify-start text-black text-base font-medium font-['Inter'] leading-normal">
                   Pre Order NOW
                 </div>
-              </div>
+              </button>
               <div className="flex-1 min-w-[136px] px-14 py-4 bg-black rounded-md flex justify-center items-center gap-2">
                 <button
-                  className="text-center justify-start text-white text-base font-medium font-['Inter'] leading-normal w-full bg-black  transition rounded-md disabled:opacity-60"
+                  className="text-center justify-start text-white text-base font-medium font-['Inter'] leading-normal w-full bg-black  transition rounded-md disabled:opacity-60 cursor-pointer"
                   onClick={handleAddToCart}
                   disabled={addToCartLoading}
                 >
@@ -831,21 +863,12 @@ const ProductLayout = ({
                 className="flex-1 min-w-[136px] px-14 py-4"
               />
             </div>
-            {/* Cart message */}
-            {addToCartMessage && (
-              <div className={`self-stretch mt-3 p-3 rounded-md text-sm ${
-                addToCartMessage.includes('lỗi') 
-                  ? 'bg-red-50 text-red-700 border border-red-200' 
-                  : 'bg-green-50 text-green-700 border border-green-200'
-              }`}>
-                {addToCartMessage}
-              </div>
-            )}
+
             
             {/* Buy Now button - new row */}
             <div className="self-stretch mt-3">
               <button
-                className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white text-lg font-semibold rounded-md shadow transition disabled:opacity-60 disabled:cursor-not-allowed"
+                className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white text-lg font-semibold rounded-md shadow transition disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
                 onClick={handleBuyNow}
                 disabled={
                   !selectedOption ||
@@ -873,18 +896,24 @@ const ProductLayout = ({
                   </span>
                 </div>
               </div>
-              {/* In Stock */}
+              {/* Stock Status */}
               <div className="flex-1 rounded-lg flex justify-start items-center gap-4">
                 <div className="p-4 bg-neutral-100 rounded-[11px] flex justify-center items-center">
-                  <FaCheckCircle className="text-2xl text-green-600" />
+                  {selectedOption && selectedOption.remainingQuantity > 0 ? (
+                    <FaCheckCircle className="text-2xl text-green-600" />
+                  ) : (
+                    <FaTimesCircle className="text-2xl text-red-600" />
+                  )}
                 </div>
                 <div className="justify-start">
                   <span className="text-neutral-500 text-sm font-medium font-['Inter'] leading-normal">
-                    In Stock
+                    {selectedOption && selectedOption.remainingQuantity > 0 ? "In Stock" : "Out of Stock"}
                     <br />
                   </span>
-                  <span className="text-black text-sm font-medium font-['Inter'] leading-normal">
-                    Today{" "}
+                  <span className={`text-sm font-medium font-['Inter'] leading-normal ${
+                    selectedOption && selectedOption.remainingQuantity > 0 ? "text-black" : "text-red-600"
+                  }`}>
+                    {selectedOption && selectedOption.remainingQuantity > 0 ? "Today" : "Unavailable"}
                   </span>
                 </div>
               </div>

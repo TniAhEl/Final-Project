@@ -19,7 +19,6 @@ const WarrantyForm = ({ onSubmit, onCancel }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     // warranty
-    console.log("Warranty submitted:", warrantyData);
     if (onSubmit) {
       onSubmit(warrantyData);
     }

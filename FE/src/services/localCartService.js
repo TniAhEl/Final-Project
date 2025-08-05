@@ -96,6 +96,21 @@ export const isAuthenticated = () => {
   return !!(localStorage.getItem('userId') && localStorage.getItem('token'));
 };
 
+// Get user role from localStorage
+export const getUserRole = () => {
+  return localStorage.getItem('role');
+};
+
+// Check if user is admin
+export const isAdmin = () => {
+  return getUserRole() === 'ADMIN';
+};
+
+// Check if user is customer
+export const isCustomer = () => {
+  return getUserRole() === 'USER';
+};
+
 // Migrate local cart to server cart (when user logs in)
 export const migrateLocalCartToServer = async (userId, cartService) => {
   const localCart = getLocalCart();

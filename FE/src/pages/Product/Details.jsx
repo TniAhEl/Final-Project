@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import HeaderAuth from "../../components/Header/HeaderAuth";
+import Header from "../../components/Header/Header";
 import Footer from "../../components/Footer/Footer";
 import ProductLayout from "../../layouts/ProductLayout";
 import ProductReviewSummary from "../../components/Card/ProductReviewSummary";
@@ -34,23 +35,91 @@ const Details = () => {
   const [addToCartLoading, setAddToCartLoading] = useState(false);
   const [addToCartMessage, setAddToCartMessage] = useState("");
 
+  // Helper function to process product images
+  const processProductImages = (productData) => {
+    if (!productData) return productData;
+
+    // Create a copy of the product data to avoid modifying the original
+    const processedData = { ...productData };
+    
+    // Create full URLs for images
+    const baseUrl = "http://localhost:8080";
+    
+         // Process image field (new API format)
+     if (processedData.image && typeof processedData.image === 'object') {
+       // Single image object
+       processedData.image = {
+         ...processedData.image,
+         url: processedData.image.imageUrl ? `${baseUrl}${processedData.image.imageUrl}` : processedData.image.url || "https://placehold.co/600x800"
+       };
+     } else if (processedData.image && Array.isArray(processedData.image)) {
+       // Array of images
+       processedData.image = processedData.image.map(img => ({
+         ...img,
+         url: img.imageUrl ? `${baseUrl}${img.imageUrl}` : img.url || "https://placehold.co/600x800"
+       }));
+     }
+    
+         // Process productImageResponse if exists (old format)
+     if (processedData.productImageResponse && Array.isArray(processedData.productImageResponse)) {
+       processedData.productImageResponse = processedData.productImageResponse.map(img => ({
+         ...img,
+         url: img.imageUrl ? `${baseUrl}${img.imageUrl}` : img.url || "https://placehold.co/600x800"
+       }));
+     }
+     
+     // Process images array if exists (old format)
+     if (processedData.images && Array.isArray(processedData.images)) {
+       processedData.images = processedData.images.map(img => ({
+         ...img,
+         url: img.imageUrl ? `${baseUrl}${img.imageUrl}` : img.url || "https://placehold.co/600x800"
+       }));
+     }
+
+    // If no image field, use productImageResponse or images array
+    if (!processedData.image && processedData.productImageResponse) {
+      processedData.image = processedData.productImageResponse;
+    } else if (!processedData.image && processedData.images) {
+      processedData.image = processedData.images;
+    }
+
+         // If still no images, create a placeholder
+     if (!processedData.image) {
+       processedData.image = {
+         id: 1,
+         url: "https://placehold.co/600x800",
+         fileName: "placeholder.png"
+       };
+     }
+
+    return processedData;
+  };
+
   useEffect(() => {
     setLoading(true);
     getProductById(id)
       .then((data) => {
+
         let prod = null;
-        if (data && data.name) {
-          prod = data;
+        if (data && data.data && data.data.name) {
+          // New API format with message and data
+          prod = processProductImages(data.data);
+        } else if (data && data.name) {
+          // Direct product object
+          prod = processProductImages(data);
         } else if (
           data &&
           typeof data === "object" &&
           data.data &&
           data.data.name
         ) {
-          prod = data.data;
+          // Fallback format
+          prod = processProductImages(data.data);
         }
+        
         setProduct(prod);
         setLoading(false);
+        
         // Get real reviews
         if (prod && prod.id) {
           getProductReviews(prod.id)
@@ -110,10 +179,17 @@ const Details = () => {
     setCartItemCount(getLocalCartItemCount());
   }, []);
 
+  // Function to show notification on homepage
+  const showNotificationOnHomepage = (message, type = "success") => {
+    localStorage.setItem("showNotification", "true");
+    localStorage.setItem("notificationMessage", message);
+    window.dispatchEvent(new CustomEvent("showNotification", { detail: { message, type } }));
+  };
+
   // Handle add to cart
   const handleAddToCart = async (quantity = 1) => {
     if (!selectedOption || !selectedOption.id) {
-      setAddToCartMessage("Please select a product version!");
+      showNotificationOnHomepage("Vui lòng chọn phiên bản sản phẩm!", "error");
       return;
     }
 
@@ -128,7 +204,7 @@ const Details = () => {
           productOptionId: selectedOption.id,
           quantity: quantity
         });
-        setAddToCartMessage("Product added to cart!");
+        showNotificationOnHomepage("Đã thêm sản phẩm vào giỏ hàng!");
       } else {
         // User is not logged in - add to local cart
         addToLocalCart({
@@ -136,18 +212,16 @@ const Details = () => {
           quantity: quantity,
           name: product.name,
           price: selectedOption.price,
-          image: product.image || 'https://placehold.co/80x80'
+          image: product.productImageResponse?.[0]?.url || 'https://placehold.co/80x80'
         });
-        setAddToCartMessage("Product added to temporary cart!");
+        showNotificationOnHomepage("Đã thêm sản phẩm vào giỏ hàng tạm thời!");
         setCartItemCount(getLocalCartItemCount());
       }
     } catch (error) {
       console.error('Error adding to cart:', error);
-      setAddToCartMessage("An error occurred while adding to cart!");
+      showNotificationOnHomepage("Có lỗi xảy ra khi thêm vào giỏ hàng!", "error");
     } finally {
       setAddToCartLoading(false);
-      // Clear message after 3 seconds
-      setTimeout(() => setAddToCartMessage(""), 3000);
     }
   };
 
@@ -180,7 +254,7 @@ const Details = () => {
   if (!product || typeof product !== "object" || !product.name)
     return (
       <div className="min-h-screen flex flex-col bg-gray-50">
-        <HeaderAuth />
+        {isAuthenticated() ? <HeaderAuth /> : <Header />}
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <div className="text-6xl mb-4">📦</div>
@@ -204,7 +278,7 @@ const Details = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
-      <HeaderAuth />
+      {isAuthenticated() ? <HeaderAuth /> : <Header />}
       <ProductLayout
         productData={product}
         onOptionChange={handleOptionChange}

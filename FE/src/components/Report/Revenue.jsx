@@ -96,7 +96,7 @@ const RevenueChart = ({ data = [], loading }) => {
   };
 
   if (loading) {
-    return <div className="p-8 text-center">Đang tải biểu đồ...</div>;
+    return <div className="p-8 text-center">Loading...</div>;
   }
   if (!data || data.length === 0) {
     // Still show 12 months with 0 values

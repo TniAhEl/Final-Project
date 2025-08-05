@@ -5,8 +5,8 @@ import ProductCard from "../components/Card/Product";
 import { filterProducts } from "../api/productService";
 
 // Dữ liệu mẫu cho filter
-const categories = ["Smartphone", "Tablet", "Feature Phone"];
-const brands = ["Apple", "Samsung", "Xiaomi", "Oppo", "Realme"];
+const categories = ["Smartphone", "Gaming Phone", "Feature Phone", "Foldable Phone", "Business Phone"];
+const brands = ["Apple", "Samsung", "Xiaomi", "Oppo", "Realme", "Vivo", "OnePlus", "Nokia", ];
 const rams = ["4GB", "6GB", "8GB", "12GB"];
 const roms = ["64GB", "128GB", "256GB", "512GB"];
 
@@ -124,7 +124,6 @@ const CategoryLayout = () => {
   // Add useEffect log products
   useEffect(() => {
     if (products.length > 0) {
-      console.log("All products after fetch:", products);
     }
   }, [products]);
 
@@ -146,6 +145,9 @@ const CategoryLayout = () => {
           if (key === 'ram' || key === 'rom') {
             const num = parseInt(value.toString().replace(/\D/g, ''));
             cleanFilter[key] = isNaN(num) ? value.toString() : num;
+          } else if (key === 'categoryName') {
+            // Convert categoryName to array format
+            cleanFilter[key] = [value.toString()];
           } else {
             cleanFilter[key] = value.toString();
           }

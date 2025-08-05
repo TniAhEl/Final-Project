@@ -17,20 +17,18 @@ import java.sql.Blob;
 @Entity
 @Table(name = "product_image")
 public class ProductImage {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String fileName;
-    private String fileType;
+    private String fileName;     // Tên file ảnh (tuỳ chọn)
+    private String fileType;     // Kiểu MIME, ví dụ: image/jpeg
 
-    @Lob
-    @JsonIgnore
-    private Blob image;
-    private String downloadUrl;
+    private String imageUrl;     // Đường dẫn ảnh (URL đầy đủ)
 
     @ManyToOne
     @JoinColumn(name = "product_id")
     private Product product;
-
 }
+

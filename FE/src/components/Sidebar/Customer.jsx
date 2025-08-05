@@ -10,11 +10,11 @@ import { FaClipboardList, FaShieldAlt } from "react-icons/fa";
 import { Link } from "react-router-dom";
 
 const menu = [
-  {
-    label: "Dashboard",
-    icon: <MdDashboard className="text-xl text-gray-700" />,
-    to: "/customer/dashboard",
-  },
+  // {
+  //   label: "Dashboard",
+  //   icon: <MdDashboard className="text-xl text-gray-700" />,
+  //   to: "/customer/dashboard",
+  // },
   {
     label: "My Orders",
     icon: <FaClipboardList className="text-xl text-gray-700" />,
@@ -40,11 +40,11 @@ const menu = [
     icon: <FaShieldAlt className="text-xl text-gray-700" />,
     to: "/customer/insurance",
   },
-  {
-    label: "Logout",
-    icon: <MdLogout className="text-xl text-gray-700" />,
-    to: "/signin",
-  },
+  // {
+  //   label: "Logout",
+  //   icon: <MdLogout className="text-xl text-gray-700" />,
+  //   to: "/signin",
+  // },
 ];
 
 const SidebarCustomer = () => {

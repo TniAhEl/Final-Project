@@ -19,7 +19,6 @@ const ViewAllOptions = ({ product, onClose, onAddSerial }) => {
   const [stores, setStores] = useState([]);
 
   const handleAddSerial = (option) => {
-    console.log("Adding serial for option:", option);
     setSelectedOptionForSerial(option);
     setShowSerialForm(true);
     setError("");
@@ -35,6 +34,22 @@ const ViewAllOptions = ({ product, onClose, onAddSerial }) => {
 
   const handleSubmitSerial = async (serialData) => {
     try {
+      // Show loading notification
+      const loadingNotification = document.createElement('div');
+      loadingNotification.className = 'fixed top-4 right-4 bg-blue-500 text-white px-6 py-3 rounded-lg shadow-lg z-[9999] transform transition-all duration-300 translate-x-full';
+      loadingNotification.innerHTML = `
+        <div class="flex items-center gap-3">
+          <div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+          <span class="font-medium">Adding serial number...</span>
+        </div>
+      `;
+      document.body.appendChild(loadingNotification);
+      
+      // Animate in loading notification
+      setTimeout(() => {
+        loadingNotification.classList.remove('translate-x-full');
+      }, 100);
+      
       setLoading(true);
       setError("");
       setSuccess("");
@@ -51,6 +66,12 @@ const ViewAllOptions = ({ product, onClose, onAddSerial }) => {
       }
       const validId = optionId !== undefined && optionId !== null && optionId !== '';
       if (!validId) {
+        // Remove loading notification
+        loadingNotification.classList.add('translate-x-full');
+        setTimeout(() => {
+          document.body.removeChild(loadingNotification);
+        }, 300);
+        
         setError("No valid product option selected for serial.");
         setLoading(false);
         return;
@@ -62,11 +83,40 @@ const ViewAllOptions = ({ product, onClose, onAddSerial }) => {
         productOptionId: String(optionId),
       };
 
-      console.log("Sending serial data to API:", apiData);
-
       // Call API to add serial
       const response = await createSerial(apiData);
-      console.log("API response:", response);
+
+      // Remove loading notification
+      loadingNotification.classList.add('translate-x-full');
+      setTimeout(() => {
+        document.body.removeChild(loadingNotification);
+      }, 300);
+      
+      // Show success notification
+      const notification = document.createElement('div');
+      notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-[9999] transform transition-all duration-300 translate-x-full';
+      notification.innerHTML = `
+        <div class="flex items-center gap-3">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+          </svg>
+          <span class="font-medium">Serial number added successfully!</span>
+        </div>
+      `;
+      document.body.appendChild(notification);
+      
+      // Animate in
+      setTimeout(() => {
+        notification.classList.remove('translate-x-full');
+      }, 100);
+      
+      // Remove after 3 seconds
+      setTimeout(() => {
+        notification.classList.add('translate-x-full');
+        setTimeout(() => {
+          document.body.removeChild(notification);
+        }, 300);
+      }, 3000);
 
       setSuccess("Serial added successfully!");
 
@@ -80,6 +130,44 @@ const ViewAllOptions = ({ product, onClose, onAddSerial }) => {
       }, 1500);
     } catch (err) {
       console.error("Error adding serial:", err);
+      
+      // Remove loading notification if it exists
+      const existingLoading = document.querySelector('.fixed.top-4.right-4.bg-blue-500');
+      if (existingLoading) {
+        existingLoading.classList.add('translate-x-full');
+        setTimeout(() => {
+          if (document.body.contains(existingLoading)) {
+            document.body.removeChild(existingLoading);
+          }
+        }, 300);
+      }
+      
+      // Show error notification
+      const notification = document.createElement('div');
+      notification.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-[9999] transform transition-all duration-300 translate-x-full';
+      notification.innerHTML = `
+        <div class="flex items-center gap-3">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+          <span class="font-medium">Failed to add serial number!</span>
+        </div>
+      `;
+      document.body.appendChild(notification);
+      
+      // Animate in
+      setTimeout(() => {
+        notification.classList.remove('translate-x-full');
+      }, 100);
+      
+      // Remove after 4 seconds
+      setTimeout(() => {
+        notification.classList.add('translate-x-full');
+        setTimeout(() => {
+          document.body.removeChild(notification);
+        }, 300);
+      }, 4000);
+      
       setError(
         err.response?.data?.message || "Failed to add serial. Please try again."
       );
@@ -89,7 +177,6 @@ const ViewAllOptions = ({ product, onClose, onAddSerial }) => {
   };
 
   const handleUpdateSerial = (serial) => {
-    console.log("Updating serial:", serial);
     setSelectedSerialForUpdate(serial);
     setShowUpdateSerialForm(true);
     setError("");
@@ -105,6 +192,22 @@ const ViewAllOptions = ({ product, onClose, onAddSerial }) => {
 
   const handleSubmitUpdateSerial = async (updateData) => {
     try {
+      // Show loading notification
+      const loadingNotification = document.createElement('div');
+      loadingNotification.className = 'fixed top-4 right-4 bg-blue-500 text-white px-6 py-3 rounded-lg shadow-lg z-[9999] transform transition-all duration-300 translate-x-full';
+      loadingNotification.innerHTML = `
+        <div class="flex items-center gap-3">
+          <div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+          <span class="font-medium">Updating serial number...</span>
+        </div>
+      `;
+      document.body.appendChild(loadingNotification);
+      
+      // Animate in loading notification
+      setTimeout(() => {
+        loadingNotification.classList.remove('translate-x-full');
+      }, 100);
+      
       setLoading(true);
       setError("");
       setSuccess("");
@@ -116,11 +219,40 @@ const ViewAllOptions = ({ product, onClose, onAddSerial }) => {
         storeId: updateData.storeId,
       };
 
-      console.log("Sending update serial data to API:", apiData);
-
       // Call API to update serial
       const response = await updateSerial(selectedSerialForUpdate.id, apiData);
-      console.log("API response:", response);
+
+      // Remove loading notification
+      loadingNotification.classList.add('translate-x-full');
+      setTimeout(() => {
+        document.body.removeChild(loadingNotification);
+      }, 300);
+      
+      // Show success notification
+      const notification = document.createElement('div');
+      notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-[9999] transform transition-all duration-300 translate-x-full';
+      notification.innerHTML = `
+        <div class="flex items-center gap-3">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+          </svg>
+          <span class="font-medium">Serial number updated successfully!</span>
+        </div>
+      `;
+      document.body.appendChild(notification);
+      
+      // Animate in
+      setTimeout(() => {
+        notification.classList.remove('translate-x-full');
+      }, 100);
+      
+      // Remove after 3 seconds
+      setTimeout(() => {
+        notification.classList.add('translate-x-full');
+        setTimeout(() => {
+          document.body.removeChild(notification);
+        }, 300);
+      }, 3000);
 
       setSuccess("Serial updated successfully!");
 
@@ -138,6 +270,44 @@ const ViewAllOptions = ({ product, onClose, onAddSerial }) => {
       }, 1500);
     } catch (err) {
       console.error("Error updating serial:", err);
+      
+      // Remove loading notification if it exists
+      const existingLoading = document.querySelector('.fixed.top-4.right-4.bg-blue-500');
+      if (existingLoading) {
+        existingLoading.classList.add('translate-x-full');
+        setTimeout(() => {
+          if (document.body.contains(existingLoading)) {
+            document.body.removeChild(existingLoading);
+          }
+        }, 300);
+      }
+      
+      // Show error notification
+      const notification = document.createElement('div');
+      notification.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-[9999] transform transition-all duration-300 translate-x-full';
+      notification.innerHTML = `
+        <div class="flex items-center gap-3">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+          <span class="font-medium">Failed to update serial number!</span>
+        </div>
+      `;
+      document.body.appendChild(notification);
+      
+      // Animate in
+      setTimeout(() => {
+        notification.classList.remove('translate-x-full');
+      }, 100);
+      
+      // Remove after 4 seconds
+      setTimeout(() => {
+        notification.classList.add('translate-x-full');
+        setTimeout(() => {
+          document.body.removeChild(notification);
+        }, 300);
+      }, 4000);
+      
       setError(
         err.response?.data?.message ||
           "Failed to update serial. Please try again."
@@ -152,9 +322,7 @@ const ViewAllOptions = ({ product, onClose, onAddSerial }) => {
     try {
       setLoadingSerials((prev) => ({ ...prev, [optionId]: true }));
 
-      console.log("Fetching serials for option:", optionId);
       const response = await getSerials(optionId);
-      console.log("Serials response:", response);
 
       if (response.data) {
         setSerialsData((prev) => ({
@@ -636,7 +804,6 @@ const UpdateSerialForm = ({
   stores = [],
 }) => {
   // Debug giá trị stores
-  console.log("stores in UpdateSerialForm", stores);
   const [formData, setFormData] = useState({
     status: serialInfo.productListConfigStatus || "AVAILABLE",
     serialNumber: serialInfo.serialNumber || "",

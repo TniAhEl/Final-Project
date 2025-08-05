@@ -44,6 +44,8 @@ public class Order {
     @OneToOne(mappedBy = "order")
     private OrderTransport orderTransport;
 
+    @Column(name = "order_code")
+    private  String orderCode;
     @Column(name = "name")
     private String name;
     @Column(name = "email")

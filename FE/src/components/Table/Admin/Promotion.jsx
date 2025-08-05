@@ -26,6 +26,7 @@ const PromotionTable = () => {
 
   const fetchPromotions = async () => {
     const data = await getAllPromotions();
+    
     setPromotions(data || []);
   };
 

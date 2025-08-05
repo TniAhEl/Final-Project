@@ -129,7 +129,7 @@ const ReviewAdminTable = () => {
                   {[...Array(star)].map((_, i) => (
                     <FaStar key={i} className="text-yellow-400" />
                   ))}
-                  <span className="ml-1 text-xs text-gray-700">{star} sao</span>
+                  <span className="ml-1 text-xs text-gray-700">{star} star</span>
                 </span>
               </label>
             ))}

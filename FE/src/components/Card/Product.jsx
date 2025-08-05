@@ -1,6 +1,7 @@
 import { FaStar } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
+import { Check } from "lucide-react";
 import CompareButton from "../Button/Compare";
 
 const ProductCard = (product) => {
@@ -25,9 +26,88 @@ const ProductCard = (product) => {
     screenDimension,
     screenTech,
     screenResolution,
-    productImageResponse,
+    image,
     productStatus,
   } = product;
+
+  // Helper function to process product images
+  const processProductImages = (productData) => {
+    if (!productData) return productData;
+
+    // Create a copy of the product data to avoid modifying the original
+    const processedData = { ...productData };
+    
+    
+    // Create full URLs for images
+    const baseUrl = "http://localhost:8080";
+    
+    // Process image field (new API format)
+    if (processedData.image && typeof processedData.image === 'object') {
+      // Single image object
+      
+      processedData.image = {
+        ...processedData.image,
+        url: processedData.image.imageUrl ? `${baseUrl}${processedData.image.imageUrl}` : processedData.image.url || "https://placehold.co/260x224"
+      };
+    } else if (processedData.image && Array.isArray(processedData.image)) {
+      // Array of images
+      processedData.image = processedData.image.map(img => ({
+        ...img,
+        url: img.imageUrl ? `${baseUrl}${img.imageUrl}` : img.url || "https://placehold.co/260x224"
+      }));
+    }
+    
+    // Process productImageResponse if exists (old format)
+    if (processedData.productImageResponse && Array.isArray(processedData.productImageResponse)) {
+      processedData.productImageResponse = processedData.productImageResponse.map(img => ({
+        ...img,
+        url: img.imageUrl ? `${baseUrl}${img.imageUrl}` : img.url || "https://placehold.co/260x224"
+      }));
+    }
+    
+    // Process images array if exists (old format)
+    if (processedData.images && Array.isArray(processedData.images)) {
+      processedData.images = processedData.images.map(img => ({
+        ...img,
+        url: img.imageUrl ? `${baseUrl}${img.imageUrl}` : img.url || "https://placehold.co/260x224"
+      }));
+    }
+
+    // If no image field, use productImageResponse or images array
+    if (!processedData.image && processedData.productImageResponse) {
+      processedData.image = processedData.productImageResponse;
+    } else if (!processedData.image && processedData.images) {
+      processedData.image = processedData.images;
+    }
+
+    // If still no images, create a placeholder
+    if (!processedData.image) {
+      processedData.image = {
+        id: 1,
+        url: "https://placehold.co/260x224",
+        fileName: "placeholder.png"
+      };
+    }
+
+    return processedData;
+  };
+
+  // Process images for this product
+  const processedProduct = processProductImages(product);
+  
+  // Get the first available image URL
+  const getProductImageUrl = () => {
+    if (processedProduct.image) {
+      if (Array.isArray(processedProduct.image)) {
+        return processedProduct.image[0]?.url || "https://placehold.co/260x224";
+      } else {
+        return processedProduct.image.url || "https://placehold.co/260x224";
+      }
+    }
+    return "https://placehold.co/260x224";
+  };
+  
+  const productImage = getProductImageUrl();
 
   const navigate = useNavigate();
 
@@ -36,37 +116,168 @@ const ProductCard = (product) => {
   const [selectedColor, setSelectedColor] = useState(null);
   const [selectedRam, setSelectedRam] = useState(null);
   const [selectedRom, setSelectedRom] = useState(null);
+  const [isInCompareList, setIsInCompareList] = useState(false);
+  const [showNotification, setShowNotification] = useState(false);
+  const [notificationMessage, setNotificationMessage] = useState("");
 
-  // Helper function to add product to compare list
-  const addToCompareList = (product) => {
+  // Function to show notification
+  const showNotificationMessage = (message) => {
+    setNotificationMessage(message);
+    setShowNotification(true);
+    setTimeout(() => {
+      setShowNotification(false);
+    }, 1000);
+  };
+
+
+
+  // Check if product is in compare list on mount
+  useEffect(() => {
+    const checkCompareStatus = () => {
+      try {
+        const savedProducts = localStorage.getItem("compareProducts");
+        const compareProducts = savedProducts ? JSON.parse(savedProducts) : [];
+        
+        // Determine which option_id to check - use selectedOption if available
+        let optionIdToCheck = null;
+        
+        if (selectedOption) {
+          optionIdToCheck = selectedOption.id;
+        } else if (option && Array.isArray(option) && option.length > 0) {
+          optionIdToCheck = option[0].id;
+        }
+        
+        // Check if product exists in compare list
+        let exists = false;
+        
+        if (optionIdToCheck) {
+          // Check by option_id
+          exists = compareProducts.find((p) => p.option_id === optionIdToCheck);
+        } else {
+          // Check by product id
+          const productId = product.id || id;
+          exists = compareProducts.find((p) => p.id === productId);
+        }
+        
+        setIsInCompareList(!!exists);
+      } catch (error) {
+        console.error("Error checking compare status:", error);
+        setIsInCompareList(false);
+      }
+    };
+
+    checkCompareStatus();
+
+    // Listen for compare list updates
+    const handleCompareUpdate = () => {
+      checkCompareStatus();
+    };
+
+    window.addEventListener("compareProductsUpdated", handleCompareUpdate);
+    return () => {
+      window.removeEventListener("compareProductsUpdated", handleCompareUpdate);
+    };
+  }, [id, product.id, selectedOption, option]);
+
+
+
+  // Helper function to add/remove product from compare list
+  const toggleCompareList = (product) => {
     try {
       // Check localStorage
       const savedProducts = localStorage.getItem("compareProducts");
       const compareProducts = savedProducts ? JSON.parse(savedProducts) : [];
 
-      // make sure product id and product name
-      const productId = product.id || id;
+      // Get the appropriate ID - prioritize option_id if available
+      let productId, optionId;
       const productName = product.name || name;
+      
+      // Determine which option_id to use
+      
+      if (option && Array.isArray(option) && option.length > 0) {
+        // Use selectedOption if available, otherwise use the first option
+        const optionToUse = selectedOption || option[0];
+        
+        productId = product.id || id;
+        optionId = optionToUse.id;
+        
+        // Update selectedOption if it's not set
+        if (!selectedOption) {
+          setSelectedOption(optionToUse);
+          setSelectedColor(optionToUse.colorName || null);
+          setSelectedRam(optionToUse.ram || null);
+          setSelectedRom(optionToUse.rom || null);
+        }
+      } else {
+        // If no options available, use product.id
+        productId = product.id || id;
+        optionId = null;
+      }
 
       // Check if product already exists in compare list
-      const exists = compareProducts.find((p) => p.id === productId);
-      if (exists) {
-        alert("Product already exists in compare list");
-        return false;
-      }
-
-      // Check max quantity
-      if (compareProducts.length >= 8) {
-        alert("You can only compare up to 8 products");
-        return false;
-      }
-
-      // Save product ID and name
-      compareProducts.push({
-        id: productId,
-        name: productName,
+      const existingIndex = compareProducts.findIndex((p) => {
+        if (optionId) {
+          // If we have option_id, check by option_id
+          return p.option_id === optionId;
+        } else {
+          // Otherwise check by product id
+          return p.id === productId;
+        }
       });
-      localStorage.setItem("compareProducts", JSON.stringify(compareProducts));
+      
+      if (existingIndex !== -1) {
+        // Remove product from compare list
+        compareProducts.splice(existingIndex, 1);
+        setIsInCompareList(false);
+        showNotificationMessage("Sản phẩm đã được xóa khỏi danh sách so sánh!");
+      } else {
+        // Check max quantity
+        if (compareProducts.length >= 8) {
+          showNotificationMessage("Bạn chỉ có thể so sánh tối đa 8 sản phẩm!");
+          return false;
+        }
+
+        // Add product to compare list with option information
+        const productToAdd = {
+          id: productId,
+          name: productName,
+        };
+
+        // Add image information
+        if (processedProduct.image) {
+          if (Array.isArray(processedProduct.image)) {
+            productToAdd.images = processedProduct.image;
+          } else {
+            productToAdd.images = [processedProduct.image];
+          }
+        } else if (processedProduct.productImageResponse) {
+          productToAdd.productImageResponse = processedProduct.productImageResponse;
+        }
+
+        // Add option_id if available
+        if (optionId) {
+          productToAdd.option_id = optionId;
+          // Add option details for better display
+          const optionDetails = selectedOption || (option && Array.isArray(option) 
+            ? option.find(opt => opt.id === optionId)
+            : null);
+          
+          if (optionDetails) {
+            productToAdd.ram = optionDetails.ram;
+            productToAdd.rom = optionDetails.rom;
+            productToAdd.color_name = optionDetails.colorName;
+            productToAdd.price = optionDetails.price;
+          }
+        }
+        
+        compareProducts.push(productToAdd);
+        setIsInCompareList(true);
+        showNotificationMessage("Sản phẩm đã được thêm vào danh sách so sánh!");
+      }
+
+      // Save to localStorage
+      const jsonString = JSON.stringify(compareProducts);
+      localStorage.setItem("compareProducts", jsonString);
 
       // Notify CompareSidebar
       window.dispatchEvent(
@@ -75,12 +286,31 @@ const ProductCard = (product) => {
         })
       );
 
-      alert("Product added to compare list!");
       return true;
     } catch (error) {
-      console.error("Error adding product to compare:", error);
-      alert("Error adding product to compare list");
+      console.error("Error toggling product in compare:", error);
+      showNotificationMessage("Lỗi khi cập nhật danh sách so sánh!");
       return false;
+    }
+  };
+
+  // Helper function to clear all compare products
+  const clearAllCompareProducts = () => {
+    try {
+      localStorage.removeItem("compareProducts");
+      setIsInCompareList(false);
+      
+      // Notify CompareSidebar
+      window.dispatchEvent(
+        new CustomEvent("compareProductsUpdated", {
+          detail: { products: [] },
+        })
+      );
+
+      showNotificationMessage("Tất cả sản phẩm đã được xóa khỏi danh sách so sánh!");
+    } catch (error) {
+      console.error("Error clearing compare list:", error);
+      showNotificationMessage("Lỗi khi xóa danh sách so sánh!");
     }
   };
 
@@ -168,15 +398,20 @@ const ProductCard = (product) => {
   // Initialize options when component mounts
   useEffect(() => {
     if (option && Array.isArray(option) && option.length > 0) {
-      const firstValidOption = option.find(
-        (opt) => opt && opt.colorName && opt.colorName.trim() !== ""
-      );
-      if (firstValidOption) {
-        setSelectedOption(firstValidOption);
-        setSelectedColor(firstValidOption.colorName);
-        setSelectedRam(firstValidOption.ram || null);
-        setSelectedRom(firstValidOption.rom || null);
+      // Always select the first option as default
+      const firstOption = option[0];
+      if (firstOption) {
+        setSelectedOption(firstOption);
+        setSelectedColor(firstOption.colorName || null);
+        setSelectedRam(firstOption.ram || null);
+        setSelectedRom(firstOption.rom || null);
       }
+    } else {
+      // Reset if no options
+      setSelectedOption(null);
+      setSelectedColor(null);
+      setSelectedRam(null);
+      setSelectedRom(null);
     }
   }, [option]);
 
@@ -270,7 +505,7 @@ const ProductCard = (product) => {
   };
 
   const front = (
-    <div className="group w-[260px] h-[480px] bg-white rounded-2xl outline outline-1 outline-offset-[-1px] outline-gray-300 overflow-hidden shadow-md hover:shadow-lg transition flex flex-col relative">
+    <div className="group w-[260px] h-[540px] bg-white rounded-2xl outline outline-1 outline-offset-[-1px] outline-gray-300 overflow-hidden shadow-md hover:shadow-lg transition flex flex-col relative">
       {/* Badge status */}
       {productStatus && (
         <div
@@ -291,33 +526,18 @@ const ProductCard = (product) => {
             : productStatus}
         </div>
       )}
-      {/* Image centered */}
-      <div className="flex justify-center items-center w-full h-[200px] mt-4 mb-2">
-        <img
-          className="w-[150px] h-[180px] object-cover rounded"
-          src={(() => {
-            if (
-              Array.isArray(productImageResponse) &&
-              productImageResponse.length > 0
-            ) {
-              const found = productImageResponse.find(
-                (img) => img && (img.downloadURL || img.url || img.imageUrl)
-              );
-              return (
-                found?.downloadURL ||
-                found?.url ||
-                found?.imageUrl ||
-                "https://placehold.co/150x180"
-              );
-            }
-            return "https://placehold.co/150x180";
-          })()}
-          alt={name || "Product"}
-          onError={(e) => {
-            e.target.src = "https://placehold.co/150x180";
-          }}
-        />
-      </div>
+             {/* Image centered */}
+       <div className="w-full h-56 flex items-center justify-center bg-gray-50 overflow-hidden">
+         <img
+           src={productImage}
+           alt={name || "Product"}
+           className="w-full h-full object-contain object-center group-hover:scale-105 transition-transform duration-300"
+           onError={(e) => {
+             e.target.src = "https://placehold.co/260x224";
+           }}
+         />
+       </div>
+     
       {/* Product information */}
       <div className="flex-1 flex flex-col w-full px-4 gap-2">
         <div className="text-right text-slate-500 text-xs font-medium font-['Inter'] leading-[14.40px]">
@@ -483,38 +703,77 @@ const ProductCard = (product) => {
             <span>{price.toLocaleString("vi-VN")}₫</span>
           ) : null}
         </div>
-        {/* Number of versions */}
+        {/* Number of versions and Compare button */}
         {option && Array.isArray(option) && option.length > 0 && (
-          <div className="text-xs text-gray-700 font-semibold w-full">
-            {option.length} versions
+          <div className="flex items-center justify-between w-full">
+            <div className="text-xs text-gray-700 font-semibold">
+              {option.length} versions
+            </div>
+            <CompareButton
+              product={{ id, name, price, brand, ...product }}
+              className={`py-1 px-3 text-xs ${
+                isInCompareList 
+                  ? "bg-red-500 hover:bg-red-600 text-white" 
+                  : "bg-blue-500 hover:bg-blue-600 text-white"
+              }`}
+              onClick={(e) => {
+                e.stopPropagation(); // Prevent navigation to product detail
+
+                // Always use main product Id and name
+                const currentProduct = { id, name, price, brand, ...product };
+                toggleCompareList(currentProduct);
+              }}
+            >
+              {isInCompareList ? "Remove" : "Compare"}
+            </CompareButton>
           </div>
         )}
 
-        {/* Compare button */}
-        <div className="mt-2">
-          <CompareButton
-            product={{ id, name, price, brand, ...product }}
-            className="w-full py-2 text-xs"
-            onClick={(e) => {
-              e.stopPropagation(); // Prevent navigation to product detail
+        {/* Compare button for products without options */}
+        {(!option || !Array.isArray(option) || option.length === 0) && (
+          <div className="mt-2">
+            <CompareButton
+              product={{ id, name, price, brand, ...product }}
+              className={`w-full py-2 text-xs ${
+                isInCompareList 
+                  ? "bg-red-500 hover:bg-red-600 text-white" 
+                  : "bg-blue-500 hover:bg-blue-600 text-white"
+              }`}
+              onClick={(e) => {
+                e.stopPropagation(); // Prevent navigation to product detail
 
-              // Always use main product Id and name
-              const currentProduct = { id, name, price, brand, ...product };
-              addToCompareList(currentProduct);
-            }}
-          />
-        </div>
+                // Always use main product Id and name
+                const currentProduct = { id, name, price, brand, ...product };
+                toggleCompareList(currentProduct);
+              }}
+            >
+              {isInCompareList ? "Remove from Compare" : "Add to Compare"}
+            </CompareButton>
+          </div>
+        )}
       </div>
     </div>
   );
 
   try {
     return (
-      <div
-        className="w-[240px] h-[480px] cursor-pointer [perspective:1200px]"
-        onClick={() => navigate(`/product/${id}`)}
-      >
-        {front}
+      <div className="relative">
+        <div
+          className="w-[240px] h-[540px] cursor-pointer [perspective:1200px]"
+          onClick={() => navigate(`/product/${id}`)}
+        >
+          {front}
+        </div>
+        
+        {/* Notification */}
+        {showNotification && (
+          <div className="fixed top-4 right-4 z-50 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg transform transition-all duration-300 ease-in-out">
+            <div className="flex items-center gap-2">
+              <Check size={16} />
+              <span className="text-sm font-medium">{notificationMessage}</span>
+            </div>
+          </div>
+        )}
       </div>
     );
   } catch (error) {

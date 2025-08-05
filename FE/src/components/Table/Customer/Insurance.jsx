@@ -42,7 +42,7 @@ const InsuranceTable = () => {
           {/* Header */}
           <div className="flex bg-neutral-50">
             <div className="w-40 p-4 text-slate-800/90 text-sm font-medium">Contract ID</div>
-            <div className="w-40 p-4 text-slate-800/90 text-sm font-medium">Product</div>
+            <div className="w-40 p-4 text-slate-800/90 text-sm font-medium">Code</div>
             <div className="w-32 p-4 text-slate-800/90 text-sm font-medium">Customer</div>
             <div className="w-32 p-4 text-slate-800/90 text-sm font-medium">Start Date</div>
             <div className="w-32 p-4 text-slate-800/90 text-sm font-medium">End Date</div>
@@ -61,7 +61,7 @@ const InsuranceTable = () => {
               <React.Fragment key={item.contractId + idx}>
                 <div className="flex items-center bg-white hover:bg-blue-50/50 divide-x divide-slate-300">
                   <div className="w-40 p-4 text-zinc-800 text-sm">{item.contractId}</div>
-                  <div className="w-40 p-4 text-zinc-800 text-sm">{item.insuranceResponse?.name || "-"}</div>
+                  <div className="w-40 p-4 text-zinc-800 text-sm">{item.code || "-"}</div>
                   <div className="w-32 p-4 text-zinc-800 text-sm">{item.userResponse ? `${item.userResponse.lastName || ""} ${item.userResponse.firstName || ""}`.trim() : "-"}</div>
                   <div className="w-32 p-4 text-zinc-800 text-sm">{item.createAt}</div>
                   <div className="w-32 p-4 text-zinc-800 text-sm">{item.expiredDate}</div>

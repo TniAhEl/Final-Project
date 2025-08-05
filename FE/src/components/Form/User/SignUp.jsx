@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { registerCustomer } from "../../../api/authService";
+import { Check } from "lucide-react";
 
 const SignUpForm = () => {
   const [form, setForm] = useState({
@@ -11,17 +12,35 @@ const SignUpForm = () => {
     email: "",
     phone: "",
   });
+  const [showNotification, setShowNotification] = useState(false);
+  const [notificationMessage, setNotificationMessage] = useState("");
 
   const navigate = useNavigate();
+
+  // Function to show notification
+  const showNotificationMessage = (message) => {
+    setNotificationMessage(message);
+    setShowNotification(true);
+    setTimeout(() => {
+      setShowNotification(false);
+    }, 1000);
+  };
+
+  // Function to show notification on homepage
+  const showNotificationOnHomepage = (message) => {
+    localStorage.setItem("showNotification", "true");
+    localStorage.setItem("notificationMessage", message);
+    window.dispatchEvent(new CustomEvent("showNotification", { detail: { message } }));
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       await registerCustomer(form);
-      alert("Sign up successfully");
+      showNotificationOnHomepage("Đăng ký thành công!");
       navigate("/signin");
     } catch (error) {
-      alert("Sign up failed");
+      showNotificationMessage("Đăng ký thất bại!");
     }
   };
 
@@ -30,7 +49,8 @@ const SignUpForm = () => {
   };
 
   return (
-    <div className="w-[750px] max-w-full rounded-[8px]  p-6 bg-white shadow-md">
+    <div className="relative">
+      <div className="w-[750px] max-w-full rounded-[8px]  p-6 bg-white shadow-md">
       <form className="flex flex-col gap-6" onSubmit={handleSubmit}>
         <div className="flex flex-col gap-1">
           <label className="text-gray-600 text-[15px] font-medium">
@@ -104,11 +124,22 @@ const SignUpForm = () => {
         </div>
         <button
           type="submit"
-          className="w-full bg-violet-500 text-white py-3 px-6 rounded font-semibold text-base hover:bg-violet-600 transition-colors mt-2"
+          className="w-full  bg-blue-500 text-white py-3 px-6 rounded font-semibold text-base hover:bg-blue-600 transition-colors mt-2 cursor-pointer"
         >
           Sign Up
         </button>
       </form>
+      </div>
+      
+      {/* Notification */}
+      {showNotification && (
+        <div className="fixed top-4 right-4 z-50 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg transform transition-all duration-300 ease-in-out">
+          <div className="flex items-center gap-2">
+            <Check size={16} />
+            <span className="text-sm font-medium">{notificationMessage}</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

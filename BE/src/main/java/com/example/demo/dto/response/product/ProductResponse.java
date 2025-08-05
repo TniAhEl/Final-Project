@@ -24,6 +24,7 @@ public class ProductResponse {
     private List<ProductOptionResponse> option;
     private List<ProductImageResponse> productImageResponse;
     private List<StoreResponse> stores;
+    private List<ProductImageResponse> images;
 
     private String os;
     private String cpu;

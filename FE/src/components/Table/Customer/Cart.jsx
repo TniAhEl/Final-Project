@@ -16,6 +16,39 @@ const CartTable = () => {
 
   const navigate = useNavigate();
 
+  // Helper function to process product images
+  const processProductImage = (imageData) => {
+    if (!imageData) return "https://placehold.co/80x80";
+    
+    const baseUrl = "http://localhost:8080";
+    
+    // If imageData is a string, it might be a full URL or a path
+    if (typeof imageData === 'string') {
+      if (imageData.startsWith('http')) {
+        return imageData;
+      } else if (imageData.startsWith('/')) {
+        return `${baseUrl}${imageData}`;
+      } else {
+        return `${baseUrl}/${imageData}`;
+      }
+    }
+    
+    // If imageData is an object
+    if (typeof imageData === 'object') {
+      if (imageData.url) {
+        return imageData.url.startsWith('http') ? imageData.url : `${baseUrl}${imageData.url}`;
+      }
+      if (imageData.imageUrl) {
+        return `${baseUrl}${imageData.imageUrl}`;
+      }
+      if (imageData.image_url) {
+        return `${baseUrl}${imageData.image_url}`;
+      }
+    }
+    
+    return "https://placehold.co/80x80";
+  };
+
   const fetchCart = async () => {
     setLoading(true);
     setError(null);
@@ -29,13 +62,12 @@ const CartTable = () => {
         name: p.productOption.productName,
         price: p.productOption.price,
         quantity: p.quantity,
-        image: p.productOption.image, // 
+        image: processProductImage(p.productOption.image || p.productOption.productImageResponse?.[0]),
         productOption: p.productOption,
         productOptionId: p.productOption.id,
       }));
       setCartItems(items);
       setCartId(data.id);
-      console.log(items); //
     } catch (err) {
       setError("Cannot load cart.");
       setCartItems([]);
@@ -59,7 +91,7 @@ const CartTable = () => {
       setUpdatingId(null);
     } catch (err) {
       setUpdatingId(null);
-      alert("Cannot increase quantity.");
+      showNotification("Không thể tăng số lượng!", "error");
     }
   };
 
@@ -76,7 +108,7 @@ const CartTable = () => {
       setUpdatingId(null);
     } catch (err) {
       setUpdatingId(null);
-      alert("Cannot decrease quantity.");
+      showNotification("Không thể giảm số lượng!", "error");
     }
   };
 
@@ -85,19 +117,28 @@ const CartTable = () => {
       const userId = localStorage.getItem("userId");
       await deleteCartProduct(userId, item.productOptionId);
       fetchCart();
+      showNotification("Đã xóa sản phẩm khỏi giỏ hàng!");
     } catch (err) {
-      alert("Cannot remove product.");
+      showNotification("Không thể xóa sản phẩm!", "error");
     }
+  };
+
+  // Function to show notification
+  const showNotification = (message, type = "success") => {
+    localStorage.setItem("showNotification", "true");
+    localStorage.setItem("notificationMessage", message);
+    window.dispatchEvent(new CustomEvent("showNotification", { detail: { message, type } }));
   };
 
   const handleClearCart = async () => {
     if (!cartId) return;
-    if (!window.confirm("Are you sure you want to clear the entire cart?")) return;
+    if (!window.confirm("Bạn có chắc chắn muốn xóa toàn bộ giỏ hàng?")) return;
     try {
       await clearCart(cartId);
       fetchCart();
+      showNotification("Đã xóa toàn bộ giỏ hàng!");
     } catch (err) {
-      alert("Cannot clear cart.");
+      showNotification("Không thể xóa giỏ hàng!", "error");
     }
   };
 
@@ -145,6 +186,9 @@ const CartTable = () => {
                   src={item.image}
                   alt={item.name}
                   className="w-16 h-16 object-contain rounded"
+                  onError={(e) => {
+                    e.target.src = "https://placehold.co/80x80";
+                  }}
                 />
               </div>
               <div className="flex-1 p-4 text-zinc-800 text-sm">{item.name}</div>

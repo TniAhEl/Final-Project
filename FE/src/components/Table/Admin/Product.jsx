@@ -1,8 +1,17 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import ProductForm from "../../Form/Product/Product.jsx";
 import ProductOptionForm from "../../Form/Product/Options.jsx";
 import ViewAllOptions from "../../Form/Product/ViewAllOptions.jsx";
-import { filterAdminProducts, getProductById } from "../../../api/productService";
+import { filterAdminProducts, getProductById, getSerials, createSerial } from "../../../api/productService";
+import {
+  uploadProductImage,
+  getProductImages,
+  deleteProductImages,
+  updateProductImage,
+} from "../../../api/imageService";
+import axios from "axios";
+import OptionCard from "./OptionCard";
+import ViewAllOptionsPopup from "./ViewAllOptionsPopup";
 
 // Utility function to check if user is authenticated
 const checkAuth = () => {
@@ -12,31 +21,6 @@ const checkAuth = () => {
     return false;
   }
   return true;
-};
-
-// Utility function to get token info
-const getTokenInfo = () => {
-  const token = localStorage.getItem("token");
-  if (!token) return null;
-
-  try {
-    // Decode JWT token (if it's a JWT)
-    const payload = JSON.parse(atob(token.split(".")[1]));
-    return {
-      token,
-      payload,
-      expiresAt: payload.exp ? new Date(payload.exp * 1000) : null,
-    };
-  } catch (error) {
-    console.warn("Invalid token format");
-    return { token };
-  }
-};
-
-const statusColor = {
-  Active: "text-green-500",
-  Inactive: "text-neutral-600",
-  OutOfStock: "text-red-500 font-bold",
 };
 
 const ProductTable = ({
@@ -61,10 +45,26 @@ const ProductTable = ({
   const [showOptionForm, setShowOptionForm] = useState(false);
   const [optionProduct, setOptionProduct] = useState(null);
   const [showAllOptions, setShowAllOptions] = useState(false);
-  const [selectedProductForOptions, setSelectedProductForOptions] =
-    useState(null);
+  const [selectedProductForOptions, setSelectedProductForOptions] = useState(null);
   const [showSerialForm, setShowSerialForm] = useState(false);
   const [selectedOptionForSerial, setSelectedOptionForSerial] = useState(null);
+  const [serialsForOption, setSerialsForOption] = useState([]);
+  const [loadingSerials, setLoadingSerials] = useState(false);
+  const [showSerialsModal, setShowSerialsModal] = useState(false);
+  const [optionForSerials, setOptionForSerials] = useState(null);
+  const [serialsPage, setSerialsPage] = useState(0);
+  const [serialsTotalPages, setSerialsTotalPages] = useState(0);
+  const [serialsPageSize, setSerialsPageSize] = useState(20);
+
+  // Thêm state quản lý ảnh sản phẩm
+  const [selectedProductIdForImage, setSelectedProductIdForImage] = useState(null);
+  const [images, setImages] = useState([]);
+  const [imageLoading, setImageLoading] = useState(false);
+  const [imageError, setImageError] = useState("");
+  const [selectedImagesToDelete, setSelectedImagesToDelete] = useState([]);
+  const fileInputRef = useRef(null);
+  const updateInputRef = useRef(null);
+  const [imageToUpdate, setImageToUpdate] = useState(null);
 
   // Fetch products from API
   const fetchProducts = async (page = 0, customPageSize = pageSize) => {
@@ -85,7 +85,6 @@ const ProductTable = ({
       };
 
       const response = await filterAdminProducts(filter, page, customPageSize);
-      console.log(response);
       setProducts(response.content || response.data || []);
       setTotalPages(response.totalPages || 0);
       setTotalElements(response.totalElements || 0);
@@ -106,7 +105,6 @@ const ProductTable = ({
   // Check authentication and load products on component mount
   useEffect(() => {
     const tokenInfo = getTokenInfo();
-    console.log("Token info:", tokenInfo);
 
     if (checkAuth()) {
       fetchProducts();
@@ -180,7 +178,7 @@ const ProductTable = ({
         design: productDetail.design || "",
         material: productDetail.material || "",
         dimension: productDetail.dimension || "",
-        releaseYear: productDetail.releaseYear !== undefined && productDetail.releaseYear !== null ? productDetail.releaseYear.toString() : "",
+        releaseYear: productDetail.releaseYear || "",
         musicUtil: productDetail.musicUtil || "",
         movieUtil: productDetail.movieUtil || "",
         recordUtil: productDetail.recordUtil || "",
@@ -204,7 +202,6 @@ const ProductTable = ({
 
   const handleConfirmDelete = () => {
     if (productToDelete) {
-      console.log("Deleting product:", productToDelete);
       onDelete(productToDelete);
       setShowDeleteConfirm(false);
       setProductToDelete(null);
@@ -227,11 +224,8 @@ const ProductTable = ({
   const handleFormSubmit = (formData) => {
     if (isEditing && editingProduct) {
       // Handle modify product
-      console.log("Modified product data:", formData);
       onModifyProduct({ ...editingProduct, ...formData });
     } else {
-      // Handle add new product
-      console.log("New product data:", formData);
       onAddProduct(formData);
     }
     setShowForm(false);
@@ -242,7 +236,6 @@ const ProductTable = ({
   };
 
   const handleAddOption = (product) => {
-    console.log("Adding option for product:", product);
     setOptionProduct(product);
     setShowOptionForm(true);
   };
@@ -252,11 +245,200 @@ const ProductTable = ({
     setOptionProduct(null);
   };
 
-  const handleSubmitOption = (optionData) => {
-    // Handle saving option for product optionProduct
-    console.log("Option for product:", optionProduct, optionData);
-    setShowOptionForm(false);
-    setOptionProduct(null);
+  const handleSubmitOption = async (optionData) => {
+    try {
+      // Show loading notification
+      const loadingNotification = document.createElement('div');
+      loadingNotification.className = 'fixed top-4 right-4 bg-blue-500 text-white px-6 py-3 rounded-lg shadow-lg z-[9999] transform transition-all duration-300 translate-x-full';
+      loadingNotification.innerHTML = `
+        <div class="flex items-center gap-3">
+          <div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+          <span class="font-medium">Adding product option...</span>
+        </div>
+      `;
+      document.body.appendChild(loadingNotification);
+      
+      // Animate in loading notification
+      setTimeout(() => {
+        loadingNotification.classList.remove('translate-x-full');
+      }, 100);
+      
+      // Simulate API call (replace with actual API call)
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Remove loading notification
+      loadingNotification.classList.add('translate-x-full');
+      setTimeout(() => {
+        document.body.removeChild(loadingNotification);
+      }, 300);
+      
+      // Show success notification
+      const notification = document.createElement('div');
+      notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-[9999] transform transition-all duration-300 translate-x-full';
+      notification.innerHTML = `
+        <div class="flex items-center gap-3">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+          </svg>
+          <span class="font-medium">Product option added successfully!</span>
+        </div>
+      `;
+      document.body.appendChild(notification);
+      
+      // Animate in
+      setTimeout(() => {
+        notification.classList.remove('translate-x-full');
+      }, 100);
+      
+      // Remove after 3 seconds
+      setTimeout(() => {
+        notification.classList.add('translate-x-full');
+        setTimeout(() => {
+          document.body.removeChild(notification);
+        }, 300);
+      }, 3000);
+      
+      // Handle saving option for product optionProduct
+      setShowOptionForm(false);
+      setOptionProduct(null);
+    } catch (error) {
+      console.error("Error adding option:", error);
+      
+      // Remove loading notification if it exists
+      const existingLoading = document.querySelector('.fixed.top-4.right-4.bg-blue-500');
+      if (existingLoading) {
+        existingLoading.classList.add('translate-x-full');
+        setTimeout(() => {
+          if (document.body.contains(existingLoading)) {
+            document.body.removeChild(existingLoading);
+          }
+        }, 300);
+      }
+      
+      // Show error notification
+      const notification = document.createElement('div');
+      notification.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-[9999] transform transition-all duration-300 translate-x-full';
+      notification.innerHTML = `
+        <div class="flex items-center gap-3">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+          <span class="font-medium">Failed to add product option!</span>
+        </div>
+      `;
+      document.body.appendChild(notification);
+      
+      // Animate in
+      setTimeout(() => {
+        notification.classList.remove('translate-x-full');
+      }, 100);
+      
+      // Remove after 4 seconds
+      setTimeout(() => {
+        notification.classList.add('translate-x-full');
+        setTimeout(() => {
+          document.body.removeChild(notification);
+        }, 300);
+      }, 4000);
+    }
+  };
+
+  // Handle updating product option
+  const handleUpdateOption = async (optionData) => {
+    try {
+      // Show loading notification
+      const loadingNotification = document.createElement('div');
+      loadingNotification.className = 'fixed top-4 right-4 bg-blue-500 text-white px-6 py-3 rounded-lg shadow-lg z-[9999] transform transition-all duration-300 translate-x-full';
+      loadingNotification.innerHTML = `
+        <div class="flex items-center gap-3">
+          <div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+          <span class="font-medium">Updating product option...</span>
+        </div>
+      `;
+      document.body.appendChild(loadingNotification);
+      
+      // Animate in loading notification
+      setTimeout(() => {
+        loadingNotification.classList.remove('translate-x-full');
+      }, 100);
+      
+      // Simulate API call (replace with actual API call)
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Remove loading notification
+      loadingNotification.classList.add('translate-x-full');
+      setTimeout(() => {
+        document.body.removeChild(loadingNotification);
+      }, 300);
+      
+      // Show success notification
+      const notification = document.createElement('div');
+      notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-[9999] transform transition-all duration-300 translate-x-full';
+      notification.innerHTML = `
+        <div class="flex items-center gap-3">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+          </svg>
+          <span class="font-medium">Product option updated successfully!</span>
+        </div>
+      `;
+      document.body.appendChild(notification);
+      
+      // Animate in
+      setTimeout(() => {
+        notification.classList.remove('translate-x-full');
+      }, 100);
+      
+      // Remove after 3 seconds
+      setTimeout(() => {
+        notification.classList.add('translate-x-full');
+        setTimeout(() => {
+          document.body.removeChild(notification);
+        }, 300);
+      }, 3000);
+      
+      // Handle updating option
+      console.log("Updated option data:", optionData);
+    } catch (error) {
+      console.error("Error updating option:", error);
+      
+      // Remove loading notification if it exists
+      const existingLoading = document.querySelector('.fixed.top-4.right-4.bg-blue-500');
+      if (existingLoading) {
+        existingLoading.classList.add('translate-x-full');
+        setTimeout(() => {
+          if (document.body.contains(existingLoading)) {
+            document.body.removeChild(existingLoading);
+          }
+        }, 300);
+      }
+      
+      // Show error notification
+      const notification = document.createElement('div');
+      notification.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-[9999] transform transition-all duration-300 translate-x-full';
+      notification.innerHTML = `
+        <div class="flex items-center gap-3">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+          <span class="font-medium">Failed to update product option!</span>
+        </div>
+      `;
+      document.body.appendChild(notification);
+      
+      // Animate in
+      setTimeout(() => {
+        notification.classList.remove('translate-x-full');
+      }, 100);
+      
+      // Remove after 4 seconds
+      setTimeout(() => {
+        notification.classList.add('translate-x-full');
+        setTimeout(() => {
+          document.body.removeChild(notification);
+        }, 300);
+      }, 4000);
+    }
   };
 
   const handleViewAllOptions = (product) => {
@@ -270,7 +452,6 @@ const ProductTable = ({
   };
 
   const handleAddSerial = (option) => {
-    console.log("Adding serial for option:", option);
     setSelectedOptionForSerial(option);
     setShowSerialForm(true);
   };
@@ -280,11 +461,232 @@ const ProductTable = ({
     setSelectedOptionForSerial(null);
   };
 
-  const handleSubmitSerial = (serialData) => {
-    // This function is now handled in ViewAllOptions component
-    console.log("Serial added successfully:", serialData);
-    // Refresh the product list after adding serial
-    fetchProducts(currentPage);
+  const handleSubmitSerial = async (serialData) => {
+    try {
+      // Show loading notification
+      const loadingNotification = document.createElement('div');
+      loadingNotification.className = 'fixed top-4 right-4 bg-blue-500 text-white px-6 py-3 rounded-lg shadow-lg z-[9999] transform transition-all duration-300 translate-x-full';
+      loadingNotification.innerHTML = `
+        <div class="flex items-center gap-3">
+          <div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+          <span class="font-medium">Adding serial number...</span>
+        </div>
+      `;
+      document.body.appendChild(loadingNotification);
+      
+      // Animate in loading notification
+      setTimeout(() => {
+        loadingNotification.classList.remove('translate-x-full');
+      }, 100);
+      
+      // Simulate API call (replace with actual API call)
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Remove loading notification
+      loadingNotification.classList.add('translate-x-full');
+      setTimeout(() => {
+        document.body.removeChild(loadingNotification);
+      }, 300);
+      
+      // Show success notification
+      const notification = document.createElement('div');
+      notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-[9999] transform transition-all duration-300 translate-x-full';
+      notification.innerHTML = `
+        <div class="flex items-center gap-3">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+          </svg>
+          <span class="font-medium">Serial number added successfully!</span>
+        </div>
+      `;
+      document.body.appendChild(notification);
+      
+      // Animate in
+      setTimeout(() => {
+        notification.classList.remove('translate-x-full');
+      }, 100);
+      
+      // Remove after 3 seconds
+      setTimeout(() => {
+        notification.classList.add('translate-x-full');
+        setTimeout(() => {
+          document.body.removeChild(notification);
+        }, 300);
+      }, 3000);
+      
+      // Refresh the product list after adding serial
+      fetchProducts(currentPage);
+    } catch (error) {
+      console.error("Error adding serial:", error);
+      
+      // Remove loading notification if it exists
+      const existingLoading = document.querySelector('.fixed.top-4.right-4.bg-blue-500');
+      if (existingLoading) {
+        existingLoading.classList.add('translate-x-full');
+        setTimeout(() => {
+          if (document.body.contains(existingLoading)) {
+            document.body.removeChild(existingLoading);
+          }
+        }, 300);
+      }
+      
+      // Show error notification
+      const notification = document.createElement('div');
+      notification.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-[9999] transform transition-all duration-300 translate-x-full';
+      notification.innerHTML = `
+        <div class="flex items-center gap-3">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+          <span class="font-medium">Failed to add serial number!</span>
+        </div>
+      `;
+      document.body.appendChild(notification);
+      
+      // Animate in
+      setTimeout(() => {
+        notification.classList.remove('translate-x-full');
+      }, 100);
+      
+      // Remove after 4 seconds
+      setTimeout(() => {
+        notification.classList.add('translate-x-full');
+        setTimeout(() => {
+          document.body.removeChild(notification);
+        }, 300);
+      }, 4000);
+    }
+  };
+
+  // Handle view serials for a specific option with pagination
+  const handleViewSerials = async (option, page = 0, size = serialsPageSize) => {
+    setLoadingSerials(true);
+    setOptionForSerials(option);
+    setShowSerialsModal(true);
+    try {
+      const res = await getSerials(option.id, page, size);
+      setSerialsForOption(res.data.content || res.data.data || []);
+      setSerialsPage(res.data.number || 0);
+      setSerialsTotalPages(res.data.totalPages || 1);
+    } catch (err) {
+      setSerialsForOption([]);
+      setSerialsPage(0);
+      setSerialsTotalPages(1);
+    } finally {
+      setLoadingSerials(false);
+    }
+  };
+
+  const handleSerialsPageChange = (newPage) => {
+    if (
+      selectedOption &&
+      newPage >= 0 &&
+      newPage < serialsTotalPages
+    ) {
+      setSerialsPage(newPage); // cập nhật page hiện tại
+      handleViewSerials(selectedOption, newPage);
+    }
+  };
+
+  const handleImageManageClick = async (productId) => {
+    setSelectedProductIdForImage(productId);
+    setImageLoading(true);
+    setImageError("");
+    setImages([]);
+    setSelectedImagesToDelete([]);
+    setImageToUpdate(null);
+
+    try {
+      const res = await getProductImages(productId);
+      // res.data là mảng ảnh
+      if (res && Array.isArray(res.data)) {
+        setImages(res.data);
+      } else {
+        setImages([]);
+      }
+    } catch (err) {
+      setImages([]);
+      setImageError("Failed to fetch image");
+    } finally {
+      setImageLoading(false);
+    }
+  };
+
+  const handleAddImage = async (e) => {
+    const file = e.target.files[0];
+    if (!file || !selectedProductIdForImage) return;
+    setImageLoading(true);
+    setImageError("");
+    try {
+      await uploadProductImage(file, selectedProductIdForImage);
+      // Sau khi upload, reload lại ảnh
+      const res = await getProductImages(selectedProductIdForImage);
+      if (res && Array.isArray(res.data)) {
+        setImages(res.data);
+      } else {
+        setImages([]);
+      }
+    } catch (err) {
+      setImageError("Upload failed");
+    } finally {
+      setImageLoading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const handleDeleteSelectedImages = async () => {
+    if (!selectedProductIdForImage || images.length === 0) return;
+    setImageLoading(true);
+    setImageError("");
+    try {
+      // Xóa ảnh đầu tiên (vì chỉ có 1 ảnh cho mỗi sản phẩm)
+      await deleteProductImages(images[0].id || images[0].imageId);
+      // Sau khi xóa, reload lại ảnh
+      const res = await getProductImages(selectedProductIdForImage);
+      if (res && res.data) {
+        setImages([res.data]);
+      } else {
+        setImages([]);
+      }
+      setSelectedImagesToDelete([]);
+    } catch {
+      setImageError("Delete failed");
+    } finally {
+      setImageLoading(false);
+    }
+  };
+
+  const handleSelectImageToDelete = (imageId) => {
+    setSelectedImagesToDelete((prev) =>
+      prev.includes(imageId) ? prev.filter((id) => id !== imageId) : [...prev, imageId]
+    );
+  };
+
+  const handleSelectImageToUpdate = (imageId) => {
+    setImageToUpdate((prev) => (prev === imageId ? null : imageId));
+  };
+
+  const handleUpdateImage = async (e) => {
+    const file = e.target.files[0];
+    if (!file || !imageToUpdate) return;
+    setImageLoading(true);
+    setImageError("");
+    try {
+      await updateProductImage(imageToUpdate, file);
+      // Sau khi update, reload lại ảnh
+      const res = await getProductImages(selectedProductIdForImage);
+      if (res && res.data) {
+        setImages([res.data]);
+      } else {
+        setImages([]);
+      }
+      setImageToUpdate(null);
+    } catch {
+      setImageError("Update failed");
+    } finally {
+      setImageLoading(false);
+      if (updateInputRef.current) updateInputRef.current.value = "";
+    }
   };
 
   // Loading state
@@ -476,7 +878,9 @@ const ProductTable = ({
                           ? "bg-gray-100 text-gray-800"
                           : product.productStatus === "DRAFT"
                           ? "bg-yellow-100 text-yellow-800"
-                          : "bg-red-100 text-red-800"
+                          : product.productStatus === "OUT_OF_STOCK"
+                          ? "bg-red-100 text-red-800"
+                          : "bg-gray-100 text-gray-800"
                       }`}>
                         {product.productStatus || "N/A"}
                       </span>
@@ -513,6 +917,12 @@ const ProductTable = ({
                           className="px-2 py-0.5 rounded bg-green-500 text-white hover:bg-green-600 text-xs font-medium transition-colors"
                         >
                           View All Options
+                        </button>
+                        <button
+                          onClick={() => handleImageManageClick(product.id || product.productId)}
+                          className="px-2 py-0.5 rounded bg-orange-500 text-white hover:bg-orange-600 text-xs font-medium transition-colors"
+                        >
+                          Manage Images
                         </button>
                       </div>
                     </div>
@@ -625,137 +1035,303 @@ const ProductTable = ({
       )}
       {/* Display all Options */}
       {showAllOptions && selectedProductForOptions && (
-        <ViewAllOptions
+        <ViewAllOptionsPopup
           product={selectedProductForOptions}
           onClose={handleCloseAllOptions}
-          onAddSerial={handleAddSerial}
         />
       )}
-    </div>
-  );
-};
-
-// Component OptionCard
-const OptionCard = ({ option }) => {
-  const [showSerials, setShowSerials] = useState(false);
-
-  const formatPrice = (price) => {
-    return new Intl.NumberFormat("vi-VN", {
-      style: "currency",
-      currency: "VND",
-    }).format(price);
-  };
-
-  const getStockStatusColor = (remainingQuantity) => {
-    if (remainingQuantity > 10) return "text-green-600";
-    if (remainingQuantity > 0) return "text-yellow-600";
-    return "text-red-600";
-  };
-
-  return (
-    <div className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <span className="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded">
-            ID: {option.id}
-          </span>
-          <span className="px-3 py-1 bg-violet-100 text-violet-800 rounded-full text-sm font-medium">
-            {option.colorName}
-          </span>
-        </div>
-        <span
-          className={`px-2 py-1 rounded-full text-xs font-medium ${
-            option.remainingQuantity > 10
-              ? "bg-green-100 text-green-800"
-              : option.remainingQuantity > 0
-              ? "bg-yellow-100 text-yellow-800"
-              : "bg-red-100 text-red-800"
-          }`}
-        >
-          Remaining: {option.remainingQuantity}
-        </span>
-      </div>
-
-      {/* Details */}
-      <div className="space-y-2 text-sm">
-        <div className="flex justify-between">
-          <span className="text-gray-500">Giá:</span>
-          <span className="font-semibold text-blue-600">
-            {formatPrice(option.price)}
-          </span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-gray-500">RAM:</span>
-          <span className="font-medium">{option.ram} GB</span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-gray-500">ROM:</span>
-          <span className="font-medium">{option.rom} GB</span>
-        </div>
-      </div>
-
-      {/* View Serials Button */}
-      <div className="mt-4 pt-3 border-t border-gray-100">
-        <button
-          onClick={() => setShowSerials(!showSerials)}
-          className="w-full px-3 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors text-sm font-medium"
-        >
-          {showSerials ? "Hide Serials" : "View Serials"}
-        </button>
-      </div>
-
-      {/* Serials List */}
-      {showSerials && (
-        <div className="mt-3 pt-3">
-          <div className="border border-blue-200 bg-blue-50 rounded-lg shadow-sm p-3">
-            <h4 className="text-xs font-bold text-blue-700 mb-3 uppercase tracking-wide">
-              Serial List
-            </h4>
-            {option.serials && option.serials.length > 0 ? (
-              <div className="divide-y divide-blue-100 max-h-40 overflow-y-auto">
-                {option.serials.map((serial, idx) => (
-                  <div
-                    key={serial.id || idx}
-                    className="flex flex-col gap-1 py-2 px-1"
-                  >
-                    <div className="flex justify-between items-center">
-                      <span className="font-semibold text-xs text-gray-800">
-                        {serial.serialNumber}
-                      </span>
-                      <span
-                        className={`px-2 py-0.5 rounded-full text-xs font-medium ml-2 ${
-                          serial.status === "AVAILABLE"
-                            ? "bg-green-100 text-green-800"
-                            : serial.status === "SOLD"
-                            ? "bg-red-100 text-red-800"
-                            : "bg-gray-100 text-gray-800"
-                        }`}
-                      >
-                        {serial.status}
-                      </span>
-                    </div>
-                    {serial.purchaseDate && (
-                      <div className="text-gray-500 text-xs">
-                        Purchased:{" "}
-                        {new Date(serial.purchaseDate).toLocaleDateString(
-                          "en-US"
-                        )}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
+      {/* Serial Modal */}
+      {showSerialsModal && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/30">
+          <div className="bg-white rounded-lg p-6 shadow-lg max-w-lg w-full">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-blue-900">
+                Serials for Option ID: {optionForSerials?.id}
+              </h3>
+              <button
+                onClick={() => setShowSerialsModal(false)}
+                className="text-gray-500 hover:text-gray-700 text-2xl font-bold"
+              >
+                ×
+              </button>
+            </div>
+            {loadingSerials ? (
+              <div className="text-center py-8 text-gray-500">Loading serials...</div>
+            ) : serialsForOption.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">No serials found.</div>
             ) : (
-              <div className="text-xs text-gray-500 text-center py-2">
-                No serials
-              </div>
+              <>
+                <div className="divide-y divide-blue-100 max-h-60 overflow-y-auto">
+                  {serialsForOption.map((serial, idx) => (
+                    <div
+                      key={serial.id || idx}
+                      className="flex flex-col gap-1 py-2 px-1"
+                    >
+                      <div className="flex justify-between items-center">
+                        <span className="font-semibold text-xs text-gray-800">
+                          {serial.serialNumber}
+                        </span>
+                        <span
+                          className={`px-2 py-0.5 rounded-full text-xs font-medium ml-2 ${
+                            serial.status === "AVAILABLE"
+                              ? "bg-green-100 text-green-800"
+                              : serial.status === "SOLD"
+                              ? "bg-red-100 text-red-800"
+                              : "bg-gray-100 text-gray-800"
+                          }`}
+                        >
+                          {serial.status}
+                        </span>
+                      </div>
+                      {serial.purchaseDate && (
+                        <div className="text-gray-500 text-xs">
+                          Purchased:{" "}
+                          {new Date(serial.purchaseDate).toLocaleDateString(
+                            "en-US"
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                {/* Pagination for serials */}
+                {serialsTotalPages > 1 && (
+                  <div className="flex items-center justify-between mt-4">
+                    <button
+                      onClick={() => handleSerialsPageChange(serialsPage - 1)}
+                      disabled={serialsPage === 0}
+                      className={`px-3 py-1 rounded ${
+                        serialsPage === 0
+                          ? "text-gray-400 cursor-not-allowed"
+                          : "text-blue-600 hover:bg-blue-50"
+                      }`}
+                    >
+                      Previous
+                    </button>
+                    <span className="text-sm text-gray-700">
+                      Page {serialsPage + 1} of {serialsTotalPages}
+                    </span>
+                    <button
+                      onClick={() => handleSerialsPageChange(serialsPage + 1)}
+                      disabled={serialsPage === serialsTotalPages - 1}
+                      className={`px-3 py-1 rounded ${
+                        serialsPage === serialsTotalPages - 1
+                          ? "text-gray-400 cursor-not-allowed"
+                          : "text-blue-600 hover:bg-blue-50"
+                      }`}
+                    >
+                      Next
+                    </button>
+                  </div>
+                )}
+              </>
             )}
+          </div>
+        </div>
+      )}
+             {selectedProductIdForImage && (
+         <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/30">
+           <div className="bg-white rounded-lg p-8 shadow-lg max-w-6xl w-full max-h-[95vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              
+              <button
+                onClick={() => {
+                  setSelectedProductIdForImage(null);
+                  setImages([]);
+                  setImageError("");
+                  setSelectedImagesToDelete([]);
+                  setImageToUpdate(null);
+                }}
+                className="text-gray-500 hover:text-gray-700 text-2xl font-bold"
+              >
+                ×
+              </button>
+            </div>
+            <div className="mb-2 flex gap-2 items-center">
+              <input
+                type="file"
+                accept="image/*"
+                ref={fileInputRef}
+                style={{ display: "none" }}
+                onChange={handleAddImage}
+              />
+                             <button
+                 className="px-4 py-2 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200 font-medium"
+                 onClick={() => fileInputRef.current && fileInputRef.current.click()}
+                 disabled={imageLoading}
+               >
+                 Upload Image
+               </button>
+               <button
+                 className="px-4 py-2 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200 font-medium"
+                 onClick={handleDeleteSelectedImages}
+                 disabled={imageLoading || images.length === 0}
+               >
+                 Delete Image
+               </button>
+              
+              {imageLoading && <span className="text-xs text-blue-500">Loading...</span>}
+              {imageError && <span className="text-xs text-red-500">{imageError}</span>}
+            </div>
+            <input
+              type="file"
+              accept="image/*"
+              ref={updateInputRef}
+              style={{ display: "none" }}
+              onChange={handleUpdateImage}
+            />
+            <div className="flex gap-2 mt-2 flex-wrap justify-center">
+              {images.length > 0 ? (
+                images.map((img) => {
+                  // Process image URL
+                  const baseUrl = "http://localhost:8080";
+                  const imageUrl = img.imageUrl 
+                    ? (img.imageUrl.startsWith('http') ? img.imageUrl : `${baseUrl}${img.imageUrl}`)
+                    : "https://placehold.co/120x120?text=No+Image";
+                  
+                  return (
+                                                              <div key={img.id || img.imageId} className="relative group border rounded p-3">
+                        <img
+                          src={imageUrl}
+                          alt={img.fileName || "Product"}
+                          className="w-64 h-64 object-contain rounded border bg-gray-50"
+                          onError={(e) => {
+                            e.target.src = "https://placehold.co/256x256?text=Error";
+                          }}
+                        />
+                      <div className="absolute top-1 left-1">
+                        <input
+                          type="checkbox"
+                          checked={selectedImagesToDelete.includes(img.id || img.imageId)}
+                          onChange={() => handleSelectImageToDelete(img.id || img.imageId)}
+                          title="Select to delete"
+                        />
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <span className="text-xs text-gray-400">No image</span>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Serial Form Modal */}
+      {showSerialForm && selectedOptionForSerial && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/30">
+          <div className="bg-white rounded-lg p-6 shadow-lg max-w-md w-full">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-gray-800">
+                Add Serial for Option
+              </h3>
+              <button
+                onClick={handleCloseSerialForm}
+                className="text-gray-500 hover:text-gray-700 text-2xl font-bold"
+              >
+                ×
+              </button>
+            </div>
+            <div className="mb-4">
+              <p className="text-sm text-gray-600 mb-2">
+                Option: {selectedOptionForSerial.productName} - {selectedOptionForSerial.colorName} - {selectedOptionForSerial.ram}GB/{selectedOptionForSerial.rom}GB
+              </p>
+            </div>
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              const formData = new FormData(e.target);
+              const serialData = {
+                serialNumber: formData.get('serialNumber'),
+                status: formData.get('status') || 'AVAILABLE',
+                storeId: formData.get('storeId') || null
+              };
+              handleSubmitSerial(serialData);
+            }}>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Serial Number *
+                  </label>
+                  <input
+                    type="text"
+                    name="serialNumber"
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Enter serial number"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Status
+                  </label>
+                  <select
+                    name="status"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="AVAILABLE">Available</option>
+                    <option value="SOLD">Sold</option>
+                    <option value="RESERVED">Reserved</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Store ID (Optional)
+                  </label>
+                  <input
+                    type="number"
+                    name="storeId"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Enter store ID"
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end gap-3 mt-6">
+                <button
+                  type="button"
+                  onClick={handleCloseSerialForm}
+                  className="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                >
+                  Add Serial
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
     </div>
   );
+};
+
+// Utility function to get token info
+const getTokenInfo = () => {
+  const token = localStorage.getItem("token");
+  if (!token) return null;
+
+  try {
+    // Decode JWT token (if it's a JWT)
+    const payload = JSON.parse(atob(token.split(".")[1]));
+    return {
+      token,
+      payload,
+      expiresAt: payload.exp ? new Date(payload.exp * 1000) : null,
+    };
+  } catch (error) {
+    console.warn("Invalid token format");
+    return { token };
+  }
+};
+
+const statusColor = {
+  Active: "text-green-500",
+  Inactive: "text-neutral-600",
+  OutOfStock: "text-red-500 font-bold",
 };
 
 export default ProductTable;

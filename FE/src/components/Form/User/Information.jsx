@@ -16,7 +16,6 @@ const UserInformationForm = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log("User info:", data);
   };
 
   return (

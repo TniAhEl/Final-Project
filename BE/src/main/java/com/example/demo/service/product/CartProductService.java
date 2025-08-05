@@ -46,7 +46,7 @@ public class CartProductService implements ICartProductService {
             cartProduct.setCart(cart);
             cartProduct.setProductOption(productOption);
             if(quantity<=productOption.getRemainingQuantity()){
-                cart.setTotalMoney(productOption.getPrice().multiply(BigDecimal.valueOf(quantity)));
+                cart.setTotalMoney(cart.getTotalMoney().add(productOption.getPrice().multiply(BigDecimal.valueOf(quantity))));
                 cartProduct.setQuantity(quantity);}
             else {
                 throw new OutOfRemainingResourceException("The remaining quantity is not enough!");

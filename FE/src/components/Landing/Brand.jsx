@@ -35,18 +35,12 @@ const Brand = () => {
       .then((data) => {
         if (Array.isArray(data) && typeof data[0] === "string") {
           setBrands(data.map((name) => ({ name })));
-          console.log(
-            "Brands set:",
-            data.map((name) => ({ name }))
-          );
         } else {
           setBrands(data);
-          console.log("Brands set:", data);
         }
       })
       .catch(() => {
         setBrands([]);
-        console.log("Brands set: [] (error)");
       });
   }, []);
 

@@ -221,7 +221,7 @@ const OrderTable = ({
                   } rounded bg-blue-600 text-white hover:bg-blue-700 font-medium`}
                   title="View Order"
                 >
-                  {compact ? "V" : "View"}
+                  {compact ? "View" : "View"}
                 </button>
                 {order.status === "PENDING" && (
                   <button
@@ -299,18 +299,33 @@ const CustomerOrderPage = () => {
       setLoading(true);
       setError(null);
       try {
-        // Get userId from localStorage
         const userId = localStorage.getItem("userId");
         if (!userId) {
           setError("User ID not found in localStorage.");
           setLoading(false);
           return;
         }
-        const data = await fetchCustomerOrders(userId, page, size, filter);
-        console.log(data);
+
+        // Prepare filter object for API - using the correct format
+        const apiFilter = {};
+        
+        // Add filter fields if they have values
+        if (filter.statuses && filter.statuses.length > 0) apiFilter.statuses = filter.statuses;
+        if (filter.types && filter.types.length > 0) apiFilter.types = filter.types;
+        if (filter.methods && filter.methods.length > 0) apiFilter.methods = filter.methods;
+        if (filter.promotionCodes && filter.promotionCodes.length > 0) apiFilter.promotionCodes = filter.promotionCodes;
+        if (filter.startDate) apiFilter.startDate = filter.startDate;
+        if (filter.endDate) apiFilter.endDate = filter.endDate;
+        if (filter.minTotalMoney) apiFilter.minTotalMoney = Number(filter.minTotalMoney);
+        if (filter.maxTotalMoney) apiFilter.maxTotalMoney = Number(filter.maxTotalMoney);
+
+        
+        const data = await fetchCustomerOrders(userId, page, size, apiFilter);
+        
         setOrders(data.content || []);
         setTotalPages(data.totalPages || 1);
       } catch (err) {
+        console.error('Error fetching orders:', err);
         setError("Could not load orders.");
         setOrders([]);
       }
@@ -340,23 +355,56 @@ const CustomerOrderPage = () => {
   return (
     <div>
       <CustomerOrderFilter filter={filter} onChange={setFilter} />
-      {loading || (orders.length === 0 && !error) ? (
+      
+      {/* Loading State */}
+      {loading ? (
         <div className="flex items-center justify-center min-h-[300px] w-full">
           <div className="w-20 h-20 border-8 border-blue-500 border-t-transparent rounded-full animate-spin" />
         </div>
       ) : error ? (
-        <div className="text-red-500">
-          {error
-            .replace(
-              "Could not load orders.",
-              "Could not load orders."
-            )
-            .replace(
-              "User ID not found in localStorage.",
-              "User ID not found in localStorage."
-            )}
+        /* Error State */
+        <div className="text-center py-8">
+          <div className="text-red-500 text-lg mb-2">Error loading orders</div>
+          <div className="text-gray-400 text-sm">{error}</div>
+        </div>
+      ) : orders.length === 0 ? (
+        /* Empty State - No orders found */
+        <div className="text-center py-12">
+          <div className="w-24 h-24 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+            <svg 
+              className="w-12 h-12 text-gray-400" 
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+            >
+              <path 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                strokeWidth={2} 
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" 
+              />
+            </svg>
+          </div>
+          <div className="text-gray-500 text-xl font-semibold mb-2">
+            No order found
+          </div>
+          <div className="text-gray-400 text-sm mb-4">
+            {getActiveFiltersCount() > 0 
+              ? "Try again later"
+              : "You have no order. Buy now!"
+            }
+          </div>
+          {getActiveFiltersCount() === 0 && (
+            <button
+              onClick={() => navigate('/products')}
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+            >
+              Exlore now!
+            </button>
+          )}
         </div>
       ) : (
+        /* Orders Found - Display Table */
         <>
           <OrderTable
             orders={orders}
@@ -721,6 +769,13 @@ const CustomerOrderPage = () => {
       />
     </div>
   );
+};
+
+// Helper function to count active filters
+const getActiveFiltersCount = () => {
+  // This function should be moved outside the component or defined within it
+  // For now, we'll use a simple approach
+  return 0; // You can implement this based on your filter state
 };
 
 export default CustomerOrderPage;

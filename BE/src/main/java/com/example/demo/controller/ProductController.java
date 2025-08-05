@@ -7,6 +7,7 @@ import com.example.demo.dto.request.orders.ReviewFilterRequest;
 import com.example.demo.dto.request.products.*;
 import com.example.demo.dto.response.ApiResponse;
 import com.example.demo.dto.response.ListProductResponse;
+import com.example.demo.dto.response.PaginationResponse;
 import com.example.demo.dto.response.order.ReviewResponse;
 import com.example.demo.dto.response.product.ProductOptionResponse;
 import com.example.demo.dto.response.product.ProductResponse;
@@ -60,7 +61,7 @@ public class ProductController {
     public ResponseEntity<Map<String, Object>> filterProducts(
             @RequestBody ProductFilterRequest filter,
             @RequestParam int page,
-            @RequestParam(defaultValue = "10") int size
+            @RequestParam(defaultValue = "20") int size
     ) {
         Map<String, Object> result = productService.filterProducts(filter, page, size);
         return ResponseEntity.ok(result);
@@ -127,13 +128,13 @@ public class ProductController {
         }
     }
 
-    @GetMapping("serial/all")
+    @PostMapping("serial/all")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse> getAllSerial(@RequestParam Long optionId) {
+    public ResponseEntity<ApiResponse> getAllSerial(@RequestParam Long optionId, @RequestParam int page, @RequestParam int size) {
         try {
-            List<ProductSerial> serial = productSerialService.getAllSerialByProductOptionId(optionId);
-            List<ProductSerialResponse> productSerialResponse = productSerialService.convertToResponses(serial);
-            return ResponseEntity.ok(new ApiResponse("Get all serial by option id", productSerialResponse));
+            PaginationResponse<ProductSerialResponse> serial = productSerialService.getAllSerialByProductOptionId(optionId, page, size);
+
+            return ResponseEntity.ok(new ApiResponse("Get all serial by option id", serial));
         } catch (Exception e) {
             return ResponseEntity.status(INTERNAL_SERVER_ERROR).body(new ApiResponse(e.getMessage(), null));
         }

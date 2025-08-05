@@ -192,19 +192,20 @@ public class InsuranceService implements IInsuranceService {
         InsuranceContractResponse res = new InsuranceContractResponse();
 
         // Contract fields (0–6)
-        res.setCoverageMoney((BigDecimal) row[0]);
-        res.setCreateAt(row[1] != null ? ((Date) row[1]).toLocalDate() : null);
-        res.setExpiredDate(row[2] != null ? ((Date) row[2]).toLocalDate() : null);
-        res.setFee((BigDecimal) row[3]);
-        res.setContractId((Long) row[4]);
-        res.setInsuranceId(row[5] != null ? ((Number) row[5]).longValue() : null);
-        res.setOrderProductSerialId(row[6] != null ? ((Number) row[6]).longValue() : null);
-        res.setContractStatus((String) row[7]);
+        res.setContractId((Long) row[0]);
+        res.setCode((String) row[1]);
+        res.setCoverageMoney((BigDecimal) row[2]);
+        res.setCreateAt(row[3] != null ? ((Date) row[3]).toLocalDate() : null);
+        res.setExpiredDate(row[4] != null ? ((Date) row[4]).toLocalDate() : null);
+        res.setFee((BigDecimal) row[5]);
+
+        res.setContractStatus((String) row[6]);
+        res.setInsuranceId(row[7] != null ? ((Number) row[7]).longValue() : null);
+        res.setOrderProductSerialId(row[8] != null ? ((Number) row[8]).longValue() : null);
 
         // Insurance fields (7–14)
         InsuranceResponse insurance = new InsuranceResponse();
-        insurance.setName((String) row[8]);
-        res.setCode((String) row[9]);
+        insurance.setName((String) row[9]);
         insurance.setReleaseAt(row[10] != null ? ((Date) row[10]).toLocalDate() : null);
         insurance.setInsured(row[11] != null ? ((Number) row[11]).intValue() : 0);
         insurance.setTerms((String) row[12]);
@@ -245,7 +246,7 @@ public class InsuranceService implements IInsuranceService {
             Insurance insurance = insuranceRepository.findById(request.getInsuranceId())
                     .orElseThrow(() -> new RuntimeException("Insurance not found with id: " + request.getInsuranceId()));
 
-            OrderProduct orderProduct = orderProductRepository.findById(request.getProductOptionId())
+            OrderProduct orderProduct = orderProductRepository.findByProductOption_IdAndOrder_Id(request.getProductOptionId(), orderId)
                     .orElseThrow(() -> new RuntimeException("OrderProduct not found with id: " + request.getProductOptionId()));
 
             InsurancePending pending = new InsurancePending();

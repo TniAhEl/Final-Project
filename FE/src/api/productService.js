@@ -1,8 +1,9 @@
 import { data } from "react-router-dom";
 import { api } from "./axios.js";
+import axios from "axios";
 
 // filter service
-export const filterProducts = async (filter, page = 0, size = 12) => {
+export const filterProducts = async (filter, page = 0, size = 20) => {
   const res = await api.post(
     `/products/filter?page=${page}&size=${size}`,
     filter
@@ -11,7 +12,7 @@ export const filterProducts = async (filter, page = 0, size = 12) => {
 };
 
 // filter service
-export const filterAdminProducts = async (filter, page = 0, size = 12) => {
+export const filterAdminProducts = async (filter, page = 0, size = 20) => {
   const res = await api.post(
     `/products/admin/filter?page=${page}&size=${size}`,
     filter
@@ -51,9 +52,11 @@ export const createSerial = async (data) => {
   return res.data;
 };
 
-// get serials by product option id
-export const getSerials = async (optionId) => {
-  const res = await api.get(`/products/serial/all?optionId=${optionId}`);
+// get serials by product option id (POST, with pagination, params in URL)
+export const getSerials = async (optionId, page = 0, size = 20) => {
+  const res = await api.post(
+    `/products/serial/all?optionId=${optionId}&page=${page}&size=${size}`
+  );
   return res.data;
 };
 
@@ -171,7 +174,13 @@ export const getGuestProducts = async (products) => {
 };
 
 // Compare products
-export const compareProducts = async (productIds) => {
-  const res = await api.post("/products/compare", { productId: productIds });
+export const compareProducts = async (productOptionId) => {
+  const res = await api.post("/products/compare", { productOptionId: productOptionId });
   return res.data;
+};
+
+// Add this function if not present
+export const getSerialsByOptionId = async (optionId) => {
+  // Adjust the URL to match your backend API
+  return axios.get(`/api/product-options/${optionId}/serials`);
 };

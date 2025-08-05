@@ -16,10 +16,11 @@ export const fetchOrders = async (filter = {}, page = 0, size = 20) => {
 };
 
 // Filter the order for user
-export const fetchCustomerOrders = async (userId, page = 0, size = 20) => {
+export const fetchCustomerOrders = async (userId, page = 0, size = 20, filter = {}) => {
   const token = localStorage.getItem("token");
   const response = await api.post(
     `/orders/customer?userId=${userId}&page=${page}&size=${size}`,
+    filter, // Send filter in request body
     {
       headers: {
         Authorization: `Bearer ${token}`,

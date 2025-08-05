@@ -66,7 +66,6 @@ const CustomerDashboard = () => {
 
   return (
     <div style={{ padding: 24, background: "#f4f6f8", minHeight: "100vh" }}>
-      <h1>Dashboard Khách Hàng</h1>
 
       {/* Chart Spending */}
       <div style={{ display: "flex", gap: 24, marginBottom: 24 }}>

@@ -17,7 +17,7 @@ const menu = [
     icon: <MdSpaceDashboard className="text-xl text-gray-700" />,
     to: "/admin/dashboard",
   },
-  { type: "section", label: "Sales", className: "text-slate-600" },
+  { type: "section", label: "Manage", className: "text-slate-600" },
   {
     type: "item",
     label: "Products",
@@ -48,7 +48,6 @@ const menu = [
     icon: <FaShieldAlt className="text-xl text-gray-700" />,
     to: "/admin/insurances",
   },
-  { type: "section", label: "Purchase", className: "text-slate-600" },
   {
     type: "item",
     label: "Promotions",
@@ -60,12 +59,6 @@ const menu = [
     label: "Review",
     icon: <MdRateReview className="text-xl text-blue-500" />,
     to: "/admin/review",
-  },
-  {
-    type: "item",
-    label: "Reports",
-    icon: <MdBarChart className="text-xl text-gray-700" />,
-    to: "/admin/reports",
   },
 ];
 

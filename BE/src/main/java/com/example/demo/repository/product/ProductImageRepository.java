@@ -12,4 +12,7 @@ import java.util.Optional;
 public interface ProductImageRepository extends JpaRepository<ProductImage, Long> {
     List<ProductImage> findByProductId(Long productId);
 
+    List<ProductImage> findAllByProduct_Id(Long productId);
+
+    List<ProductImage> findByProduct(Product product);
 }

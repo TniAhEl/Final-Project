@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { ArrowLeft, Star, Check, X } from "lucide-react";
+import { ArrowLeft, Check, X, Trash2 } from "lucide-react";
 import { compareProducts, getProductById } from "../../api/productService";
 import HeaderAuth from "../../components/Header/HeaderAuth";
 import Header from "../../components/Header/Header";
@@ -14,58 +14,102 @@ const ComparePage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Helper function to merge localStorage data with API data
-  const mergeProductData = (apiData, localStorageData) => {
-    if (!apiData || !Array.isArray(apiData)) return localStorageData;
-    if (!localStorageData || !Array.isArray(localStorageData)) return apiData;
-    
-    return apiData.map(apiProduct => {
-      const localStorageProduct = localStorageData.find(localProduct => localProduct.id === apiProduct.id);
-      if (localStorageProduct) {
-        // Merge API data with localStorage data, prioritizing API data
-        return { ...localStorageProduct, ...apiProduct };
-      }
-      return apiProduct;
-    });
-  };
-
   // Helper function to extract product data from API response
   const extractProductData = (apiData) => {
     if (!apiData || !Array.isArray(apiData)) return apiData;
     
-    return apiData.map(product => {
-      // If product has options array, use the first option's data for comparison
-      if (product.option && Array.isArray(product.option) && product.option.length > 0) {
-        const firstOption = product.option[0];
-        return {
-          ...product,
-          // Use option data for comparison fields
-          ram: firstOption.ram || product.ram,
-          rom: firstOption.rom || product.rom,
-          colorName: firstOption.colorName || product.colorName,
-          price: firstOption.price || product.price,
-          remainingQuantity: firstOption.remainingQuantity,
-          soldQuantity: firstOption.soldQuantity,
-          // Keep product-level data
-          name: product.name,
-          brand: product.brand,
-          category: product.category,
-          screenDimension: product.screenDimension,
-          screenTech: product.screenTech,
-          screenResolution: product.screenResolution,
-          productImageResponse: product.productImageResponse,
-          productStatus: product.productStatus
-        };
+    const extractedProducts = [];
+    
+    apiData.forEach(product => {
+      // Process images to create full URLs
+      const processedProduct = { ...product };
+      const baseUrl = "http://localhost:8080";
+      
+      // Process images array from API response
+      if (processedProduct.images && Array.isArray(processedProduct.images)) {
+        processedProduct.images = processedProduct.images.map(img => ({
+          ...img,
+          // Keep original image_url for proper URL construction
+          image_url: img.image_url,
+          // Create full URL for backward compatibility
+          url: img.image_url ? `${baseUrl}${img.image_url}` : img.url || "https://placehold.co/150x180"
+        }));
       }
-      return product;
+      
+      // If product has options array, create a separate product for each option
+      if (processedProduct.options && Array.isArray(processedProduct.options) && processedProduct.options.length > 0) {
+        processedProduct.options.forEach(option => {
+          const productWithOption = {
+            ...processedProduct,
+            // Use option data for comparison fields
+            ram: option.ram || processedProduct.ram,
+            rom: option.rom || processedProduct.rom,
+            color_name: option.color_name || processedProduct.color_name,
+            price: option.price || processedProduct.price,
+            option_id: option.option_id,
+            // Keep all product-level data
+            name: processedProduct.name,
+            brand: processedProduct.brand,
+            category_name: processedProduct.category_name,
+            screen_dimension: processedProduct.screen_dimension,
+            screen_tech: processedProduct.screen_tech,
+            screen_resolution: processedProduct.screen_resolution,
+            product_status: processedProduct.product_status,
+            description: processedProduct.description,
+            release_year: processedProduct.release_year,
+            cpu: processedProduct.cpu,
+            cpu_speed: processedProduct.cpu_speed,
+            gpu: processedProduct.gpu,
+            os: processedProduct.os,
+            back_camera: processedProduct.back_camera,
+            back_camera_tech: processedProduct.back_camera_tech,
+            back_camera_record: processedProduct.back_camera_record,
+            front_camera: processedProduct.front_camera,
+            flash: processedProduct.flash,
+            battery_capacity: processedProduct.battery_capacity,
+            battery_type: processedProduct.battery_type,
+            battery_tech: processedProduct.battery_tech,
+            charge_port: processedProduct.charge_port,
+            charge_support: processedProduct.charge_support,
+            mobile_network: processedProduct.mobile_network,
+            wifi: processedProduct.wifi,
+            bluetooth: processedProduct.bluetooth,
+            gps: processedProduct.gps,
+            sim: processedProduct.sim,
+            dimension: processedProduct.dimension,
+            material: processedProduct.material,
+            design: processedProduct.design,
+            resistance_util: processedProduct.resistance_util,
+            advanced_util: processedProduct.advanced_util,
+            special_util: processedProduct.special_util,
+            movie_util: processedProduct.movie_util,
+            music_util: processedProduct.music_util,
+            record_util: processedProduct.record_util,
+            earphone_port: processedProduct.earphone_port,
+            another_port: processedProduct.another_port,
+            screen_touch: processedProduct.screen_touch,
+            max_brightness: processedProduct.max_brightness,
+            // Add option-specific ID for comparison
+            compare_id: `${processedProduct.id}_${option.option_id}`
+          };
+          extractedProducts.push(productWithOption);
+        });
+      } else {
+        // If no options, use the product as is
+        processedProduct.compare_id = processedProduct.id;
+        extractedProducts.push(processedProduct);
+      }
     });
+    
+    return extractedProducts;
   };
 
   // Helper function to fetch detailed product data for each product
-  const fetchDetailedProductData = async (productIds) => {
+  const fetchDetailedProductData = async (productOptionIds) => {
     try {
+      
       const detailedProducts = await Promise.all(
-        productIds.map(async (id) => {
+        productOptionIds.map(async (id) => {
           try {
             const productData = await getProductById(id);
             return productData;
@@ -84,53 +128,81 @@ const ComparePage = () => {
     }
   };
 
+  // Function to remove product from comparison
+  const removeProduct = (compareId) => {
+    const updatedProducts = products.filter(p => p.compare_id !== compareId);
+    setProducts(updatedProducts);
+    
+    // Update localStorage
+    localStorage.setItem("compareProducts", JSON.stringify(updatedProducts));
+    
+    // If less than 2 products, redirect to home
+    if (updatedProducts.length < 2) {
+      navigate("/");
+    }
+  };
+
+  // Function to clear all products
+  const clearAllProducts = () => {
+    setProducts([]);
+    localStorage.removeItem("compareProducts");
+    navigate("/");
+  };
+
   useEffect(() => {
     const fetchCompareData = async () => {
       setLoading(true);
       setError(null);
       
       try {
-        let productIds = [];
+        let productOptionIds = [];
         let localStorageProducts = [];
         
-        // Always get data from localStorage first
+        // Get data from localStorage first
         const savedProducts = localStorage.getItem("compareProducts");
         if (savedProducts) {
           localStorageProducts = JSON.parse(savedProducts);
-          productIds = localStorageProducts.map(p => p.id);
+          // Extract productOptionIds from localStorage products - prioritize option_id
+          productOptionIds = localStorageProducts.map(p => {
+            // If the product has option_id, use it; otherwise use id
+            if (p.option_id) {
+              return p.option_id;
+            } else if (p.id) {
+              // If no option_id but has id, check if it's already a productOptionId format
+              return p.id;
+            }
+            return null;
+          }).filter(id => id !== null);
         }
         
         // If we have products from location state (from API), use them
         if (location.state?.products && location.state.products.length > 0) {
           const extractedData = extractProductData(location.state.products);
-          const mergedData = mergeProductData(extractedData, localStorageProducts);
-          setProducts(mergedData);
+          setProducts(extractedData);
           setLoading(false);
           return;
         }
         
         // If we have enough products in localStorage, call API
-        if (productIds.length >= 2) {
+        if (productOptionIds.length >= 2) {
           try {
-            // Call API to get detailed product data
-            const response = await compareProducts(productIds);
+            // Call API to get detailed product data with productOptionIds
+            const response = await compareProducts(productOptionIds);
             
-            if (response.data && Array.isArray(response.data) && response.data.length > 0) {
+            // Handle the new API response format: { total, data }
+            if (response && response.data && Array.isArray(response.data) && response.data.length > 0) {
               const extractedData = extractProductData(response.data);
-              const mergedData = mergeProductData(extractedData, localStorageProducts);
-              setProducts(mergedData);
+              setProducts(extractedData);
             } else if (response && Array.isArray(response) && response.length > 0) {
-              // Handle case where API returns array directly
+              // Handle case where API returns array directly (fallback)
               const extractedData = extractProductData(response);
-              const mergedData = mergeProductData(extractedData, localStorageProducts);
-              setProducts(mergedData);
+              setProducts(extractedData);
             } else {
               // Try to fetch detailed data for each product individually
-              const detailedProducts = await fetchDetailedProductData(productIds);
+              const detailedProducts = await fetchDetailedProductData(productOptionIds);
               if (detailedProducts.length > 0) {
                 const extractedData = extractProductData(detailedProducts);
-                const mergedData = mergeProductData(extractedData, localStorageProducts);
-                setProducts(mergedData);
+                setProducts(extractedData);
               } else {
                 setProducts(localStorageProducts);
               }
@@ -139,11 +211,10 @@ const ComparePage = () => {
             console.error("API Error:", apiError);
             
             // Try to fetch detailed data for each product individually as fallback
-            const detailedProducts = await fetchDetailedProductData(productIds);
+            const detailedProducts = await fetchDetailedProductData(productOptionIds);
             if (detailedProducts.length > 0) {
               const extractedData = extractProductData(detailedProducts);
-              const mergedData = mergeProductData(extractedData, localStorageProducts);
-              setProducts(mergedData);
+              setProducts(extractedData);
             } else {
               setProducts(localStorageProducts);
             }
@@ -317,7 +388,6 @@ const ComparePage = () => {
         { key: "another_port", label: "Other Ports", type: "text" },
       ]
     },
-    
   ];
 
   // Helper function to render property value
@@ -356,7 +426,9 @@ const ComparePage = () => {
           }`}>
             {value === "ONSELL" ? "On Sale" : 
              value === "PREORDER" ? "Pre-order" : 
-             "Discontinued"}
+             value === "OUT_STOCK" ? "Out of stock":
+             value === "DRAFT" ? "No information":
+             "No information"}
           </span>
         );
       case "color":
@@ -369,10 +441,6 @@ const ComparePage = () => {
             <span className="text-gray-700">{value}</span>
           </div>
         );
-      case "warranty":
-        return <span className="text-orange-600">{value} months</span>;
-      case "date":
-        return <span className="text-gray-600">{new Date(value).toLocaleDateString("en-US")}</span>;
       case "number":
         return <span className="text-purple-600">{value}</span>;
       default:
@@ -385,7 +453,7 @@ const ComparePage = () => {
           );
         }
         if (property.key === "screen_touch" && typeof value === "string") {
-          return value.toLowerCase() === "yes" || value.toLowerCase() === "multi-touch" ? (
+          return value || value.toLowerCase() === "multi-touch" ? (
             <Check className="text-green-600 w-4 h-4" />
           ) : (
             <X className="text-red-600 w-4 h-4" />
@@ -423,8 +491,17 @@ const ComparePage = () => {
                 </button>
                 <h1 className="text-2xl font-bold text-gray-900">Product Comparison</h1>
               </div>
-              <div className="text-sm text-gray-500">
-                {products.length} products
+              <div className="flex items-center gap-4">
+                <div className="text-sm text-gray-500">
+                  {products.length} products
+                </div>
+                <button
+                  onClick={clearAllProducts}
+                  className="flex items-center gap-2 text-red-600 hover:text-red-700 transition-colors"
+                >
+                  <Trash2 size={16} />
+                  Clear All
+                </button>
               </div>
             </div>
           </div>
@@ -441,15 +518,41 @@ const ComparePage = () => {
                       Specification
                     </th>
                     {products.map((product, index) => (
-                      <th key={index} className="text-center py-4 px-4 font-medium text-gray-700 min-w-[250px]">
+                      <th key={index} className="text-center py-4 px-4 font-medium text-gray-700 min-w-[250px] relative">
                         <div className="space-y-3">
+                                                     {/* Remove button */}
+                           <button
+                             onClick={() => removeProduct(product.compare_id)}
+                             className="absolute top-2 right-2 text-gray-400 hover:text-red-500 transition-colors"
+                           >
+                             <X size={16} />
+                           </button>
+                          
                           {/* Product image */}
                           <div className="w-32 h-32 mx-auto bg-gray-100 rounded-lg overflow-hidden">
-                            {product.productImageResponse && Array.isArray(product.productImageResponse) && product.productImageResponse.length > 0 ? (
+                            {product.images && Array.isArray(product.images) && product.images.length > 0 && product.images[0].image_url ? (
+                              <img
+                                src={`http://localhost:8080${product.images[0].image_url}`}
+                                alt={product.name}
+                                className="w-full h-full object-contain"
+                                onError={(e) => {
+                                  e.target.src = "https://placehold.co/150x180";
+                                }}
+                              />
+                            ) : product.images && Array.isArray(product.images) && product.images.length > 0 && product.images[0].url ? (
+                              <img
+                                src={product.images[0].url}
+                                alt={product.name}
+                                className="w-full h-full object-contain"
+                                onError={(e) => {
+                                  e.target.src = "https://placehold.co/150x180";
+                                }}
+                              />
+                            ) : product.productImageResponse && Array.isArray(product.productImageResponse) && product.productImageResponse.length > 0 ? (
                               <img
                                 src={product.productImageResponse[0].downloadURL || product.productImageResponse[0].url || product.productImageResponse[0].imageUrl}
                                 alt={product.name}
-                                className="w-full h-full object-cover"
+                                className="w-full h-full object-contain"
                                 onError={(e) => {
                                   e.target.src = "https://placehold.co/150x180";
                                 }}
@@ -461,10 +564,10 @@ const ComparePage = () => {
                             )}
                           </div>
                           
-                          {/* Product name */}
-                          <h3 className="font-semibold text-sm leading-tight text-gray-900">
-                            {product.name}
-                          </h3>
+                                                     {/* Product name */}
+                           <h3 className="font-semibold text-sm leading-tight text-gray-900">
+                             {product.name} {product.color_name && `(${product.color_name})`}
+                           </h3>
                           
                           {/* Product price */}
                           <p className="text-blue-600 font-bold">
@@ -485,6 +588,8 @@ const ComparePage = () => {
                             }`}>
                               {product.product_status === "ONSELL" ? "On Sale" : 
                                product.product_status === "PREORDER" ? "Pre-order" : 
+                               product.product_status === "DRAFT" ? "No information":
+                               product.product_status === "OUT_STOCK"?"Out of stock":
                                "Discontinued"}
                             </span>
                           </div>

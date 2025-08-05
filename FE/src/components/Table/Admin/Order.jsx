@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { fetchOrders, confirmOrder, updateAdminOrderStatus, getOrderById } from "../../../api/orderService"; // Đường dẫn đúng tới orderService.js
+import { fetchOrders, confirmOrder, updateAdminOrderStatus, getOrderById } from "../../../api/orderService"; 
 import { useNavigate } from "react-router-dom";
+import AdminOrderFilter from "./AdminOrderFilter";
 
 // Update Order Status Popup Component
 const UpdateOrderStatusPopup = ({ open, onClose, order, onConfirm }) => {
@@ -265,7 +266,7 @@ const OrderTable = ({
                   } rounded bg-blue-600 text-white hover:bg-blue-700 font-medium`}
                   title="View Order"
                 >
-                  {compact ? "V" : "View"}
+                  {compact ? "View" : "View"}
                 </button>
                 <button
                   onClick={() => onUpdate(order)}
@@ -274,7 +275,7 @@ const OrderTable = ({
                   } rounded bg-yellow-500 text-white hover:bg-yellow-600 font-medium`}
                   title="Update Order"
                 >
-                  {compact ? "U" : "Update"}
+                  {compact ? "Update" : "Update"}
                 </button>
               </div>
             )}
@@ -303,23 +304,42 @@ const AdminOrderPage = () => {
   const [currentPage, setCurrentPage] = useState(0);
   const [pageSize, setPageSize] = useState(20);
   const [totalPages, setTotalPages] = useState(0);
+  const [filter, setFilter] = useState({});
   const navigate = useNavigate();
 
   useEffect(() => {
     const getOrders = async () => {
       setLoading(true);
       try {
-        const data = await fetchOrders({}, currentPage, pageSize);
+        // Prepare filter object for API
+        const apiFilter = {};
+        
+        // Add filter fields if they have values
+        if (filter.statuses && filter.statuses.length > 0) apiFilter.statuses = filter.statuses;
+        if (filter.types && filter.types.length > 0) apiFilter.types = filter.types;
+        if (filter.promotionCodes && filter.promotionCodes.length > 0) apiFilter.promotionCodes = filter.promotionCodes;
+        if (filter.startDate) apiFilter.startDate = filter.startDate;
+        if (filter.endDate) apiFilter.endDate = filter.endDate;
+        if (filter.minTotalMoney) apiFilter.minTotalMoney = Number(filter.minTotalMoney);
+        if (filter.maxTotalMoney) apiFilter.maxTotalMoney = Number(filter.maxTotalMoney);
+        if (filter.customerName) apiFilter.customerName = filter.customerName;
+        if (filter.customerEmail) apiFilter.customerEmail = filter.customerEmail;
+        if (filter.customerPhone) apiFilter.customerPhone = filter.customerPhone;
+
+        
+        const data = await fetchOrders(apiFilter, currentPage, pageSize);
+        
         setOrders(data.content || []);
         setTotalPages(data.totalPages || 1);
       } catch (error) {
+        console.error('Error fetching orders:', error);
         setOrders([]);
         setTotalPages(1);
       }
       setLoading(false);
     };
     getOrders();
-  }, [currentPage, pageSize]);
+  }, [filter, currentPage, pageSize]);
 
   const handlePageChange = (page) => {
     if (page >= 0 && page < totalPages) {
@@ -355,6 +375,22 @@ const AdminOrderPage = () => {
   // Function to handle order status update
   const handleChangeStatus = async (order, status) => {
     try {
+      // Show loading notification
+      const loadingNotification = document.createElement('div');
+      loadingNotification.className = 'fixed top-4 right-4 bg-blue-500 text-white px-6 py-3 rounded-lg shadow-lg z-[9999] transform transition-all duration-300 translate-x-full';
+      loadingNotification.innerHTML = `
+        <div class="flex items-center gap-3">
+          <div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+          <span class="font-medium">Updating order status...</span>
+        </div>
+      `;
+      document.body.appendChild(loadingNotification);
+      
+      // Animate in loading notification
+      setTimeout(() => {
+        loadingNotification.classList.remove('translate-x-full');
+      }, 100);
+      
       let success = false;
       
       if (status === "CONFIRM") {
@@ -368,8 +404,39 @@ const AdminOrderPage = () => {
         success = true;
       }
       
+      // Remove loading notification
+      loadingNotification.classList.add('translate-x-full');
+      setTimeout(() => {
+        document.body.removeChild(loadingNotification);
+      }, 300);
+      
       if (success) {
-        alert("Update status successfully!");
+        // Show success notification
+        const notification = document.createElement('div');
+        notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-[9999] transform transition-all duration-300 translate-x-full';
+        notification.innerHTML = `
+          <div class="flex items-center gap-3">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+            <span class="font-medium">Order status updated successfully!</span>
+          </div>
+        `;
+        document.body.appendChild(notification);
+        
+        // Animate in
+        setTimeout(() => {
+          notification.classList.remove('translate-x-full');
+        }, 100);
+        
+        // Remove after 3 seconds
+        setTimeout(() => {
+          notification.classList.add('translate-x-full');
+          setTimeout(() => {
+            document.body.removeChild(notification);
+          }, 300);
+        }, 3000);
+        
         // Reload order list
         setLoading(true);
         const data = await fetchOrders({}, currentPage, pageSize);
@@ -378,14 +445,81 @@ const AdminOrderPage = () => {
       }
     } catch (err) {
       console.error("Error updating order status:", err);
-      alert("Error updating status!");
+      
+      // Remove loading notification if it exists
+      const existingLoading = document.querySelector('.fixed.top-4.right-4.bg-blue-500');
+      if (existingLoading) {
+        existingLoading.classList.add('translate-x-full');
+        setTimeout(() => {
+          if (document.body.contains(existingLoading)) {
+            document.body.removeChild(existingLoading);
+          }
+        }, 300);
+      }
+      
+      // Show error notification
+      const notification = document.createElement('div');
+      notification.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-[9999] transform transition-all duration-300 translate-x-full';
+      notification.innerHTML = `
+        <div class="flex items-center gap-3">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+          <span class="font-medium">Failed to update order status!</span>
+        </div>
+      `;
+      document.body.appendChild(notification);
+      
+      // Animate in
+      setTimeout(() => {
+        notification.classList.remove('translate-x-full');
+      }, 100);
+      
+      // Remove after 4 seconds
+      setTimeout(() => {
+        notification.classList.add('translate-x-full');
+        setTimeout(() => {
+          document.body.removeChild(notification);
+        }, 300);
+      }, 4000);
     }
   };
 
   return (
     <div>
+      <AdminOrderFilter filter={filter} onChange={setFilter} />
+      
       {loading ? (
-        <div>Loading...</div>
+        <div className="flex items-center justify-center min-h-[300px] w-full">
+          <div className="w-20 h-20 border-8 border-blue-500 border-t-transparent rounded-full animate-spin" />
+        </div>
+      ) : orders.length === 0 ? (
+        <div className="text-center py-12">
+          <div className="w-24 h-24 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+            <svg 
+              className="w-12 h-12 text-gray-400" 
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+            >
+              <path 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                strokeWidth={2} 
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" 
+              />
+            </svg>
+          </div>
+          <div className="text-gray-500 text-xl font-semibold mb-2">
+            No orders found
+          </div>
+          <div className="text-gray-400 text-sm mb-4">
+            {Object.keys(filter).length > 0 
+              ? "Try adjusting your filters or check back later"
+              : "No orders available at the moment"
+            }
+          </div>
+        </div>
       ) : (
         <>
           <div className="flex items-center justify-between mb-2">
@@ -396,7 +530,10 @@ const AdminOrderPage = () => {
               <span className="text-sm">Rows per page:</span>
               <select
                 value={pageSize}
-                onChange={handlePageSizeChange}
+                onChange={(e) => {
+                  setPageSize(Number(e.target.value));
+                  setCurrentPage(0);
+                }}
                 className="border rounded px-2 py-1 text-sm"
               >
                 <option value={20}>20</option>
@@ -404,16 +541,18 @@ const AdminOrderPage = () => {
               </select>
             </div>
           </div>
+          
           <OrderTable
             orders={orders}
             onView={handleView}
             onUpdate={handleUpdate}
           />
+          
           {/* Pagination */}
           {totalPages > 1 && (
             <div className="flex items-center justify-center mt-4 gap-2">
               <button
-                onClick={() => handlePageChange(currentPage - 1)}
+                onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
                 disabled={currentPage === 0}
                 className={`px-3 py-2 text-sm font-medium rounded-md ${
                   currentPage === 0
@@ -426,7 +565,7 @@ const AdminOrderPage = () => {
               {Array.from({ length: totalPages }, (_, i) => (
                 <button
                   key={i}
-                  onClick={() => handlePageChange(i)}
+                  onClick={() => setCurrentPage(i)}
                   className={`px-3 py-2 text-sm font-medium rounded-md ${
                     i === currentPage
                       ? "bg-violet-500 text-white"
@@ -437,7 +576,7 @@ const AdminOrderPage = () => {
                 </button>
               ))}
               <button
-                onClick={() => handlePageChange(currentPage + 1)}
+                onClick={() => setCurrentPage(Math.min(totalPages - 1, currentPage + 1))}
                 disabled={currentPage === totalPages - 1}
                 className={`px-3 py-2 text-sm font-medium rounded-md ${
                   currentPage === totalPages - 1

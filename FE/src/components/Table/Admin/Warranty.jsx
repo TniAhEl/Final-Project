@@ -7,10 +7,7 @@ const statusColor = {
   Pending: "text-yellow-500 font-semibold",
 };
 
-const WarrantyTable = ({
-  onView = () => {},
-  onDelete = () => {},
-}) => {
+const WarrantyTable = () => {
   const [warranties, setWarranties] = useState([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
@@ -24,6 +21,7 @@ const WarrantyTable = ({
         // Admin fetches all warranties, customer can fetch their own warranties
         // If status is provided, filter by that status
         const data = await fetchCustomerWarranties(undefined, page, 10, status ? { status } : {});
+        console.log(data);
         setWarranties(data.content || []);
         setTotalPages(data.totalPages || 1);
       } catch (e) {
@@ -63,7 +61,7 @@ const WarrantyTable = ({
             Product
           </div>
           <div className="w-32 p-4 text-slate-800/90 text-sm font-medium">
-            Customer
+            Serial Number
           </div>
           <div className="w-32 p-4 text-slate-800/90 text-sm font-medium">
             Start Date
@@ -74,9 +72,7 @@ const WarrantyTable = ({
           <div className="w-24 p-4 text-slate-800/90 text-sm font-medium">
             Status
           </div>
-          <div className="w-32 p-4 text-slate-800/90 text-sm font-medium">
-            Actions
-          </div>
+
         </div>
         {/* Rows */}
         {loading ? (
@@ -91,7 +87,7 @@ const WarrantyTable = ({
             >
               <div className="w-40 p-4 text-zinc-800 text-sm">{item.warrantyId}</div>
               <div className="w-40 p-4 text-zinc-800 text-sm">{item.productName}</div>
-              <div className="w-32 p-4 text-zinc-800 text-sm">{item.customerName || "-"}</div>
+              <div className="w-32 p-4 text-zinc-800 text-sm">{item.serialNumber || "-"}</div>
               <div className="w-32 p-4 text-zinc-800 text-sm">
                 {item.startDate ? new Date(item.startDate).toLocaleDateString("vi-VN") : "---"}
               </div>
@@ -99,20 +95,6 @@ const WarrantyTable = ({
                 {item.endDate ? new Date(item.endDate).toLocaleDateString("vi-VN") : "---"}
               </div>
               <div className={`w-24 p-4 text-sm ${statusColor[item.status] || ""}`}>{item.status}</div>
-              <div className="w-32 p-4 flex gap-2">
-                <button
-                  onClick={() => onView(item)}
-                  className="px-3 py-1 rounded bg-blue-600 text-white hover:bg-blue-700 text-xs font-medium"
-                >
-                  View
-                </button>
-                <button
-                  onClick={() => onDelete(item)}
-                  className="px-3 py-1 rounded bg-red-500 text-white hover:bg-red-600 text-xs font-medium"
-                >
-                  Delete
-                </button>
-              </div>
             </div>
           ))
         )}

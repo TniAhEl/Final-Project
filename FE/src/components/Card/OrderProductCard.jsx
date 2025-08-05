@@ -180,14 +180,14 @@ const OrderProductCard = ({
               onClick={handleConfirm}
               disabled={!selected}
             >
-              Xác nhận
+              Confirm
             </button>
             <button
               type="button"
               className="px-4 py-1 rounded bg-gray-300 text-gray-700 hover:bg-gray-400 text-xs font-semibold"
               onClick={() => setShowInsurance(false)}
             >
-              Hủy
+              Cancel
             </button>
           </div>
         </div>

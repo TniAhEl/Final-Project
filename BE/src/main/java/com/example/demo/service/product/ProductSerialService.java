@@ -2,6 +2,7 @@ package com.example.demo.service.product;
 
 import com.example.demo.dto.request.products.CreateProductSerialRequest;
 import com.example.demo.dto.request.products.UpdateProductSerialRequest;
+import com.example.demo.dto.response.PaginationResponse;
 import com.example.demo.dto.response.product.ProductSerialResponse;
 import com.example.demo.dto.response.product.StoreResponse;
 import com.example.demo.enums.ProductSerialStatus;
@@ -16,10 +17,12 @@ import com.example.demo.repository.product.ProductRepository;
 import com.example.demo.repository.product.ProductSerialRepository;
 import com.example.demo.repository.product.StoreRepository;
 import com.example.demo.service.impl.product.IProductSerialService;
-import com.example.demo.service.impl.product.IProductService;
 import com.example.demo.service.impl.product.IStoreService;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -42,9 +45,24 @@ public class ProductSerialService implements IProductSerialService {
     }
 
     @Override
-    public List<ProductSerial> getAllSerialByProductOptionId(Long optionId) {
-        return productSerialRepository.findAllByProductOption_Id(optionId);
+    public PaginationResponse<ProductSerialResponse> getAllSerialByProductOptionId(Long optionId, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<ProductSerial> resultPage = productSerialRepository.findAllByProductOption_Id(optionId, pageable);
+
+        List<ProductSerialResponse> productSerialResponses = convertToResponses(resultPage.getContent());
+
+        return new PaginationResponse<>(
+                productSerialResponses,
+                page,
+                size,
+                resultPage.getTotalPages()
+        );
     }
+
+
+
+
+
 
     @Override
     public ProductSerial createSerial(CreateProductSerialRequest request) {

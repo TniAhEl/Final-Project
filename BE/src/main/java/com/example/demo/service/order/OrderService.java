@@ -35,6 +35,7 @@ import com.example.demo.repository.utilities.*;
 import com.example.demo.service.impl.order.IOrderService;
 import com.example.demo.service.product.CartService;
 import com.example.demo.service.utility.InsuranceService;
+import com.example.demo.service.utility.MailService;
 import com.example.demo.service.utility.WarrantyService;
 import com.example.demo.util.InsuranceIDGenerator;
 import com.example.demo.util.TrackingNumberGenerator;
@@ -49,6 +50,7 @@ import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -76,7 +78,7 @@ public class OrderService implements IOrderService {
     private final ProductSerialRepository productSerialRepository;
     private final OrderTransportRepository orderTransportRepository;
     private final WarrantyRepository warrantyRepository;
-
+    private final MailService mailService;
 
     @Override
     @Transactional
@@ -86,6 +88,8 @@ public class OrderService implements IOrderService {
         if (cart == null || cart.getCartProducts().isEmpty()) {
             throw new ResourceNotFoundException("Cart is empty or not found");
         }
+
+        User user = userRepository.findById(userId).orElseThrow(() -> new ResourceNotFoundException("User not found with id:" + userId));
 
         // 2. create new order
         Order order = new Order();
@@ -100,12 +104,14 @@ public class OrderService implements IOrderService {
         order.setType(request.getType());
         order.setNote(request.getNote());
         order.setMethod(request.getMethod());
+        order.setOrderCode(generateOrderCode());
 
         Order savedOrder = orderRepository.save(order);
 
         // 3. create list order product
         List<OrderProduct> orderProducts = createOrderProducts(savedOrder, cart);
         orderProductRepository.saveAll(orderProducts);
+
 
         savedOrder.setOrderProducts(orderProducts);
 
@@ -141,20 +147,21 @@ public class OrderService implements IOrderService {
         if (requests != null && !requests.isEmpty()) {
             List<InsurancePending> insurancePendings = insuranceService.createInsurancePendings(requests, savedOrder.getId());
 
-            BigDecimal totalInsuranceMoney = insurancePendings.stream()
-                    .map(InsurancePending::getTotalfee)
-                    .filter(Objects::nonNull)
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            BigDecimal totalInsuranceMoney = insurancePendings.stream().map(InsurancePending::getTotalfee).filter(Objects::nonNull).reduce(BigDecimal.ZERO, BigDecimal::add);
 
             insurancePendingsRepository.saveAll(insurancePendings);
             savedOrder.setTotalMoney(savedOrder.getTotalMoney().add(totalInsuranceMoney));
         }
 
 
+        String name = user.getFirstName() + " " + user.getLastName();
+        Order finalOrder = orderRepository.save(savedOrder);
+        mailService.sendOrderSummaryEmail(user.getEmail(), name, order.getOrderCode(), orderProducts, order.getTotalMoney());
+
 
         // 8. save order
 
-        Order finalOrder = orderRepository.save(savedOrder);
+
         //9. clear the user cart
         cartService.clearCart(cart.getId());
 
@@ -176,13 +183,14 @@ public class OrderService implements IOrderService {
         order.setType(request.getType());
         order.setNote(request.getNote());
         order.setMethod(request.getMethod());
+        order.setOrderCode(generateOrderCode());
 
         Order savedOrder = orderRepository.save(order);
 
         // 2. Tạo danh sách orderProduct từ request list
         List<OrderProduct> orderProducts = list.getProducts().stream().map(product -> {
-            ProductOption option = productOptionRepository.findById(product.getProductOptionId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Product option not found"));
+            ProductOption option = productOptionRepository.findById(product.getProductOptionId()).orElseThrow(() -> new ResourceNotFoundException("Product option not found"));
+
 
             if (option.getRemainingQuantity() - option.getReversedQuantity() < product.getQuantity()) {
                 throw new IllegalStateException("Product option " + option.getId() + " does not have enough quantity");
@@ -195,23 +203,25 @@ public class OrderService implements IOrderService {
             op.setUnitPrice(option.getPrice());
             op.setUpdateAt(LocalDateTime.now());
 
-            // tăng reversed quantity (nếu bạn dùng reversed để hold tạm)
             option.setReversedQuantity(option.getReversedQuantity() + product.getQuantity());
             productOptionRepository.save(option);
 
             return op;
-        }).toList();
+        }).collect(Collectors.toList());
 
         orderProductRepository.saveAll(orderProducts);
         savedOrder.setOrderProducts(orderProducts);
 
+
         // 3. Tính tổng tiền
         BigDecimal totalMoney = calculateTotalMoney(orderProducts);
+
         savedOrder.setTotalMoney(totalMoney);
 
         // 4. Áp dụng promotion nếu có
         if (promotionCode != null && !promotionCode.isBlank()) {
             Promotion promotion = promotionRepository.findPromotionByCode(promotionCode);
+
 
             if (promotion.getRemainingQuantity() <= 0) {
                 throw new IllegalStateException("Promotion code is out of stock");
@@ -221,31 +231,41 @@ public class OrderService implements IOrderService {
             map.setOrder(savedOrder);
             map.setPromotion(promotion);
             map.setUpdateAt(LocalDateTime.now());
-            map.setTotalDiscount(totalMoney.subtract(calculateDiscount(totalMoney, promotion)));
+
+            BigDecimal discounted = calculateDiscount(totalMoney, promotion);
+            BigDecimal discountAmount = totalMoney.subtract(discounted);
+            map.setTotalDiscount(discountAmount);
             orderPromotionRepository.save(map);
 
-            totalMoney = calculateDiscount(totalMoney, promotion);
+            totalMoney = discounted;
+            savedOrder.setTotalMoney(totalMoney);
+
             promotion.setRemainingQuantity(promotion.getRemainingQuantity() - 1);
             promotionRepository.save(promotion);
-        }
 
-        savedOrder.setTotalMoney(totalMoney);
+
+        }
 
         // 5. Tạo insurance nếu có
         if (requests != null && !requests.isEmpty()) {
             List<InsurancePending> insurancePendings = insuranceService.createInsurancePendings(requests, savedOrder.getId());
 
-            BigDecimal totalInsuranceMoney = insurancePendings.stream()
-                    .map(InsurancePending::getTotalfee)
-                    .filter(Objects::nonNull)
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            BigDecimal totalInsuranceMoney = insurancePendings.stream().map(InsurancePending::getTotalfee).filter(Objects::nonNull).reduce(BigDecimal.ZERO, BigDecimal::add);
 
             insurancePendingsRepository.saveAll(insurancePendings);
             savedOrder.setTotalMoney(savedOrder.getTotalMoney().add(totalInsuranceMoney));
+
+
         }
 
         // 6. Lưu lại order
-        return orderRepository.save(savedOrder);
+        orderRepository.save(savedOrder);
+
+
+        // 7. Gửi email
+        mailService.sendOrderSummaryEmail(order.getEmail(), order.getName(), order.getOrderCode(), savedOrder.getOrderProducts(), savedOrder.getTotalMoney());
+
+        return savedOrder;
     }
 
 
@@ -260,8 +280,8 @@ public class OrderService implements IOrderService {
     private List<OrderProduct> createOrderProducts(Order order, Cart cart) {
         return cart.getCartProducts().stream().map(cartProduct -> {
             ProductOption productOption = cartProduct.getProductOption();
-            if(productOption.getRemainingQuantity()> 0 && productOption.getRemainingQuantity() >= productOption.getReversedQuantity()+cartProduct.getQuantity()) {
-                productOption.setReversedQuantity(cartProduct.getQuantity()+productOption.getReversedQuantity());
+            if (productOption.getRemainingQuantity() > 0 && productOption.getRemainingQuantity() >= productOption.getReversedQuantity() + cartProduct.getQuantity()) {
+                productOption.setReversedQuantity(cartProduct.getQuantity() + productOption.getReversedQuantity());
             } else {
                 throw new OutOfRemainingResourceException("The remaining quantity of the product is not enough to place order");
             }
@@ -285,16 +305,13 @@ public class OrderService implements IOrderService {
 
 
     private BigDecimal calculateTotalMoney(List<OrderProduct> orderProducts) {
-        return orderProducts.stream()
-                .map(item -> item.getUnitPrice().multiply(BigDecimal.valueOf(item.getQuantity())))
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        return orderProducts.stream().map(item -> item.getUnitPrice().multiply(BigDecimal.valueOf(item.getQuantity()))).reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
 
     @Override
     public OrderResponseDetail getOrder(Long orderId) {
-        Order order =  orderRepository.findById(orderId)
-                .orElseThrow(() -> new ResourceNotFoundException("Order not found!"));
+        Order order = orderRepository.findById(orderId).orElseThrow(() -> new ResourceNotFoundException("Order not found!"));
         return convertToDetail(order);
     }
 
@@ -305,17 +322,17 @@ public class OrderService implements IOrderService {
 
     @Override
     public Order updateOrder(Long orderId, OrderStatus status) {
-        Order order = orderRepository.findById(orderId).orElseThrow(()-> new ResourceNotFoundException("Order not found!"));
-        if(status == OrderStatus.CANCELLED && order.getStatus()==OrderStatus.PENDING){
+        Order order = orderRepository.findById(orderId).orElseThrow(() -> new ResourceNotFoundException("Order not found!"));
+        if (status == OrderStatus.CANCELLED && order.getStatus() == OrderStatus.PENDING) {
             List<OrderProduct> orderProducts = orderProductRepository.findAllByOrder_Id(orderId);
 
-                for (OrderProduct orderProduct : orderProducts) {
-                    ProductOption option = productOptionRepository.findById(orderProduct.getProductOption().getId()).orElseThrow(()->new ResourceNotFoundException("Option not found!"));
-                    option.setReversedQuantity(option.getReversedQuantity()-orderProduct.getQuantity());
-                    orderProduct.setReviewed(false);
-                    orderProductRepository.save(orderProduct);
-                    productOptionRepository.save(option);
-                }
+            for (OrderProduct orderProduct : orderProducts) {
+                ProductOption option = productOptionRepository.findById(orderProduct.getProductOption().getId()).orElseThrow(() -> new ResourceNotFoundException("Option not found!"));
+                option.setReversedQuantity(option.getReversedQuantity() - orderProduct.getQuantity());
+                orderProduct.setReviewed(false);
+                orderProductRepository.save(orderProduct);
+                productOptionRepository.save(option);
+            }
         }
         order.setStatus(status);
 
@@ -338,7 +355,6 @@ public class OrderService implements IOrderService {
 //            dto.setProductId(op.getProductOption().getProduct().getId());
 //            return dto;
 //        }).toList();
-
 
 
         return orderResponse;
@@ -369,8 +385,7 @@ public class OrderService implements IOrderService {
 
         orderResponse.setOrderProducts(orderProductResponses);
 
-        User user = userRepository.findById(order.getUser().getId())
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        User user = userRepository.findById(order.getUser().getId()).orElseThrow(() -> new ResourceNotFoundException("User not found"));
         UserResponse userResponse = modelMapper.map(user, UserResponse.class);
         orderResponse.setUser(userResponse);
 
@@ -383,8 +398,7 @@ public class OrderService implements IOrderService {
 
         OrderPromotion orderPromotion = orderPromotionRepository.findByOrderId(order.getId());
         if (orderPromotion != null && orderPromotion.getPromotion() != null) {
-            Promotion promotion = promotionRepository.findById(orderPromotion.getPromotion().getId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Promotion not found"));
+            Promotion promotion = promotionRepository.findById(orderPromotion.getPromotion().getId()).orElseThrow(() -> new ResourceNotFoundException("Promotion not found"));
 
             PromotionResponse promotionInfo = modelMapper.map(promotion, PromotionResponse.class);
             OrderPromotionResponse orderPromotionResponse = modelMapper.map(orderPromotion, OrderPromotionResponse.class);
@@ -400,8 +414,8 @@ public class OrderService implements IOrderService {
     @Override
     public Map<String, Object> filterOrders(OrderFilterRequest filter, int page, int size) {
         String baseSql = """
-        SELECT * FROM order_table WHERE 1=1
-    """;
+                    SELECT * FROM order_table WHERE 1=1
+                """;
 
         StringBuilder where = new StringBuilder();
         Map<String, Object> params = new HashMap<>();
@@ -413,9 +427,7 @@ public class OrderService implements IOrderService {
 
         if (filter.getStatuses() != null && !filter.getStatuses().isEmpty()) {
             where.append(" AND order_status IN :statuses");
-            List<String> statusNames = filter.getStatuses().stream()
-                    .map(Enum::name)
-                    .collect(Collectors.toList());
+            List<String> statusNames = filter.getStatuses().stream().map(Enum::name).collect(Collectors.toList());
             params.put("statuses", statusNames);
         }
 
@@ -461,8 +473,7 @@ public class OrderService implements IOrderService {
         query.setParameter("limit", size);
         query.setParameter("offset", page * size);
 
-        @SuppressWarnings("unchecked")
-        List<Order> orders = query.getResultList();
+        @SuppressWarnings("unchecked") List<Order> orders = query.getResultList();
 
         Long total = ((Number) countQuery.getSingleResult()).longValue();
 
@@ -481,15 +492,15 @@ public class OrderService implements IOrderService {
     @Transactional
     public Order confirmOrder(Long adminId, Long orderId, OrderStatus status) {
         // 1. Kiểm tra quyền admin
-        Admin admin = adminRepository.findById(adminId)
-                .orElseThrow(() -> new ResourceNotFoundException("Admin not found with id: " + adminId));
+        Admin admin = adminRepository.findById(adminId).orElseThrow(() -> new ResourceNotFoundException("Admin not found with id: " + adminId));
         if (admin.getAdminRole() != AdminRole.ADMIN) {
             throw new PermissionException("Admin has no permission!");
         }
 
+
         // 2. Kiểm tra đơn hàng
-        Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
+        Order order = orderRepository.findById(orderId).orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
+
 
         // 3. Lấy các sản phẩm trong đơn hàng
         List<OrderProduct> orderProducts = orderProductRepository.findAllByOrder_Id(orderId);
@@ -499,15 +510,14 @@ public class OrderService implements IOrderService {
             int quantity = orderProduct.getQuantity();
 
             // 3.0
-            ProductOption productOption = productOptionRepository.findById(productOptionId).orElseThrow(()-> new ResourceNotFoundException("Product option not found!"));
-            productOption.setRemainingQuantity(productOption.getRemainingQuantity()-orderProduct.getQuantity());
-            productOption.setReversedQuantity(productOption.getReversedQuantity()-orderProduct.getQuantity());
-            productOption.setSoldQuantity(productOption.getSoldQuantity()+orderProduct.getQuantity());
+            ProductOption productOption = productOptionRepository.findById(productOptionId).orElseThrow(() -> new ResourceNotFoundException("Product option not found!"));
+            productOption.setRemainingQuantity(productOption.getRemainingQuantity() - orderProduct.getQuantity());
+            productOption.setReversedQuantity(productOption.getReversedQuantity() - orderProduct.getQuantity());
+            productOption.setSoldQuantity(productOption.getSoldQuantity() + orderProduct.getQuantity());
             productOptionRepository.save(productOption);
 
             // 3.1 Lấy serial AVAILABLE
-            List<ProductSerial> availableSerials = productSerialRepository
-                    .findAllByProductListConfigStatusAndProductOption_Id(ProductSerialStatus.AVAILABLE, productOptionId);
+            List<ProductSerial> availableSerials = productSerialRepository.findAllByProductListConfigStatusAndProductOption_Id(ProductSerialStatus.AVAILABLE, productOptionId);
 
             // 3.2 Kiểm tra số lượng serial
             if (availableSerials.size() < quantity) {
@@ -540,8 +550,7 @@ public class OrderService implements IOrderService {
 
                 // 3.7 Tạo hợp đồng bảo hiểm nếu có4
 
-                List<InsurancePending> pendingList = insurancePendingsRepository
-                        .findByOrderAndOrderProduct(orderId, productOptionId);
+                List<InsurancePending> pendingList = insurancePendingsRepository.findByOrderAndOrderProduct(orderId, productOptionId);
                 System.out.println("Pending size: " + pendingList.size());
                 System.out.println("Order ID: " + orderId);
                 System.out.println("Product option ID: " + productOptionId);
@@ -582,54 +591,55 @@ public class OrderService implements IOrderService {
         transport.setShip(TransportStatus.PROCESSING);
         transport.setUpdateAt(LocalDateTime.now());
         transport.setOrder(order);
-        String trackingNumber = TrackingNumberGenerator.generate(
-                LocalDate.from(transport.getUpdateAt()),
-                transport.getShippingAddress(),
-                transport.getShippingMethod()
-        );
+        String trackingNumber = TrackingNumberGenerator.generate(LocalDate.from(transport.getUpdateAt()), transport.getShippingAddress(), transport.getShippingMethod());
         transport.setTrackingNumber(trackingNumber);
         orderTransportRepository.save(transport);
 
         order.setOrderTransport(transport);
         orderRepository.save(order);
 
+
+        mailService.sendOrderEmail(order.getEmail(), order.getName(), order.getOrderCode(), orderProducts, order.getTotalMoney());
+
         return order;
     }
 
     @Override
     @Transactional
-    public Order updateOrder(Long adminId, Long orderId, OrderStatus status){
-        Admin admin = adminRepository.findById(adminId).orElseThrow(()-> new ResourceNotFoundException("Admin not found with id:"+adminId));
+    public Order updateOrder(Long adminId, Long orderId, OrderStatus status) {
+        Admin admin = adminRepository.findById(adminId).orElseThrow(() -> new ResourceNotFoundException("Admin not found with id:" + adminId));
 
-        if(admin.getAdminRole()!=AdminRole.ADMIN){
+        if (admin.getAdminRole() != AdminRole.ADMIN) {
             throw new PermissionException("Admin has no permission!");
         }
 
-        Order order = orderRepository.findById(orderId).orElseThrow(()-> new ResourceNotFoundException("Order not found with id: "+ orderId));
+        Order order = orderRepository.findById(orderId).orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
 
         // Check order status and update status
 
-        if(order.getStatus() == OrderStatus.CONFIRM && status == OrderStatus.RECEIVED ){
+        if (order.getStatus() == OrderStatus.CONFIRM && status == OrderStatus.RECEIVED) {
             List<OrderProduct> orderProducts = orderProductRepository.findAllByOrder_Id(orderId);
-            for(OrderProduct product : orderProducts){
-                ProductOption option = productOptionRepository.findById(product.getProductOption().getId()).orElseThrow(()->new ResourceNotFoundException("Option not found!"));
-                option.setReversedQuantity(option.getReversedQuantity()-product.getQuantity());
+            for (OrderProduct product : orderProducts) {
+                ProductOption option = productOptionRepository.findById(product.getProductOption().getId()).orElseThrow(() -> new ResourceNotFoundException("Option not found!"));
+                option.setReversedQuantity(option.getReversedQuantity() - product.getQuantity());
                 product.setReviewed(false);
                 productOptionRepository.save(option);
                 orderProductRepository.save(product);
             }
             order.setStatus(status);
-        }
-        else if(order.getStatus()== OrderStatus.PENDING && status == OrderStatus.CANCELLED){
+        } else if (order.getStatus() == OrderStatus.PENDING && status == OrderStatus.CANCELLED) {
             order.setStatus(status);
             List<InsurancePending> insurancePending = insurancePendingsRepository.findAllByOrderId(orderId);
 
-            for (InsurancePending pending : insurancePending){
+            for (InsurancePending pending : insurancePending) {
                 pending.setStatus(PendingStatus.CANCELLED);
                 insurancePendingsRepository.save(pending);
             }
 
         }
+
+
+
         orderRepository.save(order);
         return order;
     }
@@ -637,8 +647,8 @@ public class OrderService implements IOrderService {
     @Override
     public Map<String, Object> filterOrdersForUser(OrderFilterRequest filter, Long userId, int page, int size) {
         String baseSql = """
-        SELECT * FROM order_table WHERE 1=1
-    """;
+                    SELECT * FROM order_table WHERE 1=1
+                """;
 
         StringBuilder where = new StringBuilder();
         Map<String, Object> params = new HashMap<>();
@@ -656,9 +666,7 @@ public class OrderService implements IOrderService {
 
         if (filter.getStatuses() != null && !filter.getStatuses().isEmpty()) {
             where.append(" AND order_status IN :statuses");
-            List<String> statusNames = filter.getStatuses().stream()
-                    .map(Enum::name)
-                    .collect(Collectors.toList());
+            List<String> statusNames = filter.getStatuses().stream().map(Enum::name).collect(Collectors.toList());
             params.put("statuses", statusNames);
         }
 
@@ -668,12 +676,12 @@ public class OrderService implements IOrderService {
 //        }
 
         if (filter.getStartDate() != null) {
-            where.append(" AND created_at >= :startDate");
+            where.append(" AND create_at >= :startDate");
             params.put("startDate", filter.getStartDate());
         }
 
         if (filter.getEndDate() != null) {
-            where.append(" AND created_at <= :endDate");
+            where.append(" AND create_at <= :endDate");
             params.put("endDate", filter.getEndDate());
         }
 
@@ -704,8 +712,7 @@ public class OrderService implements IOrderService {
         query.setParameter("limit", size);
         query.setParameter("offset", page * size);
 
-        @SuppressWarnings("unchecked")
-        List<Order> orders = query.getResultList();
+        @SuppressWarnings("unchecked") List<Order> orders = query.getResultList();
 
         Long total = ((Number) countQuery.getSingleResult()).longValue();
 
@@ -720,22 +727,21 @@ public class OrderService implements IOrderService {
     }
 
 
-
     @Override
     public Map<String, Object> filterOrderProductWarranty(FilterOrderWarranty filter, Long userId, int page, int size) {
         String baseSql = """
-        SELECT 
-            wc.id, wc.start_date, wc.end_date, wc.status, 
-            ps.serial_number, 
-            p.name,
-            p.warranty_id  -- Thêm để lấy warrantyId từ bảng product
-        FROM warranty_card wc
-        JOIN order_table o ON wc.order_id = o.id
-        JOIN product_serial ps ON wc.product_serial_id = ps.id
-        JOIN product_option po ON ps.product_option_id = po.id
-        JOIN product p ON po.product_id = p.id
-        WHERE 1=1
-    """;
+                    SELECT 
+                        wc.id, wc.start_date, wc.end_date, wc.status, 
+                        ps.serial_number, 
+                        p.name,
+                        p.warranty_id  -- Thêm để lấy warrantyId từ bảng product
+                    FROM warranty_card wc
+                    JOIN order_table o ON wc.order_id = o.id
+                    JOIN product_serial ps ON wc.product_serial_id = ps.id
+                    JOIN product_option po ON ps.product_option_id = po.id
+                    JOIN product p ON po.product_id = p.id
+                    WHERE 1=1
+                """;
 
         StringBuilder where = new StringBuilder();
         Map<String, Object> params = new HashMap<>();
@@ -747,9 +753,7 @@ public class OrderService implements IOrderService {
 
         if (filter.getStatuses() != null && !filter.getStatuses().isEmpty()) {
             where.append(" AND wc.status IN :statuses");
-            List<String> statusNames = filter.getStatuses().stream()
-                    .map(Enum::name)
-                    .collect(Collectors.toList());
+            List<String> statusNames = filter.getStatuses().stream().map(Enum::name).collect(Collectors.toList());
             params.put("statuses", statusNames);
         }
 
@@ -758,14 +762,14 @@ public class OrderService implements IOrderService {
 
         String finalSql = baseSql + where + orderBy + limitOffset;
         String countSql = """
-        SELECT COUNT(*)
-        FROM warranty_card wc
-        JOIN order_table o ON wc.order_id = o.id
-        JOIN product_serial ps ON wc.product_serial_id = ps.id
-        JOIN product_option po ON ps.product_option_id = po.id
-        JOIN product p ON po.product_id = p.id
-        WHERE 1=1
-    """ + where;
+                    SELECT COUNT(*)
+                    FROM warranty_card wc
+                    JOIN order_table o ON wc.order_id = o.id
+                    JOIN product_serial ps ON wc.product_serial_id = ps.id
+                    JOIN product_option po ON ps.product_option_id = po.id
+                    JOIN product p ON po.product_id = p.id
+                    WHERE 1=1
+                """ + where;
 
         Query query = entityManager.createNativeQuery(finalSql);
         Query countQuery = entityManager.createNativeQuery(countSql);
@@ -795,9 +799,7 @@ public class OrderService implements IOrderService {
             Long warrantyPolicyId = row[6] != null ? ((Number) row[6]).longValue() : null;
             WarrantyResponse warrantyResponse = null;
             if (warrantyPolicyId != null) {
-                warrantyResponse = warrantyRepository.findById(warrantyPolicyId)
-                        .map(warrantyService::convertToResponse)
-                        .orElse(null);
+                warrantyResponse = warrantyRepository.findById(warrantyPolicyId).map(warrantyService::convertToResponse).orElse(null);
             }
             info.setWarrantyResponse(warrantyResponse);
 
@@ -814,10 +816,12 @@ public class OrderService implements IOrderService {
         return result;
     }
 
-
-
-
-
+    public String generateOrderCode() {
+        String prefix = "ORD"; // hoặc "DH", "HD", tùy bạn
+        String datePart = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
+        int random = new Random().nextInt(900) + 100; // 100 - 999
+        return prefix + datePart + random;
+    }
 
 
 }
