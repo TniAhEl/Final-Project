@@ -114,7 +114,7 @@ const Profile = () => {
       {/* Header */}
       <div className="flex items-center gap-6 mb-8">
         <img
-          src="https://randomuser.me/api/portraits/women/44.jpg"
+          src="https://placehold.co/200x200/4F46E5/FFFFFF?text=Avatar"
           alt="avatar"
           className="w-20 h-20 rounded-full object-cover border"
         />

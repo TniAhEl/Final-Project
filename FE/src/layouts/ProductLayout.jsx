@@ -10,8 +10,8 @@ import {
   FaShieldAlt,
   FaTimesCircle,
 } from "react-icons/fa";
+import { Scale } from "lucide-react";
 import { getProductById } from "../api/productService";
-import CompareButton from "../components/Button/Compare";
 
 // Function to decode JWT to get userId from token
 function getUserIdFromToken() {
@@ -47,6 +47,7 @@ const ProductLayout = ({
   const [selectedRom, setSelectedRom] = useState(null);
   const [selectedStore, setSelectedStore] = useState(null);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0); // Add state for selected image
+  const [isInCompareList, setIsInCompareList] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -235,6 +236,11 @@ const ProductLayout = ({
     onOptionChange,
   ]);
 
+  // Check compare status when selectedOption changes
+  useEffect(() => {
+    checkCompareStatus();
+  }, [selectedOption]);
+
   // Helper functions to check option states
   const getOptionState = (option) => {
     if (!option) return "unavailable";
@@ -382,6 +388,96 @@ const ProductLayout = ({
         type: "warning" 
       } 
     }));
+  };
+
+  // Function to show notification
+  const showNotificationMessage = (message) => {
+    localStorage.setItem("showNotification", "true");
+    localStorage.setItem("notificationMessage", message);
+    window.dispatchEvent(new CustomEvent("showNotification", { detail: { message } }));
+  };
+
+  // Check if product is in compare list
+  const checkCompareStatus = () => {
+    try {
+      const savedProducts = localStorage.getItem("compareProducts");
+      const compareProducts = savedProducts ? JSON.parse(savedProducts) : [];
+      
+      const optionId = selectedOption?.id;
+      const productId = product?.id;
+      
+      const exists = compareProducts.findIndex((p) => {
+        if (optionId) {
+          return p.option_id === optionId;
+        } else {
+          return p.id === productId;
+        }
+      });
+      
+      setIsInCompareList(exists !== -1);
+    } catch (error) {
+      setIsInCompareList(false);
+    }
+  };
+
+  // Toggle compare list
+  const toggleCompareList = () => {
+    try {
+      const savedProducts = localStorage.getItem("compareProducts");
+      const compareProducts = savedProducts ? JSON.parse(savedProducts) : [];
+
+      const optionId = selectedOption?.id;
+      const productId = product?.id;
+      const productName = product?.name;
+
+      // Check if product already exists in compare list
+      const existingIndex = compareProducts.findIndex((p) => {
+        if (optionId) {
+          return p.option_id === optionId;
+        } else {
+          return p.id === productId;
+        }
+      });
+      
+      if (existingIndex !== -1) {
+        // Remove product from compare list
+        compareProducts.splice(existingIndex, 1);
+        setIsInCompareList(false);
+        showNotificationMessage("Sản phẩm đã được xóa khỏi danh sách so sánh!");
+      } else {
+        // Check max quantity
+        if (compareProducts.length >= 8) {
+          showNotificationMessage("Bạn chỉ có thể so sánh tối đa 8 sản phẩm!");
+          return;
+        }
+
+        // Add product to compare list
+        const productToAdd = {
+          id: productId,
+          name: productName,
+          option_id: optionId,
+          ram: selectedOption?.ram,
+          rom: selectedOption?.rom,
+          color_name: selectedOption?.colorName,
+          price: selectedOption?.price,
+          images: product?.image || product?.productImageResponse
+        };
+        
+        compareProducts.push(productToAdd);
+        setIsInCompareList(true);
+        showNotificationMessage("Sản phẩm đã được thêm vào danh sách so sánh!");
+      }
+
+      // Save to localStorage
+      localStorage.setItem("compareProducts", JSON.stringify(compareProducts));
+      
+      // Dispatch event to update compare sidebar
+      window.dispatchEvent(new CustomEvent("compareProductsUpdated", {
+        detail: { products: compareProducts }
+      }));
+    } catch (error) {
+      console.error("Error toggling compare list:", error);
+    }
   };
 
   if (loading) return <div className="p-8 text-center">Loading...</div>;
@@ -858,10 +954,15 @@ const ProductLayout = ({
                   {addToCartLoading ? "Adding..." : "Add to Cart"}
                 </button>
               </div>
-              <CompareButton 
-                product={selectedOption || product} 
-                className="flex-1 min-w-[136px] px-14 py-4"
-              />
+              <button
+                onClick={toggleCompareList}
+                className="flex-1 min-w-[136px] px-14 py-4 bg-neutral-800 hover:bg-neutral-700 text-white rounded-md flex items-center justify-center gap-2 transition-colors cursor-pointer"
+              >
+                <Scale size={16} />
+                <span className="text-base font-medium font-['Inter'] leading-normal">
+                  {isInCompareList ? "Remove" : "Compare"}
+                </span>
+              </button>
             </div>
 
             

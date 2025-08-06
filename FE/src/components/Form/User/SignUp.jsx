@@ -7,8 +7,8 @@ const SignUpForm = () => {
   const [form, setForm] = useState({
     username: "",
     password: "",
-    fname: "",
-    lname: "",
+    firstName: "",
+    lastName: "",
     email: "",
     phone: "",
   });
@@ -58,8 +58,8 @@ const SignUpForm = () => {
           </label>
           <input
             type="text"
-            value={form.fname}
-            onChange={(e) => handleChange("fname", e.target.value)}
+            value={form.firstName}
+            onChange={(e) => handleChange("firstName", e.target.value)}
             placeholder="Enter your first name"
             className="p-3 bg-slate-50 rounded outline-none text-base"
           />
@@ -70,8 +70,8 @@ const SignUpForm = () => {
           </label>
           <input
             type="text"
-            value={form.lname}
-            onChange={(e) => handleChange("lname", e.target.value)}
+            value={form.lastName}
+            onChange={(e) => handleChange("lastName", e.target.value)}
             placeholder="Enter your last name"
             className="p-3 bg-slate-50 rounded outline-none text-base"
           />

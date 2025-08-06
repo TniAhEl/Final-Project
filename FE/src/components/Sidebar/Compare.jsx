@@ -10,10 +10,32 @@ const CompareSidebar = () => {
 
   // Load compare products from localStorage
   useEffect(() => {
-    const savedProducts = localStorage.getItem("compareProducts");
-    if (savedProducts) {
-      setCompareProducts(JSON.parse(savedProducts));
-    }
+    const loadCompareProducts = () => {
+      const savedProducts = localStorage.getItem("compareProducts");
+      if (savedProducts) {
+        try {
+          setCompareProducts(JSON.parse(savedProducts));
+        } catch (error) {
+          console.error("Error parsing compare products:", error);
+          setCompareProducts([]);
+        }
+      }
+    };
+
+    loadCompareProducts();
+    
+    // Also listen for storage changes
+    const handleStorageChange = (event) => {
+      if (event.key === "compareProducts") {
+        loadCompareProducts();
+      }
+    };
+    
+    window.addEventListener("storage", handleStorageChange);
+    
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+    };
   }, []);
 
   // Note: localStorage is managed by Product.jsx, not here
@@ -139,38 +161,29 @@ const CompareSidebar = () => {
     
     // Listen for custom events from CompareButton
     const handleCompareProductsUpdated = (event) => {
+      console.log("Compare products updated event received:", event.detail);
       setCompareProducts(event.detail.products);
     };
     
     window.addEventListener("compareProductsUpdated", handleCompareProductsUpdated);
     
-    // Listen for storage changes (when localStorage is updated from other tabs/windows)
-    const handleStorageChange = (event) => {
-      if (event.key === "compareProducts") {
-        try {
-          const newProducts = event.newValue ? JSON.parse(event.newValue) : [];
-          setCompareProducts(newProducts);
-        } catch (error) {
-          console.error("Error parsing compare products from storage:", error);
-        }
-      }
-    };
-    
-    window.addEventListener("storage", handleStorageChange);
-    
     return () => {
       delete window.addToCompare;
       window.removeEventListener("compareProductsUpdated", handleCompareProductsUpdated);
-      window.removeEventListener("storage", handleStorageChange);
     };
   }, []); // Remove compareProducts dependency to prevent infinite loops
+
+  // Debug: log compareProducts changes
+  useEffect(() => {
+    console.log("Compare products state updated:", compareProducts);
+  }, [compareProducts]);
 
   if (compareProducts.length === 0) {
     return null; // Hide sidebar when no products
   }
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-r from-blue-900 to-indigo-900 border-t border-blue-700 z-50">
+    <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-r from-blue-300 to-indigo-300 border-t border-blue-600 z-50">
       <div className="max-w-7xl mx-auto px-4 py-3">
         <div className="flex items-center justify-between">
           {/* Product slots */}
@@ -184,9 +197,9 @@ const CompareSidebar = () => {
               const product = compareProducts[index];
               return (
                 <div
-                  key={index}
+                  key={index}s
                   className={`flex-shrink-0 w-32 ${
-                    product ? "bg-blue-800/80" : "bg-blue-800/40"
+                    product ? "bg-blue-700/80" : "bg-blue-700/40"
                   } rounded-lg p-2 border border-blue-600 relative`}
                 >
                   {product ? (
